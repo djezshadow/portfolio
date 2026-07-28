@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ThemeMode {
+  auto
+  manual
+}
+
+enum ThemeName {
+  noir
+  neon
+}
+
+enum LogoSource {
+  upload
+  from_category
+  none
+}
+
+enum CollaboratorType {
+  client
+  creative
+}
+
+enum MediaType {
+  image
+  video
+}
+
+enum VideoProvider {
+  youtube
+  vimeo
+}
+
+/// Cada categoría es una "carpeta estética": tiene su propio tema
+/// (manual/auto) y su propio estilo tipográfico/visual.
+model Category {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  name            String
+  /// Si queda vacío, se usa `name` (español) también en inglés.
+  nameEn          String?
+  order           Int               @default(0)
+  themeMode       ThemeMode         @default(auto)
+  themeName       ThemeName?
+  /// SEO manual (item #42). Si quedan vacíos, se autogeneran a partir del nombre.
+  metaTitle       String?
+  metaTitleEn     String?
+  metaDescription String?
+  metaDescriptionEn String?
+  /// Categoría "oculta": no aparece en destacados/nav, y su página muestra
+  /// un "coming soon" con pistas en vez de los proyectos (item #47).
+  isComingSoon    Boolean           @default(false)
+  comingSoonHint  String?
+  comingSoonHintEn String?
+  /// Si está en true, aparece como link en el navbar flotante público
+  /// (independiente de isComingSoon — así podés linkear el "coming soon"
+  /// desde la nav aunque no salga en destacados).
+  showInNav       Boolean           @default(false)
+  style           CategoryStyle?
+  projects        ProjectCategory[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+/// Personalización visual por categoría (item #22 del spec).
+model CategoryStyle {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  accentColor   String? // hex, pisa --accent solo dentro de esta categoría
+  fontFamily    String? // "display" | "body" | "mono" (fuentes curadas)
+  bold          Boolean  @default(false)
+  strikethrough Boolean  @default(false)
+  alignment     String   @default("left") // left | center | right
+  strokeWidth   Float? // px, para -webkit-text-stroke en títulos
+}
+
+model Collaborator {
+  id        String           @id @default(cuid())
+  name      String
+  type      CollaboratorType
+  logoUrl   String?
+  instagram String?
+  website   String?
+  projects  Project[]
+}
+
+model Project {
+  id             String            @id @default(cuid())
+  title          String
+  titleEn        String?
+  description    String?
+  descriptionEn  String?
+  date           DateTime?
+  role           String?
+  roleEn         String?
+  logoSource     LogoSource        @default(none)
+  logoUrl        String?
+  featured       Boolean           @default(false)
+  order          Int               @default(0)
+  /// null = borrador (nunca se muestra en el sitio público).
+  /// fecha futura = programado. fecha pasada/ahora = publicado.
+  publishedAt    DateTime?
+  collaboratorId String?
+  collaborator   Collaborator?     @relation(fields: [collaboratorId], references: [id], onDelete: SetNull)
+  categories     ProjectCategory[]
+  media          Media[]
+  tags           ProjectTag[]
+  createdAt      DateTime          @default(now())
+}
+
+/// Un proyecto puede vivir en más de una categoría (item #8).
+model ProjectCategory {
+  projectId  String
+  categoryId String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, categoryId])
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  projects ProjectTag[]
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+}
+
+model Media {
+  id            String         @id @default(cuid())
+  projectId     String
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type          MediaType
+  url           String // imagen: ruta al archivo (webp/avif). video: no se usa
+  videoProvider VideoProvider?
+  videoId       String? // id de YouTube/Vimeo
+  order         Int            @default(0)
+  isThumbnail   Boolean        @default(false)
+}
+
+/// Fila única de configuración global del sitio.
+model SiteSettings {
+  id             String  @id @default("default")
+  /// Logo PNG/WebP subido por el admin. Si está seteado, reemplaza al
+  /// ícono de diafragma en el watermark de todas las fotos nuevas.
+  watermarkUrl   String?
+  /// % del ancho de la foto que ocupa el watermark (por defecto 9%, igual
+  /// que el ícono de diafragma original).
+  watermarkScale Float   @default(9)
+
+  /// Textos del hero de la home (item pendiente: "título/subtítulo editable").
+  /// Si quedan vacíos, se usa el texto por defecto del diccionario ES/EN.
+  heroTitle1     String?
+  heroTitle1En   String?
+  heroTitle2     String?
+  heroTitle2En   String?
+  heroSubtitle   String?
+  heroSubtitleEn String?
+}

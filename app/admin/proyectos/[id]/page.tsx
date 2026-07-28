@@ -1,0 +1,185 @@
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { updateProject, deleteProject } from "./actions";
+import { MediaDropzone } from "@/components/admin/media-dropzone";
+import { PublishControls } from "@/components/admin/publish-controls";
+import { DeleteButton } from "@/components/admin/delete-button";
+
+function toDatetimeLocal(date: Date) {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export const dynamic = "force-dynamic";
+
+export default async function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  const [project, categories] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id },
+      include: { media: { orderBy: { order: "asc" } }, categories: true },
+    }),
+    prisma.category.findMany({ orderBy: { order: "asc" } }),
+  ]);
+
+  if (!project) notFound();
+
+  const currentCategoryId = project.categories[0]?.categoryId ?? "";
+  const publishState = !project.publishedAt ? "draft" : project.publishedAt > new Date() ? "scheduled" : "now";
+
+  const action = updateProject.bind(null, project.id);
+  const removeAction = deleteProject.bind(null, project.id);
+
+  return (
+    <div className="mx-auto max-w-2xl px-6 py-16">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="font-display text-3xl">Editar “{project.title}”</h1>
+        <DeleteButton
+          action={removeAction}
+          confirmText={`¿Borrar "${project.title}" y todas sus fotos/videos? Esto no se puede deshacer.`}
+          label="Borrar proyecto"
+        />
+      </div>
+
+      <form action={action} className="space-y-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Título (Español)</label>
+            <input
+              name="title"
+              required
+              defaultValue={project.title}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Título (English) — vacío = usa el español
+            </label>
+            <input
+              name="titleEn"
+              defaultValue={project.titleEn ?? ""}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Descripción ES</label>
+            <textarea
+              name="description"
+              rows={3}
+              defaultValue={project.description ?? ""}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Descripción EN — vacío = usa el ES
+            </label>
+            <textarea
+              name="descriptionEn"
+              rows={3}
+              defaultValue={project.descriptionEn ?? ""}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Tu rol (ES)</label>
+            <input
+              name="role"
+              defaultValue={project.role ?? ""}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Tu rol (EN) — vacío = usa el ES
+            </label>
+            <input
+              name="roleEn"
+              defaultValue={project.roleEn ?? ""}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Categoría</label>
+          <select
+            name="categoryId"
+            required
+            defaultValue={currentCategoryId}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <label className="flex items-center gap-2 font-mono text-sm">
+          <input type="checkbox" name="featured" defaultChecked={project.featured} /> Destacar en el home
+        </label>
+
+        {project.media.length > 0 && (
+          <div className="glass space-y-3 rounded-2xl p-4">
+            <p className="font-mono text-xs text-[var(--ink-muted)]">Media actual</p>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {project.media.map((m) => (
+                <label key={m.id} className="relative block cursor-pointer">
+                  {m.type === "image" ? (
+                    <Image
+                      src={m.url}
+                      alt=""
+                      width={150}
+                      height={150}
+                      className="aspect-square rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex aspect-square items-center justify-center rounded-xl bg-black/30 font-mono text-[10px]">
+                      {m.videoProvider?.toUpperCase()}
+                    </div>
+                  )}
+                  <span className="absolute inset-0 flex items-end justify-end rounded-xl bg-black/0 p-1 transition-colors hover:bg-black/40">
+                    <input type="checkbox" name="deleteMedia" value={m.id} className="accent-red-500" />
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="font-mono text-[10px] text-[var(--ink-muted)]">
+              Marcá el check sobre una foto/video para borrarla al guardar.
+            </p>
+          </div>
+        )}
+
+        <div>
+          <p className="mb-2 font-mono text-xs text-[var(--ink-muted)]">Agregar más fotos (opcional)</p>
+          <MediaDropzone />
+        </div>
+
+
+        <PublishControls
+          defaultState={publishState}
+          defaultScheduledFor={project.publishedAt ? toDatetimeLocal(project.publishedAt) : undefined}
+        />
+
+        <button
+          type="submit"
+          data-cursor="magnetic"
+          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
+        >
+          Guardar cambios
+        </button>
+      </form>
+    </div>
+  );
+}

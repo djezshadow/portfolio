@@ -1,0 +1,143 @@
+import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Carousel, type CarouselItem } from "@/components/carousel";
+import { Reveal } from "@/components/reveal";
+import { prisma } from "@/lib/prisma";
+import { getDictionary, type Locale } from "@/lib/i18n/dictionaries";
+import { loc, locOrNull } from "@/lib/i18n/content";
+import { getSiteSettings } from "@/lib/site-settings";
+
+const fallback: CarouselItem[] = [
+  { id: "1", code: "SC-01", title: "Cortometrajes", subtitle: "6 proyectos" },
+  { id: "2", code: "SC-02", title: "Comerciales", subtitle: "12 proyectos" },
+  { id: "3", code: "SC-03", title: "Música", subtitle: "9 proyectos" },
+  { id: "4", code: "SC-04", title: "Documentales", subtitle: "4 proyectos" },
+];
+
+async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselItem[]; slugs: Record<string, string>; live: boolean }> {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { order: "asc" },
+      where: { isComingSoon: false },
+      include: { projects: true },
+    });
+    if (categories.length === 0) return { items: fallback, slugs: {}, live: false };
+
+    const slugs: Record<string, string> = {};
+    const items = categories.map((c, i) => {
+      slugs[c.id] = c.slug;
+      return {
+        id: c.id,
+        code: `SC-${String(i + 1).padStart(2, "0")}`,
+        title: loc(c.name, c.nameEn, locale),
+        subtitle: `${c.projects.length} proyectos`,
+      };
+    });
+    return { items, slugs, live: true };
+  } catch {
+    return { items: fallback, slugs: {}, live: false };
+  }
+}
+
+export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: rawLocale } = await params;
+  const locale: Locale = rawLocale === "en" ? "en" : "es";
+  const dict = getDictionary(locale);
+  const otherLocale = locale === "es" ? "en" : "es";
+  const { items, slugs, live } = await getFeaturedCategories(locale);
+
+  let heroTitle1: string = dict.hero.title1;
+  let heroTitle2: string = dict.hero.title2;
+  let heroSubtitle: string = dict.hero.subtitle;
+  try {
+    const settings = await getSiteSettings();
+    heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
+    heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
+    heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;
+  } catch {
+    // sin DB disponible, seguimos con los textos por defecto del diccionario
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl px-6">
+      <nav className="flex flex-wrap items-center justify-between gap-y-2 py-6">
+        <span className="font-display text-lg tracking-tight" data-cursor="magnetic">
+          DJEZSHADOW
+        </span>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link href={`/${locale}/contacto`} data-cursor="magnetic" className="font-mono text-sm">
+            {dict.nav.contact}
+          </Link>
+          <Link
+            href={`/${otherLocale}`}
+            data-cursor="magnetic"
+            className="font-mono text-xs text-[var(--ink-muted)]"
+          >
+            {otherLocale.toUpperCase()}
+          </Link>
+          <ThemeToggle />
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section className="flex min-h-[70vh] flex-col justify-center gap-6">
+        <Reveal>
+          <span className="font-mono text-xs text-accent">{dict.hero.reel} — 00:00:00:00</span>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <h1 className="font-display text-5xl leading-[1.05] sm:text-7xl">
+            {heroTitle1}
+            <br />
+            {heroTitle2}
+          </h1>
+        </Reveal>
+        <Reveal delay={0.2}>
+          <p className="max-w-md font-body text-[var(--ink-muted)]">{heroSubtitle}</p>
+        </Reveal>
+      </section>
+
+      {/* CATEGORÍAS — carpetas estéticas, carrusel configurable (3-10 ítems) */}
+      <section className="pb-24">
+        <Reveal>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
+              {dict.featured.label}
+            </h2>
+            {!live && (
+              <span className="font-mono text-[10px] text-[var(--ink-muted)]">
+                {dict.featured.sampleNotice}
+              </span>
+            )}
+          </div>
+        </Reveal>
+
+        {live ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {items.map((item) => (
+              <Link
+                key={item.id}
+                href={`/${locale}/categoria/${slugs[item.id]}`}
+                data-cursor="magnetic"
+                className="glass rounded-2xl p-6 transition-transform hover:-translate-y-1"
+              >
+                <span className="font-mono text-[11px] text-accent">{item.code}</span>
+                <h3 className="font-display text-xl">{item.title}</h3>
+                <p className="text-sm text-[var(--ink-muted)]">{item.subtitle}</p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Carousel items={items} />
+        )}
+
+        <a
+          href="/api/reel-pdf"
+          data-cursor="magnetic"
+          className="glass mt-8 inline-block rounded-full px-5 py-2 font-mono text-xs"
+        >
+          {dict.nav.downloadReel} ↓
+        </a>
+      </section>
+    </div>
+  );
+}

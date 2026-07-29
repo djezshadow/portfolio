@@ -1,7 +1,7 @@
-import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
 import { updateWatermarkSettings, updateHeroSettings } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 
 export const dynamic = "force-dynamic";
 
@@ -9,12 +9,15 @@ export default async function ConfiguracionPage() {
   let settings = {
     watermarkUrl: null as string | null,
     watermarkScale: 9,
+    watermarkOpacity: 40,
+    watermarkPosition: "bottom-right",
     heroTitle1: null as string | null,
     heroTitle1En: null as string | null,
     heroTitle2: null as string | null,
     heroTitle2En: null as string | null,
     heroSubtitle: null as string | null,
     heroSubtitleEn: null as string | null,
+    carouselPreset: "cards",
   };
   try {
     settings = await getSiteSettings();
@@ -112,6 +115,21 @@ export default async function ConfiguracionPage() {
           </div>
         </div>
 
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            Estilo del carrusel de destacados
+          </label>
+          <select
+            name="carouselPreset"
+            defaultValue={settings.carouselPreset}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          >
+            <option value="cards">Cards (tarjetas grandes, el original)</option>
+            <option value="minimal">Minimal (lista prolija, sin tarjetas)</option>
+            <option value="stack">Stack (círculos superpuestos)</option>
+          </select>
+        </div>
+
         <button
           type="submit"
           data-cursor="magnetic"
@@ -138,57 +156,22 @@ export default async function ConfiguracionPage() {
         </ul>
         <p className="pt-2 font-mono text-xs text-accent">Configuración extra</p>
         <ul className="list-inside list-disc space-y-1">
-          <li><strong className="text-[var(--ink)]">Escala</strong>: qué porcentaje del ancho de la foto ocupa el watermark (por defecto 9%, como el ícono original).</li>
-          <li>La <strong className="text-[var(--ink)]">opacidad</strong> y <strong className="text-[var(--ink)]">posición</strong> (esquina) se siguen eligiendo por foto, en la pantalla de cada proyecto — esto de acá solo define qué imagen se usa y su tamaño relativo.</li>
+          <li><strong className="text-[var(--ink)]">Escala, opacidad y posición</strong> ahora se configuran acá una sola vez, con preview en vivo — cualquier foto nueva que subas en cualquier proyecto usa esto por defecto (podés seguir ajustándolo por foto puntual si querés algo distinto).</li>
           <li>Si no subís nada, se usa el ícono de diafragma de cámara original.</li>
         </ul>
       </div>
 
       {settings.watermarkUrl && (
-        <div className="glass mb-6 flex items-center gap-4 rounded-2xl p-4">
-          <div className="relative h-20 w-20 shrink-0 rounded-lg bg-black/20">
-            <Image src={settings.watermarkUrl} alt="Watermark actual" fill className="object-contain p-2" />
-          </div>
-          <p className="font-mono text-xs text-[var(--ink-muted)]">Logo personalizado activo</p>
-        </div>
+        <p className="mb-4 font-mono text-xs text-accent">Logo personalizado activo (se ve en la preview de abajo)</p>
       )}
 
-      <form action={updateWatermarkSettings} className="space-y-6">
-        <div>
-          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
-            {settings.watermarkUrl ? "Reemplazar logo" : "Subir logo (PNG transparente)"}
-          </label>
-          <input name="logo" type="file" accept="image/png" className="w-full font-mono text-sm" />
-        </div>
-
-        {settings.watermarkUrl && (
-          <label className="flex items-center gap-2 font-mono text-sm">
-            <input type="checkbox" name="removeLogo" /> Quitar el logo y volver al ícono de diafragma
-          </label>
-        )}
-
-        <div>
-          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
-            Escala (% del ancho de la foto)
-          </label>
-          <input
-            type="number"
-            name="watermarkScale"
-            min={3}
-            max={30}
-            step={0.5}
-            defaultValue={settings.watermarkScale}
-            className="w-32 rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
-          />
-        </div>
-
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar configuración
-        </button>
+      <form action={updateWatermarkSettings}>
+        <WatermarkSettingsForm
+          currentLogoUrl={settings.watermarkUrl}
+          initialScale={settings.watermarkScale}
+          initialOpacity={settings.watermarkOpacity}
+          initialPosition={settings.watermarkPosition}
+        />
       </form>
     </div>
   );

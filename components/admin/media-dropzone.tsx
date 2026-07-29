@@ -14,14 +14,20 @@ type UploadItem = {
   errorMessage?: string;
 };
 
-export function MediaDropzone() {
+export function MediaDropzone({
+  defaultOpacity = 40,
+  defaultPosition = "bottom-right",
+}: {
+  defaultOpacity?: number;
+  defaultPosition?: string;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
-  const [opacity, setOpacity] = useState(40);
-  const [position, setPosition] = useState("bottom-right");
+  const [opacity, setOpacity] = useState(defaultOpacity);
+  const [position, setPosition] = useState(defaultPosition);
   const [videoUrls, setVideoUrls] = useState<string[]>([""]);
 
   const uploadingCount = items.filter((it) => it.status === "uploading").length;

@@ -162,6 +162,10 @@ model SiteSettings {
   /// % del ancho de la foto que ocupa el watermark (por defecto 9%, igual
   /// que el ícono de diafragma original).
   watermarkScale Float   @default(9)
+  /// Opacidad y posición por defecto — antes vivían sueltas en cada
+  /// formulario de proyecto y no se guardaban en ningún lado.
+  watermarkOpacity  Float  @default(40)
+  watermarkPosition String @default("bottom-right")
 
   /// Textos del hero de la home (item pendiente: "título/subtítulo editable").
   /// Si quedan vacíos, se usa el texto por defecto del diccionario ES/EN.
@@ -171,4 +175,7 @@ model SiteSettings {
   heroTitle2En   String?
   heroSubtitle   String?
   heroSubtitleEn String?
+
+  /// Preset visual del carrusel de destacados: "cards" | "minimal" | "stack"
+  carouselPreset String  @default("cards")
 }

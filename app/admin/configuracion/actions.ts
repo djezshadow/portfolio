@@ -18,6 +18,8 @@ export async function updateWatermarkSettings(formData: FormData) {
   await assertAdmin();
 
   const scale = Number(formData.get("watermarkScale") ?? 9);
+  const opacity = Number(formData.get("watermarkOpacity") ?? 40);
+  const position = (formData.get("watermarkPosition") as string) || "bottom-right";
   const removeLogo = formData.get("removeLogo") === "on";
   const logo = formData.get("logo") as File | null;
 
@@ -62,7 +64,7 @@ export async function updateWatermarkSettings(formData: FormData) {
 
     await prisma.siteSettings.update({
       where: { id: "default" },
-      data: { watermarkUrl, watermarkScale: scale },
+      data: { watermarkUrl, watermarkScale: scale, watermarkOpacity: opacity, watermarkPosition: position },
     });
   } catch (err) {
     console.error("Error en updateWatermarkSettings:", err);
@@ -74,12 +76,14 @@ export async function updateWatermarkSettings(formData: FormData) {
   }
 
   revalidatePath("/admin/configuracion");
+  revalidatePath("/", "layout");
 }
 
 export async function updateHeroSettings(formData: FormData) {
   await assertAdmin();
 
   const field = (name: string) => (formData.get(name) as string)?.trim() || null;
+  const carouselPreset = (formData.get("carouselPreset") as string) || "cards";
 
   try {
     await prisma.siteSettings.upsert({
@@ -91,6 +95,7 @@ export async function updateHeroSettings(formData: FormData) {
         heroTitle2En: field("heroTitle2En"),
         heroSubtitle: field("heroSubtitle"),
         heroSubtitleEn: field("heroSubtitleEn"),
+        carouselPreset,
       },
       create: {
         id: "default",
@@ -100,6 +105,7 @@ export async function updateHeroSettings(formData: FormData) {
         heroTitle2En: field("heroTitle2En"),
         heroSubtitle: field("heroSubtitle"),
         heroSubtitleEn: field("heroSubtitleEn"),
+        carouselPreset,
       },
     });
   } catch (err) {

@@ -17,7 +17,7 @@ export default async function LocaleLayout({
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   return (
-    <div className="hide-native-cursor">
+    <div className="hide-native-cursor pt-14">
       <SetHtmlLang locale={locale} />
       <CustomCursor />
       {children}

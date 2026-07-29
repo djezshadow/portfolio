@@ -5,6 +5,7 @@ import { updateProject, deleteProject } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { getSiteSettings } from "@/lib/site-settings";
 
 function toDatetimeLocal(date: Date) {
   const pad = (n: number) => n.toString().padStart(2, "0");
@@ -28,6 +29,13 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
 
   const currentCategoryId = project.categories[0]?.categoryId ?? "";
   const publishState = !project.publishedAt ? "draft" : project.publishedAt > new Date() ? "scheduled" : "now";
+
+  let settings = { watermarkOpacity: 40, watermarkPosition: "bottom-right" };
+  try {
+    settings = await getSiteSettings();
+  } catch {
+    // seguimos con los defaults si la tabla todavía no existe
+  }
 
   const action = updateProject.bind(null, project.id);
   const removeAction = deleteProject.bind(null, project.id);
@@ -163,7 +171,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
 
         <div>
           <p className="mb-2 font-mono text-xs text-[var(--ink-muted)]">Agregar más fotos (opcional)</p>
-          <MediaDropzone />
+          <MediaDropzone defaultOpacity={settings.watermarkOpacity} defaultPosition={settings.watermarkPosition} />
         </div>
 
 

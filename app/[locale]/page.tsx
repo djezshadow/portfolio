@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
+import Image from "next/image";
 import { Carousel, type CarouselItem } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
 import { prisma } from "@/lib/prisma";
@@ -43,42 +43,36 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   const dict = getDictionary(locale);
-  const otherLocale = locale === "es" ? "en" : "es";
   const { items, slugs, live } = await getFeaturedCategories(locale);
 
   let heroTitle1: string = dict.hero.title1;
   let heroTitle2: string = dict.hero.title2;
   let heroSubtitle: string = dict.hero.subtitle;
+  let carouselPreset: "cards" | "minimal" | "stack" = "cards";
   try {
     const settings = await getSiteSettings();
     heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
     heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
     heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;
+    if (settings.carouselPreset === "minimal" || settings.carouselPreset === "stack") {
+      carouselPreset = settings.carouselPreset;
+    }
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
   }
 
+  let collaborators: { id: string; name: string; logoUrl: string | null }[] = [];
+  try {
+    collaborators = await prisma.collaborator.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, logoUrl: true },
+    });
+  } catch {
+    // sin DB disponible
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6">
-      <nav className="flex flex-wrap items-center justify-between gap-y-2 py-6">
-        <span className="font-display text-lg tracking-tight" data-cursor="magnetic">
-          DJEZSHADOW
-        </span>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <Link href={`/${locale}/contacto`} data-cursor="magnetic" className="font-mono text-sm">
-            {dict.nav.contact}
-          </Link>
-          <Link
-            href={`/${otherLocale}`}
-            data-cursor="magnetic"
-            className="font-mono text-xs text-[var(--ink-muted)]"
-          >
-            {otherLocale.toUpperCase()}
-          </Link>
-          <ThemeToggle />
-        </div>
-      </nav>
-
       {/* HERO */}
       <section className="flex min-h-[70vh] flex-col justify-center gap-6">
         <Reveal>
@@ -127,7 +121,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             ))}
           </div>
         ) : (
-          <Carousel items={items} />
+          <Carousel items={items} preset={carouselPreset} />
         )}
 
         <a
@@ -138,6 +132,39 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           {dict.nav.downloadReel} ↓
         </a>
       </section>
+
+      {collaborators.length > 0 && (
+        <section className="pb-24">
+          <p className="mb-6 font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
+            {locale === "en" ? "Worked with" : "Con quién trabajé"}
+          </p>
+          <div className="flex flex-wrap items-center gap-6">
+            {collaborators.map((c) => (
+              <Link
+                key={c.id}
+                href={`/${locale}/colaboradores`}
+                data-cursor="magnetic"
+                title={c.name}
+                className="transition-transform hover:scale-105"
+              >
+                {c.logoUrl ? (
+                  <Image
+                    src={c.logoUrl}
+                    alt={c.name}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-full object-cover grayscale transition-all hover:grayscale-0"
+                  />
+                ) : (
+                  <span className="glass flex h-12 w-12 items-center justify-center rounded-full font-display text-sm">
+                    {c.name.charAt(0)}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

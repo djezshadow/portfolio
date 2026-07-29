@@ -18,6 +18,7 @@ type LightboxProject = {
   role: string | null;
   description: string | null;
   collaboratorName?: string | null;
+  dateLabel?: string | null;
   media: MediaItem[];
 };
 
@@ -133,6 +134,9 @@ export function ProjectLightbox({
 
           <div className="space-y-1 px-5 pb-5">
             <span className="font-mono text-[11px] text-accent">{project.role ?? "—"}</span>
+            {project.dateLabel && (
+              <span className="ml-2 font-mono text-[11px] text-[var(--ink-muted)]">{project.dateLabel}</span>
+            )}
             <h2 className="font-display text-xl">{project.title}</h2>
             {project.description && (
               <p className="text-sm text-[var(--ink-muted)]">{project.description}</p>

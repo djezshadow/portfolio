@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { useTheme, resolveCategoryTheme } from "./theme-provider";
 import { categoryStyleToCSS } from "@/lib/category-style";
 import { loc, locOrNull } from "@/lib/i18n/content";
+import { formatDateRange } from "@/lib/date-range";
 import type { Locale } from "@/lib/i18n/dictionaries";
 import { VideoEmbed } from "./video-embed";
 import { ProjectLightbox } from "./project-lightbox";
@@ -74,6 +75,7 @@ export function CategoryView({
             const title = loc(project.title, project.titleEn, locale);
             const description = locOrNull(project.description, project.descriptionEn, locale);
             const role = locOrNull(project.role, project.roleEn, locale);
+            const dateLabel = formatDateRange(project.dateStart, project.dateEnd, project.isOngoing, locale);
             const extraCount = project.media.length - 1;
 
             return (
@@ -113,6 +115,9 @@ export function CategoryView({
 
                   <div className="p-5">
                     <span className="font-mono text-[11px] text-accent">{role ?? "—"}</span>
+                    {dateLabel && (
+                      <span className="ml-2 font-mono text-[11px] text-[var(--ink-muted)]">{dateLabel}</span>
+                    )}
                     <h2 className="font-display text-xl">{title}</h2>
                     {description && (
                       <p className="mt-1 text-sm text-[var(--ink-muted)]">{description}</p>
@@ -141,6 +146,7 @@ export function CategoryView({
             role: locOrNull(openProject.role, openProject.roleEn, locale),
             description: locOrNull(openProject.description, openProject.descriptionEn, locale),
             collaboratorName: openProject.collaborator?.name,
+            dateLabel: formatDateRange(openProject.dateStart, openProject.dateEnd, openProject.isOngoing, locale),
             media: openProject.media,
           }}
           onClose={() => setOpenProjectId(null)}

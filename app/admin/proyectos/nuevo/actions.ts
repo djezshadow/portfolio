@@ -29,6 +29,13 @@ export async function createProject(formData: FormData) {
   const roleEn = (formData.get("roleEn") as string) || null;
   const categoryId = String(formData.get("categoryId") ?? "");
   const featured = formData.get("featured") === "on";
+  const collaboratorId = (formData.get("collaboratorId") as string) || null;
+
+  const isOngoing = formData.get("isOngoing") === "on";
+  const dateStartRaw = formData.get("dateStart") as string | null; // "YYYY-MM"
+  const dateEndRaw = formData.get("dateEnd") as string | null;
+  const dateStart = dateStartRaw ? new Date(`${dateStartRaw}-01`) : null;
+  const dateEnd = !isOngoing && dateEndRaw ? new Date(`${dateEndRaw}-01`) : null;
 
   const publishState = String(formData.get("publishState") ?? "draft");
   const scheduledFor = formData.get("scheduledFor") as string | null;
@@ -57,6 +64,10 @@ export async function createProject(formData: FormData) {
       roleEn,
       featured,
       publishedAt,
+      collaboratorId,
+      dateStart,
+      dateEnd,
+      isOngoing,
       categories: { create: [{ categoryId }] },
     },
   });

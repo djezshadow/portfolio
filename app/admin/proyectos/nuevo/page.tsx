@@ -7,7 +7,10 @@ import { getSiteSettings } from "@/lib/site-settings";
 export const dynamic = "force-dynamic";
 
 export default async function NewProjectPage() {
-  const categories = await prisma.category.findMany({ orderBy: { order: "asc" } });
+  const [categories, collaborators] = await Promise.all([
+    prisma.category.findMany({ orderBy: { order: "asc" } }),
+    prisma.collaborator.findMany({ orderBy: { name: "asc" } }),
+  ]);
   let settings = { watermarkOpacity: 40, watermarkPosition: "bottom-right" };
   try {
     settings = await getSiteSettings();
@@ -102,6 +105,54 @@ export default async function NewProjectPage() {
               <a href="/admin/categorias/nueva" className="underline">creá una primero</a>.
             </p>
           )}
+        </div>
+
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            Colaboración (opcional)
+          </label>
+          <select
+            name="collaboratorId"
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          >
+            <option value="">Ninguna — trabajo solo en este proyecto</option>
+            {collaborators.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.type === "client" ? "cliente" : "colaborador creativo"})
+              </option>
+            ))}
+          </select>
+          {collaborators.length === 0 && (
+            <p className="mt-1 font-mono text-[11px] text-[var(--ink-muted)]">
+              No hay colaboradores cargados —{" "}
+              <a href="/admin/colaboradores" className="underline">agregar uno</a> (opcional).
+            </p>
+          )}
+        </div>
+
+        <div className="glass space-y-3 rounded-2xl p-4">
+          <p className="font-mono text-xs text-[var(--ink-muted)]">Fechas (opcional, tipo CV)</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Desde</label>
+              <input
+                type="month"
+                name="dateStart"
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Hasta</label>
+              <input
+                type="month"
+                name="dateEnd"
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 font-mono text-sm">
+            <input type="checkbox" name="isOngoing" /> Sigo trabajando en esto actualmente (ignora "Hasta")
+          </label>
         </div>
 
         <label className="flex items-center gap-2 font-mono text-sm">

@@ -6,6 +6,7 @@ import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { getSiteSettings } from "@/lib/site-settings";
+import { toMonthInputValue } from "@/lib/date-range";
 
 function toDatetimeLocal(date: Date) {
   const pad = (n: number) => n.toString().padStart(2, "0");
@@ -17,12 +18,13 @@ export const dynamic = "force-dynamic";
 export default async function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [project, categories] = await Promise.all([
+  const [project, categories, collaborators] = await Promise.all([
     prisma.project.findUnique({
       where: { id },
       include: { media: { orderBy: { order: "asc" } }, categories: true },
     }),
     prisma.category.findMany({ orderBy: { order: "asc" } }),
+    prisma.collaborator.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!project) notFound();
@@ -132,6 +134,52 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            Colaboración (opcional)
+          </label>
+          <select
+            name="collaboratorId"
+            defaultValue={project.collaboratorId ?? ""}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          >
+            <option value="">Ninguna — trabajo solo en este proyecto</option>
+            {collaborators.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.type === "client" ? "cliente" : "colaborador creativo"})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="glass space-y-3 rounded-2xl p-4">
+          <p className="font-mono text-xs text-[var(--ink-muted)]">Fechas (opcional, tipo CV)</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Desde</label>
+              <input
+                type="month"
+                name="dateStart"
+                defaultValue={toMonthInputValue(project.dateStart)}
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Hasta</label>
+              <input
+                type="month"
+                name="dateEnd"
+                defaultValue={toMonthInputValue(project.dateEnd)}
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 font-mono text-sm">
+            <input type="checkbox" name="isOngoing" defaultChecked={project.isOngoing} /> Sigo trabajando en
+            esto actualmente (ignora "Hasta")
+          </label>
         </div>
 
         <label className="flex items-center gap-2 font-mono text-sm">

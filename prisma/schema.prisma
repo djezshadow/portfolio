@@ -98,7 +98,11 @@ model Project {
   titleEn        String?
   description    String?
   descriptionEn  String?
-  date           DateTime?
+  /// Rango de fechas del proyecto/colaboración (item pendiente: "fechas
+  /// año a año, o actualidad"). dateEnd queda null si isOngoing es true.
+  dateStart      DateTime?
+  dateEnd        DateTime?
+  isOngoing      Boolean           @default(false)
   role           String?
   roleEn         String?
   logoSource     LogoSource        @default(none)
@@ -178,4 +182,10 @@ model SiteSettings {
 
   /// Preset visual del carrusel de destacados: "cards" | "minimal" | "stack"
   carouselPreset String  @default("cards")
+
+  /// Logo de marca, uno para cada tema (PNG blanco para Neón, negro para
+  /// Noir, por ejemplo). Si no hay ninguno cargado, se muestra el texto
+  /// "DJEZSHADOW" como wordmark.
+  logoNoirUrl    String?
+  logoNeonUrl    String?
 }

@@ -118,3 +118,87 @@ export async function updateHeroSettings(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath("/", "layout");
 }
+
+export async function updateLogoSettings(formData: FormData) {
+  await assertAdmin();
+
+  const noirLogo = formData.get("logoNoir") as File | null;
+  const neonLogo = formData.get("logoNeon") as File | null;
+  const removeNoirLogo = formData.get("removeNoirLogo") === "on";
+  const removeNeonLogo = formData.get("removeNeonLogo") === "on";
+
+  try {
+    const current = await prisma.siteSettings.upsert({
+      where: { id: "default" },
+      update: {},
+      create: { id: "default" },
+    });
+
+    let logoNoirUrl = current.logoNoirUrl;
+    let logoNeonUrl = current.logoNeonUrl;
+
+    if (removeNoirLogo && logoNoirUrl) {
+      try {
+        await del(logoNoirUrl);
+      } catch {
+        // ignorar
+      }
+      logoNoirUrl = null;
+    }
+    if (removeNeonLogo && logoNeonUrl) {
+      try {
+        await del(logoNeonUrl);
+      } catch {
+        // ignorar
+      }
+      logoNeonUrl = null;
+    }
+
+    if (noirLogo && noirLogo.size > 0) {
+      if (current.logoNoirUrl) {
+        try {
+          await del(current.logoNoirUrl);
+        } catch {
+          // ignorar
+        }
+      }
+      const buffer = Buffer.from(await noirLogo.arrayBuffer());
+      const png = await sharp(buffer).resize(400, 120, { fit: "inside" }).png().toBuffer();
+      const blob = await put(`settings/logo-noir-${Date.now()}.png`, png, {
+        access: "public",
+        contentType: "image/png",
+      });
+      logoNoirUrl = blob.url;
+    }
+
+    if (neonLogo && neonLogo.size > 0) {
+      if (current.logoNeonUrl) {
+        try {
+          await del(current.logoNeonUrl);
+        } catch {
+          // ignorar
+        }
+      }
+      const buffer = Buffer.from(await neonLogo.arrayBuffer());
+      const png = await sharp(buffer).resize(400, 120, { fit: "inside" }).png().toBuffer();
+      const blob = await put(`settings/logo-neon-${Date.now()}.png`, png, {
+        access: "public",
+        contentType: "image/png",
+      });
+      logoNeonUrl = blob.url;
+    }
+
+    await prisma.siteSettings.update({
+      where: { id: "default" },
+      data: { logoNoirUrl, logoNeonUrl },
+    });
+  } catch (err) {
+    console.error("Error en updateLogoSettings:", err);
+    throw new Error(
+      `No se pudo guardar el logo. Detalle: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/", "layout");
+}

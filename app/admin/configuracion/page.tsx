@@ -1,5 +1,6 @@
+import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
-import { updateWatermarkSettings, updateHeroSettings } from "./actions";
+import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 
@@ -18,6 +19,8 @@ export default async function ConfiguracionPage() {
     heroSubtitle: null as string | null,
     heroSubtitleEn: null as string | null,
     carouselPreset: "cards",
+    logoNoirUrl: null as string | null,
+    logoNeonUrl: null as string | null,
   };
   try {
     settings = await getSiteSettings();
@@ -31,6 +34,52 @@ export default async function ConfiguracionPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="mb-8 font-display text-3xl">Configuración</h1>
+
+      {/* --- Logo por tema --- */}
+      <h2 className="mb-1 font-display text-xl">Logo (uno por tema)</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        Reemplaza el texto "DJEZSHADOW" en la nav — subí uno negro para Noir (fondo claro)
+        y uno blanco para Neón (fondo oscuro). PNG con transparencia, horizontal, altura ideal ~120px.
+      </p>
+      <form action={updateLogoSettings} className="glass mb-10 grid grid-cols-1 gap-6 rounded-2xl p-5 sm:grid-cols-2">
+        <div className="space-y-2">
+          <p className="font-mono text-[11px] text-[var(--ink-muted)]">Logo para Noir (claro) — subilo en negro</p>
+          {settings.logoNoirUrl && (
+            <div className="relative flex h-16 items-center justify-center rounded-lg bg-[#e9e4dc] p-2">
+              <Image src={settings.logoNoirUrl} alt="Logo Noir" width={140} height={48} className="h-8 w-auto object-contain" />
+            </div>
+          )}
+          <input name="logoNoir" type="file" accept="image/png" className="w-full font-mono text-xs" />
+          {settings.logoNoirUrl && (
+            <label className="flex items-center gap-2 font-mono text-xs">
+              <input type="checkbox" name="removeNoirLogo" /> Quitar y volver al texto
+            </label>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="font-mono text-[11px] text-[var(--ink-muted)]">Logo para Neón (oscuro) — subilo en blanco</p>
+          {settings.logoNeonUrl && (
+            <div className="relative flex h-16 items-center justify-center rounded-lg bg-[#07070a] p-2">
+              <Image src={settings.logoNeonUrl} alt="Logo Neón" width={140} height={48} className="h-8 w-auto object-contain" />
+            </div>
+          )}
+          <input name="logoNeon" type="file" accept="image/png" className="w-full font-mono text-xs" />
+          {settings.logoNeonUrl && (
+            <label className="flex items-center gap-2 font-mono text-xs">
+              <input type="checkbox" name="removeNeonLogo" /> Quitar y volver al texto
+            </label>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          data-cursor="magnetic"
+          className="col-span-full w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
+        >
+          Guardar logos
+        </button>
+      </form>
 
       {/* --- Título / subtítulo de la home --- */}
       <h2 className="mb-1 font-display text-xl">Título y subtítulo de la home</h2>

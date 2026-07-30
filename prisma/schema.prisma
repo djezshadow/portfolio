@@ -163,7 +163,7 @@ model Media {
 /// Fila única de configuración global del sitio.
 model SiteSettings {
   id             String  @id @default("default")
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime @default(now()) @updatedAt
   /// Logo PNG/WebP subido por el admin. Si está seteado, reemplaza al
   /// ícono de diafragma en el watermark de todas las fotos nuevas.
   watermarkUrl   String?

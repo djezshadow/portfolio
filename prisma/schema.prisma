@@ -150,7 +150,10 @@ model Media {
   projectId     String
   project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   type          MediaType
-  url           String // imagen: ruta al archivo (webp/avif). video: no se usa
+  url           String // imagen: ruta al archivo base SIN watermark (el watermark se aplica al vuelo)
+  /// Si es false, esta foto puntual nunca lleva watermark aunque esté
+  /// activado globalmente (se elige al subirla).
+  watermarkEnabled Boolean     @default(true)
   videoProvider VideoProvider?
   videoId       String? // id de YouTube/Vimeo
   order         Int            @default(0)
@@ -160,6 +163,7 @@ model Media {
 /// Fila única de configuración global del sitio.
 model SiteSettings {
   id             String  @id @default("default")
+  updatedAt      DateTime @updatedAt
   /// Logo PNG/WebP subido por el admin. Si está seteado, reemplaza al
   /// ícono de diafragma en el watermark de todas las fotos nuevas.
   watermarkUrl   String?

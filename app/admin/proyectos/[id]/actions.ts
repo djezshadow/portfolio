@@ -7,8 +7,6 @@ import { put, del } from "@vercel/blob";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { applyWatermark, type WatermarkPosition } from "@/lib/watermark";
-import { getSiteSettings } from "@/lib/site-settings";
 import { parseVideoUrl } from "@/lib/video-url";
 
 async function assertAdmin() {
@@ -88,47 +86,30 @@ export async function updateProject(projectId: string, formData: FormData) {
     },
   });
 
-  // Nueva media agregada en esta edición (misma lógica que al crear)
+  // Nueva media agregada en esta edición (misma lógica que al crear) — el
+  // watermark ya no se hornea acá, se aplica al vuelo en
+  // app/api/media/[id]/route.ts según la config global.
   const watermarkEnabled = formData.get("watermarkEnabled") === "on";
-  const watermarkOpacity = Number(formData.get("watermarkOpacity") ?? 40);
-  const watermarkPosition = (formData.get("watermarkPosition") as WatermarkPosition) ?? "bottom-right";
 
   const existingCount = await prisma.media.count({ where: { projectId } });
   const uploadedUrls = formData.getAll("uploadedImageUrls") as string[];
   let order = existingCount;
-  let siteSettings = null;
-  if (watermarkEnabled) {
-    try {
-      siteSettings = await getSiteSettings();
-    } catch (err) {
-      console.error("No se pudo leer SiteSettings (¿corriste prisma db push?):", err);
-    }
-  }
 
   for (const tempUrl of uploadedUrls) {
     if (!tempUrl) continue;
 
     try {
       const res = await fetch(tempUrl);
-      let buffer: Buffer = Buffer.from(await res.arrayBuffer());
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const webp = await sharp(buffer).webp({ quality: 82 }).toBuffer();
 
-      if (watermarkEnabled) {
-        buffer = await applyWatermark(buffer, {
-          opacity: watermarkOpacity,
-          position: watermarkPosition,
-          customLogoUrl: siteSettings?.watermarkUrl,
-          scale: siteSettings?.watermarkScale,
-        });
-      }
-      buffer = await sharp(buffer).webp({ quality: 82 }).toBuffer();
-
-      const blob = await put(`media/${projectId}-${order}.webp`, buffer, {
+      const blob = await put(`media/${projectId}-${order}.webp`, webp, {
         access: "public",
         contentType: "image/webp",
       });
 
       await prisma.media.create({
-        data: { projectId, type: "image", url: blob.url, order, isThumbnail: order === 0 },
+        data: { projectId, type: "image", url: blob.url, watermarkEnabled, order, isThumbnail: order === 0 },
       });
 
       try {

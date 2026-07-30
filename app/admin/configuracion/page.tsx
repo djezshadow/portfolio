@@ -205,7 +205,8 @@ export default async function ConfiguracionPage() {
         </ul>
         <p className="pt-2 font-mono text-xs text-accent">Configuración extra</p>
         <ul className="list-inside list-disc space-y-1">
-          <li><strong className="text-[var(--ink)]">Escala, opacidad y posición</strong> ahora se configuran acá una sola vez, con preview en vivo — cualquier foto nueva que subas en cualquier proyecto usa esto por defecto (podés seguir ajustándolo por foto puntual si querés algo distinto).</li>
+          <li><strong className="text-[var(--ink)]">Escala, opacidad y posición</strong> se aplican al vuelo cada vez que se muestra una foto — no se "hornean" en el archivo. Cambiarlas acá actualiza automáticamente todas las fotos ya publicadas, sin re-subir nada.</li>
+          <li>Por foto podés decidir si lleva watermark o no (al subirla), pero el logo/escala/opacidad/posición siempre son estos de acá.</li>
           <li>Si no subís nada, se usa el ícono de diafragma de cámara original.</li>
         </ul>
       </div>

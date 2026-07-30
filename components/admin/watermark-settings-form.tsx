@@ -169,8 +169,9 @@ export function WatermarkSettingsForm({
       </div>
 
       <p className="font-mono text-[10px] text-[var(--ink-muted)]">
-        Esto queda como el default para cualquier foto nueva que subas en cualquier proyecto —
-        ya no hace falta elegirlo de nuevo cada vez.
+        Esto se aplica en el momento en que se muestra cada foto — <strong className="text-[var(--ink)]">no
+        hace falta volver a subir nada</strong>. Cambiar esto acá actualiza todas las fotos ya
+        publicadas (con watermark activado) en minutos.
       </p>
 
       <button

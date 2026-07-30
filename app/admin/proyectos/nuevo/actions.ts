@@ -7,8 +7,6 @@ import { put, del } from "@vercel/blob";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { applyWatermark, type WatermarkPosition } from "@/lib/watermark";
-import { getSiteSettings } from "@/lib/site-settings";
 import { parseVideoUrl } from "@/lib/video-url";
 
 async function assertAdmin() {
@@ -46,9 +44,12 @@ export async function createProject(formData: FormData) {
       ? new Date(scheduledFor)
       : null;
 
+  // El watermark ya NO se hornea acá: solo guardamos si esta foto lo lleva
+  // o no. La apariencia (logo/opacidad/posición/escala) se aplica al vuelo
+  // en app/api/media/[id]/route.ts, leyendo la config global cada vez —
+  // así cambiar la config en Configuración actualiza TODAS las fotos ya
+  // subidas, sin re-procesarlas a mano.
   const watermarkEnabled = formData.get("watermarkEnabled") === "on";
-  const watermarkOpacity = Number(formData.get("watermarkOpacity") ?? 40);
-  const watermarkPosition = (formData.get("watermarkPosition") as WatermarkPosition) ?? "bottom-right";
 
   if (!title || !categoryId) {
     throw new Error("Falta título o categoría.");
@@ -77,34 +78,18 @@ export async function createProject(formData: FormData) {
   // que este pedido es liviano sin importar cuántas fotos o cuánto pesen.
   const uploadedUrls = formData.getAll("uploadedImageUrls") as string[];
   let order = 0;
-  let siteSettings = null;
-  if (watermarkEnabled) {
-    try {
-      siteSettings = await getSiteSettings();
-    } catch (err) {
-      console.error("No se pudo leer SiteSettings (¿corriste prisma db push?):", err);
-    }
-  }
 
   for (const tempUrl of uploadedUrls) {
     if (!tempUrl) continue;
 
     try {
       const res = await fetch(tempUrl);
-      let buffer: Buffer = Buffer.from(await res.arrayBuffer());
+      const buffer = Buffer.from(await res.arrayBuffer());
+      // Conversión a WebP (calidad 82, ver guía de export del spec) — sin
+      // watermark; esta es la copia "base" que sirve de original interno.
+      const webp = await sharp(buffer).webp({ quality: 82 }).toBuffer();
 
-      if (watermarkEnabled) {
-        buffer = await applyWatermark(buffer, {
-          opacity: watermarkOpacity,
-          position: watermarkPosition,
-          customLogoUrl: siteSettings?.watermarkUrl,
-          scale: siteSettings?.watermarkScale,
-        });
-      }
-      // Conversión a WebP (calidad 82, ver guía de export del spec).
-      buffer = await sharp(buffer).webp({ quality: 82 }).toBuffer();
-
-      const blob = await put(`media/${project.id}-${order}.webp`, buffer, {
+      const blob = await put(`media/${project.id}-${order}.webp`, webp, {
         access: "public",
         contentType: "image/webp",
       });
@@ -114,12 +99,14 @@ export async function createProject(formData: FormData) {
           projectId: project.id,
           type: "image",
           url: blob.url,
+          watermarkEnabled,
           order,
           isThumbnail: order === 0,
         },
       });
 
-      // Borramos el original temporal, ya no lo necesitamos.
+      // Borramos el original temporal, ya no lo necesitamos (ya tenemos
+      // la copia webp base en `blob.url`).
       try {
         await del(tempUrl);
       } catch {

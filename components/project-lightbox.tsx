@@ -80,7 +80,7 @@ export function ProjectLightbox({
               <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
             ) : current?.url ? (
               <Image
-                src={current.url}
+                src={`/api/media/${current.id}`}
                 alt={project.title}
                 fill
                 className="object-contain"
@@ -121,7 +121,7 @@ export function ProjectLightbox({
                   style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}
                 >
                   {m.type === "image" ? (
-                    <Image src={m.url} alt="" fill className="object-cover" sizes="64px" />
+                    <Image src={`/api/media/${m.id}`} alt="" fill className="object-cover" sizes="64px" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-black/40 font-mono text-[8px] text-white">
                       ▶

@@ -14,20 +14,12 @@ type UploadItem = {
   errorMessage?: string;
 };
 
-export function MediaDropzone({
-  defaultOpacity = 40,
-  defaultPosition = "bottom-right",
-}: {
-  defaultOpacity?: number;
-  defaultPosition?: string;
-}) {
+export function MediaDropzone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
-  const [opacity, setOpacity] = useState(defaultOpacity);
-  const [position, setPosition] = useState(defaultPosition);
   const [videoUrls, setVideoUrls] = useState<string[]>([""]);
 
   const uploadingCount = items.filter((it) => it.status === "uploading").length;
@@ -258,46 +250,16 @@ export function MediaDropzone({
             checked={watermarkEnabled}
             onChange={(e) => setWatermarkEnabled(e.target.checked)}
           />
-          Watermark
+          Watermark en estas fotos
         </label>
-        {watermarkEnabled && (
-          <a href="/admin/configuracion" className="text-[var(--ink-muted)] underline">
-            usar mi logo →
-          </a>
-        )}
-
-        {watermarkEnabled && (
-          <>
-            <label className="flex items-center gap-2">
-              Opacidad
-              <input
-                type="range"
-                name="watermarkOpacity"
-                min={0}
-                max={100}
-                value={opacity}
-                onChange={(e) => setOpacity(Number(e.target.value))}
-              />
-              {opacity}%
-            </label>
-
-            <label className="flex items-center gap-2">
-              Posición
-              <select
-                name="watermarkPosition"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                className="rounded bg-transparent"
-              >
-                <option value="bottom-right">Abajo derecha</option>
-                <option value="bottom-left">Abajo izquierda</option>
-                <option value="top-right">Arriba derecha</option>
-                <option value="top-left">Arriba izquierda</option>
-                <option value="center">Centro</option>
-              </select>
-            </label>
-          </>
-        )}
+        <span className="text-[var(--ink-muted)]">
+          El logo, opacidad, posición y escala se configuran en{" "}
+          <a href="/admin/configuracion" className="underline">
+            Configuración
+          </a>{" "}
+          — se aplican al vuelo, así que si los cambiás después, se actualiza acá también sin tener
+          que volver a subir nada.
+        </span>
       </div>
     </div>
   );

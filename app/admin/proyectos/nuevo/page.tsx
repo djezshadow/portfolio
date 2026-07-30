@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { createProject } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
-import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +10,6 @@ export default async function NewProjectPage() {
     prisma.category.findMany({ orderBy: { order: "asc" } }),
     prisma.collaborator.findMany({ orderBy: { name: "asc" } }),
   ]);
-  let settings = { watermarkOpacity: 40, watermarkPosition: "bottom-right" };
-  try {
-    settings = await getSiteSettings();
-  } catch {
-    // seguimos con los defaults si la tabla todavía no existe
-  }
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
@@ -159,7 +152,7 @@ export default async function NewProjectPage() {
           <input type="checkbox" name="featured" /> Destacar en el home
         </label>
 
-        <MediaDropzone defaultOpacity={settings.watermarkOpacity} defaultPosition={settings.watermarkPosition} />
+        <MediaDropzone />
 
 
         <PublishControls />

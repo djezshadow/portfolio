@@ -97,7 +97,7 @@ export function CategoryView({
                     ) : project.media[0]?.url ? (
                       <div className="relative aspect-video w-full">
                         <Image
-                          src={project.media[0].url}
+                          src={`/api/media/${project.media[0].id}`}
                           alt={title}
                           fill
                           className="object-cover"

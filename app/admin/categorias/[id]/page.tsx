@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { CategoryForm } from "@/components/admin/category-form";
-import { updateCategory } from "../actions";
+import { updateCategory, deleteCategory } from "../actions";
+import { DeleteButton } from "@/components/admin/delete-button";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +12,18 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
   if (!category) notFound();
 
   const action = updateCategory.bind(null, category.id);
+  const removeAction = deleteCategory.bind(null, category.id);
 
   return (
     <div className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="mb-8 font-display text-3xl">Editar “{category.name}”</h1>
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="font-display text-3xl">Editar "{category.name}"</h1>
+        <DeleteButton
+          action={removeAction}
+          confirmText={`¿Borrar la categoría "${category.name}"? Los proyectos no se borran, pero dejan de pertenecer a esta categoría.`}
+          label="Borrar categoría"
+        />
+      </div>
       <CategoryForm
         action={action}
         submitLabel="Guardar cambios"

@@ -154,12 +154,39 @@ body {
   color: var(--accent);
 }
 
+/* Cursor normal del sistema en todos lados (se sacó el cursor custom).
+   Acá sí dejamos en claro qué es clickeable, con pointer + feedback al
+   pasar el mouse o tocar. */
+a,
+button,
+[role="button"],
+[data-cursor="magnetic"],
+input[type="submit"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+select {
+  cursor: pointer;
+}
+
+a,
+button,
+[role="button"] {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .hide-native-cursor,
-  .hide-native-cursor a,
-  .hide-native-cursor button {
-    cursor: none;
+  a:hover,
+  button:hover:not(:disabled),
+  [role="button"]:hover {
+    opacity: 0.82;
   }
+}
+
+a:active,
+button:active:not(:disabled),
+[role="button"]:active {
+  transform: scale(0.97);
 }
 
 /* La nav flotante se esconde sola mientras el lightbox de fotos/video

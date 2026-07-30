@@ -103,3 +103,13 @@ export async function updateCategory(categoryId: string, formData: FormData) {
   revalidatePath("/", "layout");
   redirect("/admin/categorias");
 }
+
+export async function deleteCategory(categoryId: string, _formData: FormData) {
+  await assertAdmin();
+
+  await prisma.category.delete({ where: { id: categoryId } });
+
+  revalidatePath("/admin/categorias");
+  revalidatePath("/", "layout");
+  redirect("/admin/categorias");
+}

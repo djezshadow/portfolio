@@ -20,7 +20,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
     <div className="mx-auto max-w-md px-6 py-16">
       <h1 className="font-display text-4xl">{dict.contact.title}</h1>
       <p className="mt-2 mb-8 text-[var(--ink-muted)]">{dict.contact.subtitle}</p>
-      <ContactForm dict={dict} />
+      <ContactForm dict={dict} locale={locale} />
     </div>
   );
 }

@@ -202,3 +202,24 @@ export async function updateLogoSettings(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath("/", "layout");
 }
+
+export async function updateContactSettings(formData: FormData) {
+  await assertAdmin();
+
+  const contactEmail = (formData.get("contactEmail") as string)?.trim() || null;
+
+  try {
+    await prisma.siteSettings.upsert({
+      where: { id: "default" },
+      update: { contactEmail },
+      create: { id: "default", contactEmail },
+    });
+  } catch (err) {
+    console.error("Error en updateContactSettings:", err);
+    throw new Error(
+      `No se pudo guardar el mail de contacto. Detalle: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  revalidatePath("/admin/configuracion");
+}

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
-import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings } from "./actions";
+import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 
@@ -21,6 +21,7 @@ export default async function ConfiguracionPage() {
     carouselPreset: "cards",
     logoNoirUrl: null as string | null,
     logoNeonUrl: null as string | null,
+    contactEmail: null as string | null,
   };
   try {
     settings = await getSiteSettings();
@@ -222,6 +223,34 @@ export default async function ConfiguracionPage() {
           initialOpacity={settings.watermarkOpacity}
           initialPosition={settings.watermarkPosition}
         />
+      </form>
+
+      {/* --- Contacto --- */}
+      <h2 className="mb-1 mt-12 font-display text-xl">Contacto</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        A dónde llegan los mensajes confirmados de <code>/contacto</code>. Si lo dejás vacío,
+        se usa <code>CONTACT_EMAIL_TO</code> del .env como respaldo.
+      </p>
+      <form action={updateContactSettings} className="glass space-y-4 rounded-2xl p-5">
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            Mail donde recibir los mensajes
+          </label>
+          <input
+            type="email"
+            name="contactEmail"
+            defaultValue={settings.contactEmail ?? ""}
+            placeholder="tu-mail@ejemplo.com"
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          />
+        </div>
+        <button
+          type="submit"
+          data-cursor="magnetic"
+          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
+        >
+          Guardar mail de contacto
+        </button>
       </form>
     </div>
   );

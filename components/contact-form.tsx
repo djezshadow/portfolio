@@ -16,10 +16,11 @@ type Dict = {
     whatsapp: string;
     instagram: string;
     success: string;
+    confirmSent: string;
   };
 };
 
-export function ContactForm({ dict }: { dict: Dict }) {
+export function ContactForm({ dict, locale }: { dict: Dict; locale: string }) {
   const [state, formAction, pending] = useActionState<ContactState, FormData>(
     sendContactMessage,
     null
@@ -28,6 +29,7 @@ export function ContactForm({ dict }: { dict: Dict }) {
   return (
     <div className="space-y-8">
       <form action={formAction} className="glass space-y-4 rounded-2xl p-6">
+        <input type="hidden" name="locale" value={locale} />
         <div>
           <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">{dict.contact.name}</label>
           <input
@@ -56,7 +58,7 @@ export function ContactForm({ dict }: { dict: Dict }) {
         </div>
 
         {state?.error && <p className="text-sm text-[var(--accent-contrast)]">{state.error}</p>}
-        {state?.ok && <p className="text-sm text-accent">{dict.contact.success}</p>}
+        {state?.ok && <p className="text-sm text-accent">{dict.contact.confirmSent}</p>}
 
         <button
           type="submit"

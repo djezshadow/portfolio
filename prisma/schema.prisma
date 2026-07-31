@@ -192,4 +192,9 @@ model SiteSettings {
   /// "DJEZSHADOW" como wordmark.
   logoNoirUrl    String?
   logoNeonUrl    String?
+
+  /// Mail donde llegan los mensajes de contacto — configurable acá para no
+  /// depender de una variable de entorno y tener que redeployar para cambiarlo.
+  /// Si queda vacío, se usa CONTACT_EMAIL_TO del .env como respaldo.
+  contactEmail   String?
 }

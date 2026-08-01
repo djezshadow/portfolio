@@ -11,6 +11,11 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const wantsOriginal = req.nextUrl.searchParams.get("original") === "1";
+  // ?w=160 → miniatura chica y liviana (achicamos ANTES de aplicar el
+  // watermark, así el procesamiento también es mucho más rápido, no solo
+  // el archivo final más chico).
+  const widthParam = Number(req.nextUrl.searchParams.get("w") ?? 0);
+  const targetWidth = widthParam > 0 && widthParam <= 2000 ? Math.round(widthParam) : null;
 
   const media = await prisma.media.findUnique({ where: { id } });
   if (!media || media.type !== "image" || !media.url) {
@@ -19,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const sourceRes = await fetch(media.url);
   if (!sourceRes.ok) return new Response("Not found", { status: 404 });
-  const sourceBuffer = Buffer.from(await sourceRes.arrayBuffer());
+  let sourceBuffer: Buffer = Buffer.from(await sourceRes.arrayBuffer());
 
   // La imagen original SIN watermark solo se sirve si sos admin logueado y
   // la pedís explícitamente (?original=1) — nunca se linkea desde el sitio
@@ -34,6 +39,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return new Response(new Uint8Array(sourceBuffer), {
       headers: { "Content-Type": "image/webp", "Cache-Control": "private, no-store" },
     });
+  }
+
+  // Achicamos primero (si se pidió un ancho) — mucho más rápido de procesar
+  // y de aplicarle el watermark que trabajar siempre a resolución completa.
+  if (targetWidth) {
+    sourceBuffer = await sharp(sourceBuffer).resize({ width: targetWidth, withoutEnlargement: true }).toBuffer();
   }
 
   let outputBuffer: Buffer = sourceBuffer;
@@ -57,14 +68,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  const webp = await sharp(outputBuffer).webp({ quality: 82 }).toBuffer();
+  const quality = targetWidth && targetWidth <= 200 ? 65 : 82;
+  const webp = await sharp(outputBuffer).webp({ quality }).toBuffer();
 
   return new Response(new Uint8Array(webp), {
     headers: {
       "Content-Type": "image/webp",
-      // Cache corto: si cambiás la config del watermark, se refleja en
-      // minutos sin tener que re-subir nada.
-      "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+      // Las miniaturas cachean más tiempo (cambian poco visualmente aunque
+      // se ajuste el watermark); el tamaño completo sigue con cache corto.
+      "Cache-Control": targetWidth
+        ? "public, max-age=3600, stale-while-revalidate=86400"
+        : "public, max-age=60, stale-while-revalidate=300",
     },
   });
 }

@@ -49,6 +49,24 @@ export function ProjectLightbox({
     };
   }, [media.length, onClose]);
 
+  // Precarga: apenas se abre, disparamos la descarga de TODAS las fotos
+  // (tamaño completo) en segundo plano. Cuando el usuario navega con las
+  // flechas, la imagen ya está en la cache del navegador — no vuelve a cargar.
+  useEffect(() => {
+    const preloaded: HTMLImageElement[] = [];
+    for (const m of media) {
+      if (m.type !== "image") continue;
+      const img = new window.Image();
+      img.src = `/api/media/${m.id}`;
+      preloaded.push(img);
+    }
+    return () => {
+      preloaded.forEach((img) => {
+        img.src = "";
+      });
+    };
+  }, [media]);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -98,6 +116,7 @@ export function ProjectLightbox({
                 className="object-contain"
                 sizes="95vw"
                 priority
+                unoptimized
               />
             ) : null}
 
@@ -134,7 +153,15 @@ export function ProjectLightbox({
                   style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}
                 >
                   {m.type === "image" ? (
-                    <Image src={`/api/media/${m.id}`} alt="" fill className="object-cover" sizes="64px" />
+                    <Image
+                      src={`/api/media/${m.id}?w=160`}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="64px"
+                      loading="eager"
+                      unoptimized
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-black/40 font-mono text-[8px] text-white">
                       ▶

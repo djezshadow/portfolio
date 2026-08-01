@@ -1,4 +1,4 @@
-# DJEZSHADOW — Portfolio (completo + watermark personalizado).
+# DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
 ## Watermark personalizado + contacto (última tanda)
 

@@ -55,7 +55,7 @@ export function ProjectLightbox({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 px-4 py-8"
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-2 sm:p-6"
         onClick={onClose}
       >
         <motion.div
@@ -64,27 +64,40 @@ export function ProjectLightbox({
           exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.25 }}
           onClick={(e) => e.stopPropagation()}
-          className="glass relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl"
+          className="glass relative flex h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl"
         >
-          <button
-            onClick={onClose}
-            data-cursor="magnetic"
-            aria-label="Cerrar"
-            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-lg text-white"
-          >
-            ×
-          </button>
+          {/* La cruz vive en su propia franja, separada del video/foto —
+              así nunca choca con el botón de calidad de YouTube ni nada
+              que esté dentro del reproductor. */}
+          <div className="flex shrink-0 items-center justify-between px-4 py-3">
+            <span className="font-mono text-[11px] text-[var(--ink-muted)]">
+              {media.length > 1 ? `${index + 1} / ${media.length}` : ""}
+            </span>
+            <button
+              onClick={onClose}
+              data-cursor="magnetic"
+              aria-label="Cerrar"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/10 text-xl transition-colors hover:bg-black/20"
+            >
+              ×
+            </button>
+          </div>
 
-          <div className="relative flex aspect-video w-full items-center justify-center bg-black">
+          <div className="relative min-h-0 flex-1 bg-black">
             {current?.type === "video" && current.videoProvider && current.videoId ? (
-              <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
+              <div className="flex h-full items-center justify-center p-2 sm:p-6">
+                <div className="aspect-video max-h-full w-full">
+                  <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
+                </div>
+              </div>
             ) : current?.url ? (
               <Image
                 src={`/api/media/${current.id}`}
                 alt={project.title}
                 fill
                 className="object-contain"
-                sizes="(max-width: 768px) 100vw, 800px"
+                sizes="95vw"
+                priority
               />
             ) : null}
 
@@ -94,7 +107,7 @@ export function ProjectLightbox({
                   onClick={() => setIndex((i) => (i - 1 + media.length) % media.length)}
                   data-cursor="magnetic"
                   aria-label="Anterior"
-                  className="absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
+                  className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white sm:left-4"
                 >
                   ←
                 </button>
@@ -102,7 +115,7 @@ export function ProjectLightbox({
                   onClick={() => setIndex((i) => (i + 1) % media.length)}
                   data-cursor="magnetic"
                   aria-label="Siguiente"
-                  className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white sm:right-4"
                 >
                   →
                 </button>
@@ -111,7 +124,7 @@ export function ProjectLightbox({
           </div>
 
           {media.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto p-3">
+            <div className="flex shrink-0 gap-1.5 overflow-x-auto p-3">
               {media.map((m, i) => (
                 <button
                   key={m.id}
@@ -132,7 +145,7 @@ export function ProjectLightbox({
             </div>
           )}
 
-          <div className="space-y-1 px-5 pb-5">
+          <div className="shrink-0 space-y-1 px-5 pb-5">
             <span className="font-mono text-[11px] text-accent">{project.role ?? "—"}</span>
             {project.dateLabel && (
               <span className="ml-2 font-mono text-[11px] text-[var(--ink-muted)]">{project.dateLabel}</span>

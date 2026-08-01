@@ -30,7 +30,7 @@ export async function sendContactMessage(
   }
 
   if (!process.env.RESEND_API_KEY) {
-    return { ok: false, error: "El formulario no está configurado todavía. Escribime directo a ezche3819@gmail.com o por Instagram." };
+    return { ok: false, error: "El formulario no está configurado todavía. Escribime directo por mail." };
   }
 
   const token = await createContactToken({ name, email, message });

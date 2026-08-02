@@ -39,3 +39,10 @@ export function parseVideoUrl(raw: string): ParsedVideo | null {
 
   return null;
 }
+
+/** Miniatura estática de YouTube (gratis, sin API key). Vimeo no tiene un
+ * equivalente sin llamar a su oEmbed, así que devolvemos null para ese caso. */
+export function getVideoThumbnail(provider: "youtube" | "vimeo", videoId: string): string | null {
+  if (provider === "youtube") return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  return null;
+}

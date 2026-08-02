@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { VideoEmbed } from "./video-embed";
+import { getVideoThumbnail } from "@/lib/video-url";
 
 type MediaItem = {
   id: string;
@@ -55,10 +56,18 @@ export function ProjectLightbox({
   useEffect(() => {
     const preloaded: HTMLImageElement[] = [];
     for (const m of media) {
-      if (m.type !== "image") continue;
-      const img = new window.Image();
-      img.src = `/api/media/${m.id}`;
-      preloaded.push(img);
+      if (m.type === "image") {
+        const img = new window.Image();
+        img.src = `/api/media/${m.id}`;
+        preloaded.push(img);
+      } else if (m.videoProvider && m.videoId) {
+        const thumb = getVideoThumbnail(m.videoProvider, m.videoId);
+        if (thumb) {
+          const img = new window.Image();
+          img.src = thumb;
+          preloaded.push(img);
+        }
+      }
     }
     return () => {
       preloaded.forEach((img) => {
@@ -104,9 +113,7 @@ export function ProjectLightbox({
           <div className="relative min-h-0 flex-1 bg-black">
             {current?.type === "video" && current.videoProvider && current.videoId ? (
               <div className="flex h-full items-center justify-center p-2 sm:p-6">
-                <div className="aspect-video max-h-full w-full">
-                  <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
-                </div>
+                <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
               </div>
             ) : current?.url ? (
               <Image
@@ -162,6 +169,21 @@ export function ProjectLightbox({
                       loading="eager"
                       unoptimized
                     />
+                  ) : m.videoProvider && m.videoId && getVideoThumbnail(m.videoProvider, m.videoId) ? (
+                    <div className="relative h-full w-full bg-black">
+                      <Image
+                        src={getVideoThumbnail(m.videoProvider, m.videoId)!}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                        loading="eager"
+                        unoptimized
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/20 font-mono text-[10px] text-white">
+                        ▶
+                      </span>
+                    </div>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-black/40 font-mono text-[8px] text-white">
                       ▶

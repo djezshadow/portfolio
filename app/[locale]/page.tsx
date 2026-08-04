@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Carousel, type CarouselItem } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
+import { CollaboratorCard } from "@/components/collaborator-card";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, type Locale } from "@/lib/i18n/dictionaries";
 import { loc, locOrNull } from "@/lib/i18n/content";
@@ -61,15 +61,24 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     // sin DB disponible, seguimos con los textos por defecto del diccionario
   }
 
-  let collaborators: { id: string; name: string; logoUrl: string | null }[] = [];
+  let collaborators: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    type: string;
+    instagram: string | null;
+    website: string | null;
+  }[] = [];
   try {
     collaborators = await prisma.collaborator.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, logoUrl: true },
+      select: { id: true, name: true, logoUrl: true, type: true, instagram: true, website: true },
     });
   } catch {
     // sin DB disponible
   }
+  const clients = collaborators.filter((c) => c.type === "client");
+  const creatives = collaborators.filter((c) => c.type === "creative");
 
   return (
     <div className="mx-auto max-w-6xl px-6">
@@ -135,34 +144,35 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
       {collaborators.length > 0 && (
         <section className="pb-24">
-          <p className="mb-6 font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
-            {locale === "en" ? "Worked with" : "Con quién trabajé"}
-          </p>
-          <div className="flex flex-wrap items-center gap-6">
-            {collaborators.map((c) => (
-              <Link
-                key={c.id}
-                href={`/${locale}/colaboradores`}
-                data-cursor="magnetic"
-                title={c.name}
-                className="transition-transform hover:scale-105"
-              >
-                {c.logoUrl ? (
-                  <Image
-                    src={c.logoUrl}
-                    alt={c.name}
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 rounded-full object-cover grayscale transition-all hover:grayscale-0"
-                  />
-                ) : (
-                  <span className="glass flex h-12 w-12 items-center justify-center rounded-full font-display text-sm">
-                    {c.name.charAt(0)}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
+          <h2 className="mb-12 text-center font-display text-2xl sm:text-3xl">
+            {locale === "en" ? "Who I've worked with" : "Con quién trabajé"}
+          </h2>
+
+          {clients.length > 0 && (
+            <div className="mb-14">
+              <p className="mb-6 text-center font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
+                {locale === "en" ? "Clients" : "Clientes"}
+              </p>
+              <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
+                {clients.map((c) => (
+                  <CollaboratorCard key={c.id} collaborator={c} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {creatives.length > 0 && (
+            <div>
+              <p className="mb-6 text-center font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
+                {locale === "en" ? "Collaborators" : "Colaboradores"}
+              </p>
+              <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
+                {creatives.map((c) => (
+                  <CollaboratorCard key={c.id} collaborator={c} />
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>

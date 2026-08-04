@@ -3,6 +3,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
+import { OptimizePhotosButton } from "@/components/admin/optimize-photos-button";
 
 export const dynamic = "force-dynamic";
 
@@ -224,6 +225,10 @@ export default async function ConfiguracionPage() {
           initialPosition={settings.watermarkPosition}
         />
       </form>
+
+      <div className="mt-10">
+        <OptimizePhotosButton />
+      </div>
 
       {/* --- Contacto --- */}
       <h2 className="mb-1 mt-12 font-display text-xl">Contacto</h2>

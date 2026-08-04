@@ -101,7 +101,10 @@ export async function updateProject(projectId: string, formData: FormData) {
     try {
       const res = await fetch(tempUrl);
       const buffer = Buffer.from(await res.arrayBuffer());
-      const webp = await sharp(buffer).webp({ quality: 82 }).toBuffer();
+      const webp = await sharp(buffer)
+        .resize({ width: 2400, withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
 
       const blob = await put(`media/${projectId}-${order}.webp`, webp, {
         access: "public",

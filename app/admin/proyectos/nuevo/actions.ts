@@ -87,7 +87,10 @@ export async function createProject(formData: FormData) {
       const buffer = Buffer.from(await res.arrayBuffer());
       // Conversión a WebP (calidad 82, ver guía de export del spec) — sin
       // watermark; esta es la copia "base" que sirve de original interno.
-      const webp = await sharp(buffer).webp({ quality: 82 }).toBuffer();
+      const webp = await sharp(buffer)
+        .resize({ width: 2400, withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
 
       const blob = await put(`media/${project.id}-${order}.webp`, webp, {
         access: "public",

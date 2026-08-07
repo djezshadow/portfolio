@@ -16,6 +16,7 @@ export function AdminNav() {
         <Link href="/admin/categorias" data-cursor="magnetic">Categorías</Link>
         <Link href="/admin/colaboradores" data-cursor="magnetic">Colaboradores</Link>
         <Link href="/admin/configuracion" data-cursor="magnetic">Configuración</Link>
+        <Link href="/admin/sobre-mi" data-cursor="magnetic">Sobre mí</Link>
         <Link href="/admin/proyectos/nuevo" data-cursor="magnetic" className="text-accent">
           + Nuevo
         </Link>

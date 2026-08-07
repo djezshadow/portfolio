@@ -64,6 +64,17 @@ export async function updateProject(projectId: string, formData: FormData) {
     await prisma.media.deleteMany({ where: { id: { in: mediaIdsToDelete } } });
   }
 
+  // Reasignación de subcategoría por foto/video existente — cada select
+  // en el form se llama "mediaGroup:<mediaId>" (item #13).
+  const existingMedia = await prisma.media.findMany({ where: { projectId }, select: { id: true } });
+  for (const m of existingMedia) {
+    if (mediaIdsToDelete.includes(m.id)) continue;
+    const raw = formData.get(`mediaGroup:${m.id}`);
+    if (raw === null) continue;
+    const groupId = String(raw) || null;
+    await prisma.media.update({ where: { id: m.id }, data: { groupId } });
+  }
+
   await prisma.project.update({
     where: { id: projectId },
     data: {
@@ -153,6 +164,46 @@ export async function updateProject(projectId: string, formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/", "layout");
   redirect("/admin");
+}
+
+export async function createMediaGroup(projectId: string, formData: FormData) {
+  await assertAdmin();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const nameEn = (formData.get("nameEn") as string)?.trim() || null;
+  if (!name) throw new Error("Falta el nombre de la subcategoría.");
+
+  const count = await prisma.mediaGroup.count({ where: { projectId } });
+  await prisma.mediaGroup.create({
+    data: { projectId, name, nameEn, order: count },
+  });
+
+  revalidatePath(`/admin/proyectos/${projectId}`);
+}
+
+export async function renameMediaGroup(groupId: string, formData: FormData) {
+  await assertAdmin();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const nameEn = (formData.get("nameEn") as string)?.trim() || null;
+  if (!name) throw new Error("Falta el nombre de la subcategoría.");
+
+  const group = await prisma.mediaGroup.update({
+    where: { id: groupId },
+    data: { name, nameEn },
+  });
+
+  revalidatePath(`/admin/proyectos/${group.projectId}`);
+}
+
+export async function deleteMediaGroup(groupId: string, _formData: FormData) {
+  await assertAdmin();
+
+  // La media que estaba en este grupo no se borra: onDelete: SetNull la
+  // deja sin subcategoría (queda en "Sin subcategoría").
+  const group = await prisma.mediaGroup.delete({ where: { id: groupId } });
+
+  revalidatePath(`/admin/proyectos/${group.projectId}`);
 }
 
 export async function deleteProject(projectId: string, _formData: FormData) {

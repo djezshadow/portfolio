@@ -18,7 +18,7 @@ type CategoryWithData = Prisma.CategoryGetPayload<{
     projects: {
       include: {
         project: {
-          include: { media: true; collaborator: true };
+          include: { media: true; mediaGroups: true; collaborator: true };
         };
       };
     };
@@ -149,6 +149,10 @@ export function CategoryView({
             collaboratorName: openProject.collaborator?.name,
             dateLabel: formatDateRange(openProject.dateStart, openProject.dateEnd, openProject.isOngoing, locale),
             media: openProject.media,
+            groups: openProject.mediaGroups.map((g) => ({
+              id: g.id,
+              name: loc(g.name, g.nameEn, locale),
+            })),
           }}
           onClose={() => setOpenProjectId(null)}
         />

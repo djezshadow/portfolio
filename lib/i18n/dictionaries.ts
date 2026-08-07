@@ -4,7 +4,7 @@ export const defaultLocale: Locale = "es";
 
 const dictionaries = {
   es: {
-    nav: { contact: "Contacto", downloadReel: "Descargar reel (PDF)" },
+    nav: { contact: "Contacto", downloadReel: "Descargar reel (PDF)", about: "Sobre mí" },
     hero: {
       reel: "REEL",
       title1: "Cada corte",
@@ -38,7 +38,7 @@ const dictionaries = {
     },
   },
   en: {
-    nav: { contact: "Contact", downloadReel: "Download reel (PDF)" },
+    nav: { contact: "Contact", downloadReel: "Download reel (PDF)", about: "About me" },
     hero: {
       reel: "REEL",
       title1: "Every cut",

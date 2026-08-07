@@ -84,7 +84,11 @@ export default async function CategoryPage({
         where: isAdmin ? {} : { project: { publishedAt: { lte: new Date() } } },
         include: {
           project: {
-            include: { media: { orderBy: { order: "asc" } }, collaborator: true },
+            include: {
+              media: { orderBy: { order: "asc" } },
+              mediaGroups: { orderBy: { order: "asc" } },
+              collaborator: true,
+            },
           },
         },
       },

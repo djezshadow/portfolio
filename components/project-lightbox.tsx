@@ -12,7 +12,10 @@ type MediaItem = {
   url: string;
   videoProvider?: "youtube" | "vimeo" | null;
   videoId?: string | null;
+  groupId?: string | null;
 };
+
+type MediaGroupInfo = { id: string; name: string };
 
 type LightboxProject = {
   title: string;
@@ -21,7 +24,45 @@ type LightboxProject = {
   collaboratorName?: string | null;
   dateLabel?: string | null;
   media: MediaItem[];
+  /// Subcategorías del proyecto (item #13), ya en el orden en que se
+  /// definieron — la media sin grupo se muestra al final, sin etiqueta.
+  groups?: MediaGroupInfo[];
 };
+
+/// Reordena la media agrupándola por subcategoría (en el orden de
+/// `groups`), dejando la que no tiene grupo al final. Devuelve también,
+/// por cada índice, el nombre de grupo a mostrar como separador (solo en
+/// el primer ítem de cada grupo).
+function groupMedia(media: MediaItem[], groups: MediaGroupInfo[]) {
+  if (groups.length === 0) return { ordered: media, labelForIndex: new Map<number, string>() };
+
+  const byGroup = new Map<string, MediaItem[]>();
+  const ungrouped: MediaItem[] = [];
+  for (const m of media) {
+    if (m.groupId && groups.some((g) => g.id === m.groupId)) {
+      const list = byGroup.get(m.groupId) ?? [];
+      list.push(m);
+      byGroup.set(m.groupId, list);
+    } else {
+      ungrouped.push(m);
+    }
+  }
+
+  const ordered: MediaItem[] = [];
+  const labelForIndex = new Map<number, string>();
+  for (const g of groups) {
+    const items = byGroup.get(g.id);
+    if (!items || items.length === 0) continue;
+    labelForIndex.set(ordered.length, g.name);
+    ordered.push(...items);
+  }
+  if (ungrouped.length > 0) {
+    if (ordered.length > 0) labelForIndex.set(ordered.length, "—");
+    ordered.push(...ungrouped);
+  }
+
+  return { ordered, labelForIndex };
+}
 
 export function ProjectLightbox({
   project,
@@ -31,7 +72,7 @@ export function ProjectLightbox({
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
-  const media = project.media;
+  const { ordered: media, labelForIndex } = groupMedia(project.media, project.groups ?? []);
   const current = media[index];
 
   useEffect(() => {
@@ -150,16 +191,21 @@ export function ProjectLightbox({
           </div>
 
           {media.length > 1 && (
-            <div className="flex shrink-0 gap-1.5 overflow-x-auto p-3">
+            <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto p-3">
               {media.map((m, i) => (
-                <button
-                  key={m.id}
-                  onClick={() => setIndex(i)}
-                  data-cursor="magnetic"
-                  className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md"
-                  style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}
-                >
-                  {m.type === "image" ? (
+                <div key={m.id} className="flex shrink-0 items-center gap-1.5">
+                  {labelForIndex.has(i) && (
+                    <span className="ml-1 whitespace-nowrap font-mono text-[10px] text-[var(--ink-muted)]">
+                      {labelForIndex.get(i)}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setIndex(i)}
+                    data-cursor="magnetic"
+                    className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md"
+                    style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}
+                  >
+                    {m.type === "image" ? (
                     <Image
                       src={`/api/media/${m.id}?w=160`}
                       alt=""
@@ -189,7 +235,8 @@ export function ProjectLightbox({
                       ▶
                     </div>
                   )}
-                </button>
+                  </button>
+                </div>
               ))}
             </div>
           )}

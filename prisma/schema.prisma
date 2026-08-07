@@ -116,6 +116,7 @@ model Project {
   collaborator   Collaborator?     @relation(fields: [collaboratorId], references: [id], onDelete: SetNull)
   categories     ProjectCategory[]
   media          Media[]
+  mediaGroups    MediaGroup[]
   tags           ProjectTag[]
   createdAt      DateTime          @default(now())
 }
@@ -158,6 +159,22 @@ model Media {
   videoId       String? // id de YouTube/Vimeo
   order         Int            @default(0)
   isThumbnail   Boolean        @default(false)
+  /// Subcategoría opcional dentro del proyecto (item #13 del pedido:
+  /// dividir un mismo proyecto por fecha, tipo de trabajo, etc).
+  groupId       String?
+  group         MediaGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+}
+
+/// Subcategoría dentro de un proyecto (ej: "Making of", "Fotos finales",
+/// "Marzo 2026"). El admin las crea/borra libremente por proyecto.
+model MediaGroup {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  nameEn    String?
+  order     Int      @default(0)
+  media     Media[]
 }
 
 /// Fila única de configuración global del sitio.
@@ -197,4 +214,16 @@ model SiteSettings {
   /// depender de una variable de entorno y tener que redeployar para cambiarlo.
   /// Si queda vacío, se usa CONTACT_EMAIL_TO del .env como respaldo.
   contactEmail   String?
+
+  /// Sección "Sobre mí / About Me" (item #21) — ultra personalizable:
+  /// se puede prender/apagar del todo, el contenido se escribe en Markdown
+  /// (listas, numeradas, subtítulos, negrita, etc) y admite CSS propio para
+  /// cuando esto se venda como plantilla a otros clientes.
+  aboutEnabled     Boolean @default(false)
+  aboutTitle       String?
+  aboutTitleEn     String?
+  aboutContent     String? @db.Text
+  aboutContentEn   String? @db.Text
+  aboutImageUrl    String?
+  aboutCustomCss   String? @db.Text
 }

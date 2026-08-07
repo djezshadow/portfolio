@@ -202,3 +202,50 @@ body[data-lightbox-open="true"] [data-floating-nav] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Estilos base para el contenido en Markdown de la sección "Sobre mí"
+   (item #21). Un CSS personalizado cargado desde /admin/sobre-mi se
+   inyecta aparte y puede pisar cualquiera de estas reglas. */
+.about-content {
+  line-height: 1.7;
+}
+.about-content h2 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  margin: 2rem 0 0.75rem;
+}
+.about-content h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin: 1.75rem 0 0.6rem;
+}
+.about-content h4 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 1.5rem 0 0.5rem;
+}
+.about-content p {
+  margin: 0.9rem 0;
+}
+.about-content ul,
+.about-content ol {
+  margin: 0.9rem 0;
+  padding-left: 1.4rem;
+}
+.about-content ul {
+  list-style: disc;
+}
+.about-content ol {
+  list-style: decimal;
+}
+.about-content li {
+  margin: 0.35rem 0;
+}
+.about-content a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.about-content strong {
+  font-weight: 600;
+}

@@ -11,6 +11,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   const otherLocale = locale === "es" ? "en" : "es";
   let categories: { slug: string; name: string; nameEn: string | null }[] = [];
   let logos = { logoNoirUrl: null as string | null, logoNeonUrl: null as string | null };
+  let aboutEnabled = false;
 
   try {
     categories = await prisma.category.findMany({
@@ -23,7 +24,9 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   }
 
   try {
-    logos = await getSiteSettings();
+    const settings = await getSiteSettings();
+    logos = settings;
+    aboutEnabled = settings.aboutEnabled;
   } catch {
     // sin DB disponible, se usa el wordmark de texto
   }
@@ -46,6 +49,16 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
             {loc(c.name, c.nameEn, locale)}
           </Link>
         ))}
+
+        {aboutEnabled && (
+          <Link
+            href={`/${locale}/sobre-mi`}
+            data-cursor="magnetic"
+            className="shrink-0 rounded-full px-3 py-2 text-[var(--ink-muted)] transition-colors hover:text-accent"
+          >
+            {dict.nav.about}
+          </Link>
+        )}
 
         <Link
           href={`/${locale}/colaboradores`}

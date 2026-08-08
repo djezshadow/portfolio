@@ -5,6 +5,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
 import { OptimizePhotosButton } from "@/components/admin/optimize-photos-button";
+import { SubmitButton } from "@/components/admin/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -74,13 +75,7 @@ export default async function ConfiguracionPage() {
           )}
         </div>
 
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="col-span-full w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar logos
-        </button>
+        <SubmitButton className="col-span-full">Guardar logos</SubmitButton>
       </form>
 
       {/* --- Título / subtítulo de la home --- */}
@@ -165,13 +160,7 @@ export default async function ConfiguracionPage() {
             className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
           />
         </div>
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar mail de contacto
-        </button>
+        <SubmitButton>Guardar mail de contacto</SubmitButton>
       </form>
     </div>
   );

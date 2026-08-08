@@ -3,6 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { createCollaborator } from "./actions";
 import { getCollaboratorTypes } from "@/lib/collaborator-types";
+import { SubmitButton } from "@/components/admin/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -94,13 +95,7 @@ export default async function ColaboradoresPage() {
           <input name="logo" type="file" accept="image/*" className="w-full font-mono text-sm" />
         </div>
 
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar colaborador
-        </button>
+        <SubmitButton>Guardar colaborador</SubmitButton>
       </form>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { SubmitButton } from "./submit-button";
 
 type Position = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
 
@@ -174,13 +175,7 @@ export function WatermarkSettingsForm({
         publicadas (con watermark activado) en minutos.
       </p>
 
-      <button
-        type="submit"
-        data-cursor="magnetic"
-        className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-      >
-        Guardar watermark
-      </button>
+      <SubmitButton>Guardar watermark</SubmitButton>
     </div>
   );
 }

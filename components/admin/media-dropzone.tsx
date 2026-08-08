@@ -10,6 +10,7 @@ type UploadItem = {
   file: File;
   previewUrl: string;
   status: "uploading" | "done" | "error";
+  progress?: number;
   blobUrl?: string;
   errorMessage?: string;
 };
@@ -44,9 +45,14 @@ export function MediaDropzone() {
       const blob = await upload(item.file.name, item.file, {
         access: "public",
         handleUploadUrl: "/api/admin/upload-token",
+        onUploadProgress: ({ percentage }) => {
+          setItems((prev) =>
+            prev.map((it) => (it.id === item.id ? { ...it, progress: percentage } : it))
+          );
+        },
       });
       setItems((prev) =>
-        prev.map((it) => (it.id === item.id ? { ...it, status: "done", blobUrl: blob.url } : it))
+        prev.map((it) => (it.id === item.id ? { ...it, status: "done", progress: 100, blobUrl: blob.url } : it))
       );
     } catch (err) {
       console.error("Error subiendo", item.file.name, err);
@@ -145,9 +151,15 @@ export function MediaDropzone() {
                 )}
               />
               {item.status === "uploading" && (
-                <span className="absolute inset-0 flex items-center justify-center font-mono text-[10px] text-white">
-                  Subiendo…
-                </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-2">
+                  <span className="font-mono text-[10px] text-white">{Math.round(item.progress ?? 0)}%</span>
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-black/40">
+                    <div
+                      className="h-full rounded-full bg-[var(--accent)] transition-all"
+                      style={{ width: `${item.progress ?? 0}%` }}
+                    />
+                  </div>
+                </div>
               )}
               {item.status === "done" && (
                 <span className="absolute bottom-1 right-1 rounded-full bg-[var(--accent)] px-2 py-0.5 font-mono text-[9px] text-[var(--bg)]">
@@ -190,9 +202,22 @@ export function MediaDropzone() {
       )}
 
       {uploadingCount > 0 && (
-        <p className="font-mono text-[11px] text-accent">
-          Subiendo {uploadingCount} foto{uploadingCount > 1 ? "s" : ""}… esperá a que termine antes de guardar.
-        </p>
+        <div className="space-y-1.5">
+          <p className="font-mono text-[11px] text-accent">
+            Subiendo {uploadingCount} foto{uploadingCount > 1 ? "s" : ""}… esperá a que termine antes de guardar.
+          </p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/20">
+            <div
+              className="h-full rounded-full bg-[var(--accent)] transition-all"
+              style={{
+                width: `${
+                  items.filter((it) => it.status === "uploading").reduce((sum, it) => sum + (it.progress ?? 0), 0) /
+                  uploadingCount
+                }%`,
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Links de video — mismo contenedor que las fotos, se pueden agregar varios */}

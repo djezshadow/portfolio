@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createProject } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
+import { SubmitButton } from "@/components/admin/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -157,13 +158,7 @@ export default async function NewProjectPage() {
 
         <PublishControls />
 
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar proyecto
-        </button>
+        <SubmitButton>Guardar proyecto</SubmitButton>
       </form>
     </div>
   );

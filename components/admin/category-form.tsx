@@ -1,4 +1,5 @@
 import { CategoryThemeControl } from "./category-theme-control";
+import { SubmitButton } from "./submit-button";
 
 type CategoryFormProps = {
   action: (formData: FormData) => void;
@@ -219,13 +220,7 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
         </div>
       </div>
 
-      <button
-        type="submit"
-        data-cursor="magnetic"
-        className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-      >
-        {submitLabel}
-      </button>
+      <SubmitButton>{submitLabel}</SubmitButton>
     </form>
   );
 }

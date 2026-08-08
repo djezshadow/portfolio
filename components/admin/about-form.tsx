@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { markdownToHtml } from "@/lib/markdown";
+import { SubmitButton } from "./submit-button";
 
 type Props = {
   action: (formData: FormData) => Promise<void>;
@@ -119,13 +120,7 @@ export function AboutForm({ action, initial }: Props) {
         />
       </div>
 
-      <button
-        type="submit"
-        data-cursor="magnetic"
-        className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-      >
-        Guardar cambios
-      </button>
+      <SubmitButton>Guardar cambios</SubmitButton>
     </form>
   );
 }

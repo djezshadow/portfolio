@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { updateCollaborator, deleteCollaborator } from "../actions";
 import { createParticipant, updateParticipant, deleteParticipant } from "../participant-actions";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { SubmitButton } from "@/components/admin/submit-button";
 import { getCollaboratorTypes } from "@/lib/collaborator-types";
 import { ParticipantsPanel } from "@/components/admin/participants-panel";
 
@@ -91,13 +92,7 @@ export default async function EditCollaboratorPage({ params }: { params: Promise
           <input name="logo" type="file" accept="image/*" className="w-full font-mono text-sm" />
         </div>
 
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar cambios
-        </button>
+        <SubmitButton>Guardar cambios</SubmitButton>
       </form>
 
       <div className="mt-10">

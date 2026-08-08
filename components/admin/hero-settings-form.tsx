@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SubmitButton } from "./submit-button";
 
 type Props = {
   action: (formData: FormData) => Promise<void>;
@@ -129,13 +130,7 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
         </select>
       </div>
 
-      <button
-        type="submit"
-        data-cursor="magnetic"
-        className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-      >
-        Guardar título y subtítulo
-      </button>
+      <SubmitButton>Guardar título y subtítulo</SubmitButton>
     </form>
   );
 }

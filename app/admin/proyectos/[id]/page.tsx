@@ -6,6 +6,7 @@ import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { MediaGroupsPanel } from "@/components/admin/media-groups-panel";
+import { SubmitButton } from "@/components/admin/submit-button";
 import { toMonthInputValue } from "@/lib/date-range";
 
 function toDatetimeLocal(date: Date) {
@@ -260,13 +261,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
           defaultScheduledFor={project.publishedAt ? toDatetimeLocal(project.publishedAt) : undefined}
         />
 
-        <button
-          type="submit"
-          data-cursor="magnetic"
-          className="w-full rounded-full bg-[var(--accent)] py-3 font-mono text-sm text-[var(--bg)]"
-        >
-          Guardar cambios
-        </button>
+        <SubmitButton>Guardar cambios</SubmitButton>
       </form>
     </div>
   );

@@ -37,13 +37,17 @@ export function CollaboratorCard({
     collaborator.instagram || collaborator.website || participants.length > 0
   );
   const dim = size === "sm" ? "h-14 w-14" : "h-24 w-24 sm:h-28 sm:w-28";
+  // Ancho fijo del ítem completo (icono + nombre) para que un nombre largo
+  // no empuje ni desacomode al resto de la grilla — el texto se acomoda
+  // en hasta 2 líneas adentro de ese ancho en vez de estirar la columna.
+  const itemWidth = size === "sm" ? "w-16" : "w-24 sm:w-28";
 
   return (
     <>
       <button
         onClick={() => hasLinks && setOpen(true)}
         data-cursor="magnetic"
-        className="flex flex-col items-center gap-2"
+        className={`flex ${itemWidth} flex-col items-center gap-2`}
         aria-label={collaborator.name}
       >
         {collaborator.logoUrl ? (
@@ -58,7 +62,9 @@ export function CollaboratorCard({
           </div>
         )}
         {size === "md" && (
-          <span className="font-mono text-[11px] text-[var(--ink-muted)]">{collaborator.name}</span>
+          <span className="line-clamp-2 w-full break-words font-mono text-[11px] leading-tight text-[var(--ink-muted)]">
+            {collaborator.name}
+          </span>
         )}
       </button>
 
@@ -77,7 +83,7 @@ export function CollaboratorCard({
               exit={{ opacity: 0, scale: 0.92, y: 8 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="glass glass-distort flex w-full max-w-xs flex-col items-center gap-4 rounded-2xl p-6 text-center"
+              className="nav-surface flex w-full max-w-xs flex-col items-center gap-4 rounded-2xl p-6 text-center"
             >
               {collaborator.logoUrl && (
                 <div className="relative h-16 w-16 overflow-hidden rounded-full bg-black/10">

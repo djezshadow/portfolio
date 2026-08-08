@@ -59,7 +59,17 @@ export default async function ColaboradoresPage({
     if (list.length === 0) return null;
     return (
       <section className="mb-16">
-        <h2 className="mb-8 text-center font-display text-2xl sm:text-3xl">{title}</h2>
+        {/* Label de sección distinto al de la home: ahí es una leyenda
+            chica sin adornos; acá, al ser una página dedicada, lleva
+            líneas a los costados — mismo espíritu tipográfico, pero no
+            calcado (pedido explícito: que no se vean idénticos). */}
+        <div className="mb-8 flex items-center justify-center gap-4">
+          <span className="h-px w-10 bg-[var(--glass-border)]" />
+          <h2 className="whitespace-nowrap font-mono text-xs uppercase tracking-[0.25em] text-accent">
+            {title}
+          </h2>
+          <span className="h-px w-10 bg-[var(--glass-border)]" />
+        </div>
         <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
           {list.map((c, i) => (
             <Reveal key={c.id} delay={i * 0.04}>
@@ -74,7 +84,7 @@ export default async function ColaboradoresPage({
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
       <Reveal>
-        <h1 className="text-center font-display text-4xl sm:text-5xl">
+        <h1 className="text-center font-display text-3xl sm:text-4xl">
           {locale === "en" ? "Who I've worked with" : "Con quién trabajé"}
         </h1>
       </Reveal>

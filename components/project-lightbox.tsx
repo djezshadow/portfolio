@@ -99,13 +99,15 @@ export function ProjectLightbox({
     };
   }, [media.length, onClose]);
 
-  // Precarga: solo la foto actual y sus dos vecinas (anterior/siguiente),
-  // no el proyecto entero de una — así no compite por ancho de banda con
-  // la que se está mirando. Se re-dispara cada vez que cambia el índice,
-  // usando el mismo ancho acotado que la vista grande (así el navegador ya
-  // tiene esa URL en caché cuando el usuario navega y carga al instante).
+  // Precarga: solo las dos fotos VECINAS (anterior/siguiente) — la actual
+  // no, porque de eso ya se encarga <ProgressiveImage> con su propio
+  // fetch(). Precargarla acá TAMBIÉN generaba un segundo pedido a la
+  // misma URL al mismo tiempo; el navegador los unifica en uno solo y
+  // eso rompía el progreso por bytes (llegaba todo junto al final en vez
+  // de ir subiendo de a poco). No competimos con el proyecto entero,
+  // solo con los dos pasos posibles de "siguiente/anterior".
   useEffect(() => {
-    const neighborOffsets = [0, 1, -1];
+    const neighborOffsets = [1, -1];
     const preloaded: HTMLImageElement[] = [];
     for (const offset of neighborOffsets) {
       const m = media[(index + offset + media.length) % media.length];

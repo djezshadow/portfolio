@@ -13,6 +13,11 @@ import { useEffect, useRef, useState } from "react";
  * preload silencioso) ya pidió la misma URL antes, el fetch acá pega
  * contra la cache HTTP del navegador y el progreso salta prácticamente
  * directo al 100%.
+ *
+ * Importante: el componente que use esto NO debe disparar otro pedido
+ * (ej. un <img> nativo o `new Image()`) a la MISMA URL al mismo tiempo —
+ * el navegador puede unificar ambos pedidos en una sola conexión, y ahí
+ * el progreso por bytes deja de reportarse de a poco.
  */
 export function ProgressiveImage({
   src,
@@ -28,7 +33,9 @@ export function ProgressiveImage({
   priority?: boolean;
 }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
+  // null = todavía no sabemos el tamaño total (barra indeterminada);
+  // número = % real ya calculado contra Content-Length.
+  const [progress, setProgress] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const currentSrc = useRef<string | null>(null);
@@ -40,7 +47,7 @@ export function ProgressiveImage({
 
     setLoaded(false);
     setFailed(false);
-    setProgress(0);
+    setProgress(null);
 
     async function run() {
       try {
@@ -98,18 +105,47 @@ export function ProgressiveImage({
 
       {!loaded && !failed && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-          {progress > 0 && (
-            <div className="w-32 space-y-1">
-              <div className="h-1 w-full overflow-hidden rounded-full bg-white/20">
+          <span
+            aria-hidden
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "9999px",
+              border: "3px solid rgba(255,255,255,0.25)",
+              borderTopColor: "#fff",
+              animation: "djez-lightbox-spin 0.8s linear infinite",
+            }}
+          />
+          <div className="w-32 space-y-1">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-white/20">
+              {progress !== null ? (
                 <div
-                  className="h-full rounded-full bg-white transition-all"
+                  className="h-full rounded-full bg-white transition-[width] duration-150"
                   style={{ width: `${progress}%` }}
                 />
-              </div>
-              <p className="text-center font-mono text-[10px] text-white/70">{progress}%</p>
+              ) : (
+                // No sabemos el tamaño total todavía (o el server no mandó
+                // Content-Length) — igual mostramos movimiento para que
+                // se vea que algo está pasando, en vez de una barra fija.
+                <div
+                  className="h-full w-1/3 rounded-full bg-white"
+                  style={{ animation: "djez-lightbox-indeterminate 1.1s ease-in-out infinite" }}
+                />
+              )}
             </div>
-          )}
+            {progress !== null && (
+              <p className="text-center font-mono text-[10px] text-white/70">{progress}%</p>
+            )}
+          </div>
+          <style>{`
+            @keyframes djez-lightbox-spin {
+              to { transform: rotate(360deg); }
+            }
+            @keyframes djez-lightbox-indeterminate {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(300%); }
+            }
+          `}</style>
         </div>
       )}
 

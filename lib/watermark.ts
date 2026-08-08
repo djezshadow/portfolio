@@ -44,6 +44,14 @@ const gravityMap: Record<WatermarkPosition, string> = {
   center: "center",
 };
 
+// Cache en memoria del logo personalizado ya procesado (redimensionado +
+// con la opacidad aplicada), por tamaño. Como el server function de
+// Vercel se reutiliza "tibio" entre pedidos seguidos, esto evita volver a
+// bajar y reprocesar el mismo logo en cada foto que se pide — antes era
+// un fetch + 2 pasadas de sharp EXTRA por cada imagen servida.
+const logoCache = new Map<string, Buffer>();
+const LOGO_CACHE_LIMIT = 30;
+
 export async function applyWatermark(
   imageBuffer: Buffer,
   opts: {
@@ -67,25 +75,34 @@ export async function applyWatermark(
   let watermarkInput: Buffer;
 
   if (opts.customLogoUrl) {
-    // Logo personalizado: lo bajamos, lo redimensionamos al tamaño calculado
-    // (manteniendo proporción) y le aplicamos la opacidad pedida.
-    const res = await fetch(opts.customLogoUrl);
-    const logoBuffer = Buffer.from(await res.arrayBuffer());
-    watermarkInput = await sharp(logoBuffer)
-      .resize({ width: size, height: size, fit: "inside" })
-      .ensureAlpha()
-      .composite([
-        {
-          // multiplica el canal alpha existente por la opacidad elegida,
-          // sin afectar el color del logo
-          input: Buffer.from([255, 255, 255, Math.round(opacity * 255)]),
-          raw: { width: 1, height: 1, channels: 4 },
-          tile: true,
-          blend: "dest-in",
-        },
-      ])
-      .png()
-      .toBuffer();
+    const cacheKey = `${opts.customLogoUrl}:${size}:${opacity}`;
+    const cached = logoCache.get(cacheKey);
+    if (cached) {
+      watermarkInput = cached;
+    } else {
+      // Logo personalizado: lo bajamos, lo redimensionamos al tamaño calculado
+      // (manteniendo proporción) y le aplicamos la opacidad pedida.
+      const res = await fetch(opts.customLogoUrl);
+      const logoBuffer = Buffer.from(await res.arrayBuffer());
+      watermarkInput = await sharp(logoBuffer)
+        .resize({ width: size, height: size, fit: "inside" })
+        .ensureAlpha()
+        .composite([
+          {
+            // multiplica el canal alpha existente por la opacidad elegida,
+            // sin afectar el color del logo
+            input: Buffer.from([255, 255, 255, Math.round(opacity * 255)]),
+            raw: { width: 1, height: 1, channels: 4 },
+            tile: true,
+            blend: "dest-in",
+          },
+        ])
+        .png()
+        .toBuffer();
+
+      if (logoCache.size >= LOGO_CACHE_LIMIT) logoCache.clear();
+      logoCache.set(cacheKey, watermarkInput);
+    }
   } else {
     watermarkInput = Buffer.from(apertureSVG(size, opacity));
   }

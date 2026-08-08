@@ -5,6 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { VideoEmbed } from "./video-embed";
 import { getVideoThumbnail } from "@/lib/video-url";
+import { ProgressiveImage } from "./progressive-image";
+
+// Ancho tope para la vista grande del lightbox. Antes se pedía la imagen
+// a resolución ORIGINAL (podía ser 6000px+ de una cámara) — eso hacía que
+// el server tuviera que procesar y mandar un archivo enorme cada vez.
+// 2000px ya se ve nítido a pantalla completa y es mucho más rápido de
+// generar (watermark incluido) y de transferir.
+const LIGHTBOX_WIDTH = 2000;
 
 type MediaItem = {
   id: string;
@@ -91,15 +99,20 @@ export function ProjectLightbox({
     };
   }, [media.length, onClose]);
 
-  // Precarga: apenas se abre, disparamos la descarga de TODAS las fotos
-  // (tamaño completo) en segundo plano. Cuando el usuario navega con las
-  // flechas, la imagen ya está en la cache del navegador — no vuelve a cargar.
+  // Precarga: solo la foto actual y sus dos vecinas (anterior/siguiente),
+  // no el proyecto entero de una — así no compite por ancho de banda con
+  // la que se está mirando. Se re-dispara cada vez que cambia el índice,
+  // usando el mismo ancho acotado que la vista grande (así el navegador ya
+  // tiene esa URL en caché cuando el usuario navega y carga al instante).
   useEffect(() => {
+    const neighborOffsets = [0, 1, -1];
     const preloaded: HTMLImageElement[] = [];
-    for (const m of media) {
+    for (const offset of neighborOffsets) {
+      const m = media[(index + offset + media.length) % media.length];
+      if (!m) continue;
       if (m.type === "image") {
         const img = new window.Image();
-        img.src = `/api/media/${m.id}`;
+        img.src = `/api/media/${m.id}?w=${LIGHTBOX_WIDTH}`;
         preloaded.push(img);
       } else if (m.videoProvider && m.videoId) {
         const thumb = getVideoThumbnail(m.videoProvider, m.videoId);
@@ -115,7 +128,7 @@ export function ProjectLightbox({
         img.src = "";
       });
     };
-  }, [media]);
+  }, [media, index]);
 
   return (
     <AnimatePresence>
@@ -157,14 +170,13 @@ export function ProjectLightbox({
                 <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
               </div>
             ) : current?.url ? (
-              <Image
-                src={`/api/media/${current.id}`}
+              <ProgressiveImage
+                key={current.id}
+                src={`/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
                 alt={project.title}
-                fill
-                className="object-contain"
-                sizes="95vw"
                 priority
-                unoptimized
+                className="absolute inset-0"
+                imgClassName="h-full w-full object-contain"
               />
             ) : null}
 

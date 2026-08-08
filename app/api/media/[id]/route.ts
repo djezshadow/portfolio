@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
+import { unstable_cache } from "next/cache";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { applyWatermark } from "@/lib/watermark";
@@ -7,6 +8,18 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 
 export const runtime = "nodejs";
+
+// La config del watermark casi no cambia, pero sin esto se pegaba a la
+// base de datos UNA VEZ POR CADA FOTO servida (podían ser 20-30 pedidos
+// en paralelo al entrar a un proyecto). La cacheamos 60s: si el admin
+// cambia algo en /admin/configuracion, tarda como mucho un minuto en
+// notarse en las fotos públicas — a cambio, navegar el sitio es mucho
+// más rápido porque no hace esa consulta por cada imagen.
+const getCachedSiteSettings = unstable_cache(
+  async () => getSiteSettings(),
+  ["media-route-site-settings"],
+  { revalidate: 60 }
+);
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -51,7 +64,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (media.watermarkEnabled) {
     try {
-      const settings = await getSiteSettings();
+      const settings = await getCachedSiteSettings();
       outputBuffer = await applyWatermark(sourceBuffer, {
         opacity: settings.watermarkOpacity,
         position: settings.watermarkPosition as

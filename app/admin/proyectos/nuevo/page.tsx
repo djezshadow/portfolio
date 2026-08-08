@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function NewProjectPage() {
   const [categories, collaborators] = await Promise.all([
     prisma.category.findMany({ orderBy: { order: "asc" } }),
-    prisma.collaborator.findMany({ orderBy: { name: "asc" } }),
+    prisma.collaborator.findMany({ orderBy: { name: "asc" }, include: { typeOption: true } }),
   ]);
 
   return (
@@ -111,7 +111,7 @@ export default async function NewProjectPage() {
             <option value="">Ninguna — trabajo solo en este proyecto</option>
             {collaborators.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.type === "client" ? "cliente" : "colaborador creativo"})
+                {c.name} ({(c.typeOption?.name ?? c.type).toLowerCase()})
               </option>
             ))}
           </select>

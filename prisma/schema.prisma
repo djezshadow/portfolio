@@ -23,11 +23,6 @@ enum LogoSource {
   none
 }
 
-enum CollaboratorType {
-  client
-  creative
-}
-
 enum MediaType {
   image
   video
@@ -63,6 +58,10 @@ model Category {
   /// (independiente de isComingSoon — así podés linkear el "coming soon"
   /// desde la nav aunque no salga en destacados).
   showInNav       Boolean           @default(false)
+  /// Portada de la categoría (item #17) — se usa en el carrusel de
+  /// destacados de la home para que se vea más atractivo. Si queda vacía,
+  /// se muestra la card sin imagen (como antes).
+  coverImageUrl   String?
   style           CategoryStyle?
   projects        ProjectCategory[]
   createdAt       DateTime          @default(now())
@@ -85,11 +84,45 @@ model CategoryStyle {
 model Collaborator {
   id        String           @id @default(cuid())
   name      String
-  type      CollaboratorType
+  /// Slug del tipo de relación — antes era un enum fijo (client/creative),
+  /// ahora referencia CollaboratorTypeOption.slug para que el admin pueda
+  /// crear/borrar tipos nuevos (item #14). Sigue siendo un string simple
+  /// para no perder los valores "client"/"creative" que ya existen.
+  type      String           @default("client")
+  typeOption CollaboratorTypeOption? @relation(fields: [type], references: [slug])
   logoUrl   String?
   instagram String?
   website   String?
+  /// Participantes opcionales dentro de este colaborador (item #16):
+  /// personas puntuales con su rol y redes, todo opcional.
+  participants Participant[]
   projects  Project[]
+}
+
+/// Tipos de relación personalizables (item #14). isClient decide en qué
+/// sección de la vista pública cae ("Clientes" o "Colaboradores", item #8).
+model CollaboratorTypeOption {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  nameEn        String?
+  isClient      Boolean        @default(false)
+  order         Int            @default(0)
+  collaborators Collaborator[]
+}
+
+/// Persona puntual dentro de un Collaborator (item #16). Todo opcional
+/// salvo que tenga sentido tener al menos un nombre.
+model Participant {
+  id             String       @id @default(cuid())
+  collaboratorId String
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  name           String?
+  role           String?
+  roleEn         String?
+  instagram      String?
+  website        String?
+  order          Int          @default(0)
 }
 
 model Project {

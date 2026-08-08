@@ -14,15 +14,46 @@ export default async function ColaboradoresPage({
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   const dict = getDictionary(locale);
 
-  let collaborators: Awaited<ReturnType<typeof prisma.collaborator.findMany>> = [];
+  let collaborators: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    type: string;
+    instagram: string | null;
+    website: string | null;
+    typeOption: { isClient: boolean } | null;
+    participants: {
+      id: string;
+      name: string | null;
+      role: string | null;
+      roleEn: string | null;
+      instagram: string | null;
+      website: string | null;
+    }[];
+  }[] = [];
   try {
-    collaborators = await prisma.collaborator.findMany({ orderBy: { name: "asc" } });
+    collaborators = await prisma.collaborator.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        type: true,
+        instagram: true,
+        website: true,
+        typeOption: { select: { isClient: true } },
+        participants: {
+          orderBy: { order: "asc" },
+          select: { id: true, name: true, role: true, roleEn: true, instagram: true, website: true },
+        },
+      },
+    });
   } catch {
     // sin DB disponible
   }
 
-  const clients = collaborators.filter((c) => c.type === "client");
-  const creatives = collaborators.filter((c) => c.type === "creative");
+  const clients = collaborators.filter((c) => c.typeOption?.isClient ?? c.type === "client");
+  const creatives = collaborators.filter((c) => !(c.typeOption?.isClient ?? c.type === "client"));
 
   function Section({ title, list }: { title: string; list: typeof collaborators }) {
     if (list.length === 0) return null;
@@ -32,7 +63,7 @@ export default async function ColaboradoresPage({
         <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
           {list.map((c, i) => (
             <Reveal key={c.id} delay={i * 0.04}>
-              <CollaboratorCard collaborator={c} />
+              <CollaboratorCard collaborator={c} locale={locale} />
             </Reveal>
           ))}
         </div>

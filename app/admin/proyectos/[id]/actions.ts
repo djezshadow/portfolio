@@ -75,6 +75,17 @@ export async function updateProject(projectId: string, formData: FormData) {
     await prisma.media.update({ where: { id: m.id }, data: { groupId } });
   }
 
+  // Portada del proyecto (item #17) — un solo radio "thumbnailMediaId" en
+  // el form elige qué foto se usa como portada en las cards del sitio.
+  const thumbnailMediaId = formData.get("thumbnailMediaId");
+  if (thumbnailMediaId) {
+    await prisma.media.updateMany({ where: { projectId }, data: { isThumbnail: false } });
+    await prisma.media.update({
+      where: { id: String(thumbnailMediaId) },
+      data: { isThumbnail: true },
+    });
+  }
+
   await prisma.project.update({
     where: { id: projectId },
     data: {

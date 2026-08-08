@@ -2,11 +2,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { createCollaborator } from "./actions";
+import { getCollaboratorTypes } from "@/lib/collaborator-types";
 
 export const dynamic = "force-dynamic";
 
 export default async function ColaboradoresPage() {
-  const collaborators = await prisma.collaborator.findMany({ orderBy: { name: "asc" } });
+  const [collaborators, types] = await Promise.all([
+    prisma.collaborator.findMany({ orderBy: { name: "asc" }, include: { typeOption: true } }),
+    getCollaboratorTypes(),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
@@ -26,7 +30,7 @@ export default async function ColaboradoresPage() {
             <div>
               <p>{c.name}</p>
               <p className="font-mono text-[11px] text-[var(--ink-muted)]">
-                {c.type === "client" ? "Cliente" : "Colaborador creativo"}
+                {c.typeOption?.name ?? c.type}
               </p>
             </div>
           </Link>
@@ -51,11 +55,22 @@ export default async function ColaboradoresPage() {
           <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Tipo</label>
           <select
             name="type"
+            defaultValue={types.find((t) => t.slug === "creative") ? "creative" : types[0]?.slug}
             className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
           >
-            <option value="creative">Colaborador creativo</option>
-            <option value="client">Cliente</option>
+            {types.map((t) => (
+              <option key={t.id} value={t.slug}>
+                {t.name}
+              </option>
+            ))}
           </select>
+          <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
+            ¿Necesitás otro tipo? Creálo en{" "}
+            <Link href="/admin/tipos-colaborador" className="underline" data-cursor="magnetic">
+              Tipos de relación
+            </Link>
+            .
+          </p>
         </div>
 
         <div>

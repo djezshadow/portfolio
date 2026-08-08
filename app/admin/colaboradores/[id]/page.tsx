@@ -2,13 +2,19 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updateCollaborator, deleteCollaborator } from "../actions";
+import { createParticipant, updateParticipant, deleteParticipant } from "../participant-actions";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { getCollaboratorTypes } from "@/lib/collaborator-types";
+import { ParticipantsPanel } from "@/components/admin/participants-panel";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditCollaboratorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const collaborator = await prisma.collaborator.findUnique({ where: { id } });
+  const [collaborator, types] = await Promise.all([
+    prisma.collaborator.findUnique({ where: { id }, include: { participants: { orderBy: { order: "asc" } } } }),
+    getCollaboratorTypes(),
+  ]);
   if (!collaborator) notFound();
 
   const action = updateCollaborator.bind(null, collaborator.id);
@@ -52,8 +58,11 @@ export default async function EditCollaboratorPage({ params }: { params: Promise
             defaultValue={collaborator.type}
             className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
           >
-            <option value="creative">Colaborador creativo</option>
-            <option value="client">Cliente</option>
+            {types.map((t) => (
+              <option key={t.id} value={t.slug}>
+                {t.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -90,6 +99,17 @@ export default async function EditCollaboratorPage({ params }: { params: Promise
           Guardar cambios
         </button>
       </form>
+
+      <div className="mt-10">
+        <h2 className="mb-3 font-display text-xl">Participantes (opcional)</h2>
+        <ParticipantsPanel
+          collaboratorId={collaborator.id}
+          participants={collaborator.participants}
+          createAction={createParticipant}
+          updateAction={updateParticipant}
+          deleteAction={deleteParticipant}
+        />
+      </div>
     </div>
   );
 }

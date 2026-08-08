@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { CategoryForm } from "@/components/admin/category-form";
-import { updateCategory, deleteCategory } from "../actions";
+import { updateCategory, deleteCategory, updateCategoryCover } from "../actions";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { CoverImageForm } from "@/components/admin/cover-image-form";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
 
   const action = updateCategory.bind(null, category.id);
   const removeAction = deleteCategory.bind(null, category.id);
+  const coverAction = updateCategoryCover.bind(null, category.id);
 
   return (
     <div className="mx-auto max-w-xl px-6 py-16">
@@ -24,6 +26,15 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
           label="Borrar categoría"
         />
       </div>
+
+      <div className="mb-8">
+        <CoverImageForm
+          action={coverAction}
+          currentUrl={category.coverImageUrl}
+          label="Portada de esta categoría (item #17) — se usa en el carrusel de la home"
+        />
+      </div>
+
       <CategoryForm
         action={action}
         submitLabel="Guardar cambios"

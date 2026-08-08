@@ -77,6 +77,7 @@ export function CategoryView({
             const role = locOrNull(project.role, project.roleEn, locale);
             const dateLabel = formatDateRange(project.dateStart, project.dateEnd, project.isOngoing, locale);
             const extraCount = project.media.length - 1;
+            const coverMedia = project.media.find((m) => m.isThumbnail) ?? project.media[0];
 
             return (
               <Reveal key={project.id} delay={i * 0.05}>
@@ -86,18 +87,18 @@ export function CategoryView({
                   className="glass cursor-pointer overflow-hidden rounded-2xl"
                 >
                   <div className="relative">
-                    {project.media[0]?.type === "video" && project.media[0].videoProvider && project.media[0].videoId ? (
+                    {coverMedia?.type === "video" && coverMedia.videoProvider && coverMedia.videoId ? (
                       <div className="pointer-events-none">
                         <VideoEmbed
-                          provider={project.media[0].videoProvider}
-                          videoId={project.media[0].videoId}
+                          provider={coverMedia.videoProvider}
+                          videoId={coverMedia.videoId}
                           title={title}
                         />
                       </div>
-                    ) : project.media[0]?.url ? (
+                    ) : coverMedia?.url ? (
                       <div className="relative aspect-video w-full">
                         <Image
-                          src={`/api/media/${project.media[0].id}?w=800`}
+                          src={`/api/media/${coverMedia.id}?w=800`}
                           alt={title}
                           fill
                           className="object-cover"

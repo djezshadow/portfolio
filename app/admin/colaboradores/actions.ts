@@ -21,7 +21,7 @@ export async function createCollaborator(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Falta el nombre.");
 
-  const type = (formData.get("type") as string) === "client" ? "client" : "creative";
+  const type = String(formData.get("type") ?? "").trim() || "creative";
   const instagram = (formData.get("instagram") as string) || null;
   const website = (formData.get("website") as string) || null;
 
@@ -52,7 +52,7 @@ export async function updateCollaborator(collaboratorId: string, formData: FormD
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Falta el nombre.");
 
-  const type = (formData.get("type") as string) === "client" ? "client" : "creative";
+  const type = String(formData.get("type") ?? "").trim() || "creative";
   const instagram = (formData.get("instagram") as string) || null;
   const website = (formData.get("website") as string) || null;
 

@@ -31,6 +31,7 @@ async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselI
         code: `SC-${String(i + 1).padStart(2, "0")}`,
         title: loc(c.name, c.nameEn, locale),
         subtitle: `${c.projects.length} proyectos`,
+        coverImageUrl: c.coverImageUrl,
       };
     });
     return { items, slugs, live: true };
@@ -68,17 +69,38 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     type: string;
     instagram: string | null;
     website: string | null;
+    typeOption: { isClient: boolean } | null;
+    participants: {
+      id: string;
+      name: string | null;
+      role: string | null;
+      roleEn: string | null;
+      instagram: string | null;
+      website: string | null;
+    }[];
   }[] = [];
   try {
     collaborators = await prisma.collaborator.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, logoUrl: true, type: true, instagram: true, website: true },
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        type: true,
+        instagram: true,
+        website: true,
+        typeOption: { select: { isClient: true } },
+        participants: {
+          orderBy: { order: "asc" },
+          select: { id: true, name: true, role: true, roleEn: true, instagram: true, website: true },
+        },
+      },
     });
   } catch {
     // sin DB disponible
   }
-  const clients = collaborators.filter((c) => c.type === "client");
-  const creatives = collaborators.filter((c) => c.type === "creative");
+  const clients = collaborators.filter((c) => c.typeOption?.isClient ?? c.type === "client");
+  const creatives = collaborators.filter((c) => !(c.typeOption?.isClient ?? c.type === "client"));
 
   return (
     <div className="mx-auto max-w-6xl px-6">
@@ -155,7 +177,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               </p>
               <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
                 {clients.map((c) => (
-                  <CollaboratorCard key={c.id} collaborator={c} />
+                  <CollaboratorCard key={c.id} collaborator={c} locale={locale} />
                 ))}
               </div>
             </div>
@@ -168,7 +190,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               </p>
               <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
                 {creatives.map((c) => (
-                  <CollaboratorCard key={c.id} collaborator={c} />
+                  <CollaboratorCard key={c.id} collaborator={c} locale={locale} />
                 ))}
               </div>
             </div>

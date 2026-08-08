@@ -28,7 +28,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
       },
     }),
     prisma.category.findMany({ orderBy: { order: "asc" } }),
-    prisma.collaborator.findMany({ orderBy: { name: "asc" } }),
+    prisma.collaborator.findMany({ orderBy: { name: "asc" }, include: { typeOption: true } }),
   ]);
 
   if (!project) notFound();
@@ -155,7 +155,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
             <option value="">Ninguna — trabajo solo en este proyecto</option>
             {collaborators.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.type === "client" ? "cliente" : "colaborador creativo"})
+                {c.name} ({(c.typeOption?.name ?? c.type).toLowerCase()})
               </option>
             ))}
           </select>
@@ -231,6 +231,15 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
                       ))}
                     </select>
                   )}
+                  <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-muted)]">
+                    <input
+                      type="radio"
+                      name="thumbnailMediaId"
+                      value={m.id}
+                      defaultChecked={m.isThumbnail}
+                    />
+                    Portada
+                  </label>
                 </div>
               ))}
             </div>

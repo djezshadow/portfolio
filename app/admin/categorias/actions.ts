@@ -3,6 +3,8 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { put, del } from "@vercel/blob";
+import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 
@@ -112,4 +114,50 @@ export async function deleteCategory(categoryId: string, _formData: FormData) {
   revalidatePath("/admin/categorias");
   revalidatePath("/", "layout");
   redirect("/admin/categorias");
+}
+
+export async function updateCategoryCover(categoryId: string, formData: FormData) {
+  await assertAdmin();
+
+  const removeImage = formData.get("removeImage") === "on";
+  const image = formData.get("image") as File | null;
+
+  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  if (!category) throw new Error("Categoría no encontrada.");
+
+  let coverImageUrl = category.coverImageUrl;
+
+  if (removeImage && coverImageUrl) {
+    try {
+      await del(coverImageUrl);
+    } catch {
+      // ignorar si ya no existe
+    }
+    coverImageUrl = null;
+  }
+
+  if (image && image.size > 0) {
+    if (category.coverImageUrl) {
+      try {
+        await del(category.coverImageUrl);
+      } catch {
+        // ignorar si ya no existe
+      }
+    }
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const webp = await sharp(buffer)
+      .resize({ width: 1200, withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toBuffer();
+    const blob = await put(`settings/category-cover-${categoryId}-${Date.now()}.webp`, webp, {
+      access: "public",
+      contentType: "image/webp",
+    });
+    coverImageUrl = blob.url;
+  }
+
+  await prisma.category.update({ where: { id: categoryId }, data: { coverImageUrl } });
+
+  revalidatePath(`/admin/categorias/${categoryId}`);
+  revalidatePath("/", "layout");
 }

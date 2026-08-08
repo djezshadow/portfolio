@@ -4,23 +4,38 @@ import { useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 
+type Participant = {
+  id: string;
+  name: string | null;
+  role: string | null;
+  roleEn: string | null;
+  instagram: string | null;
+  website: string | null;
+};
+
 type Collaborator = {
   id: string;
   name: string;
   logoUrl: string | null;
   instagram: string | null;
   website: string | null;
+  participants?: Participant[];
 };
 
 export function CollaboratorCard({
   collaborator,
   size = "md",
+  locale = "es",
 }: {
   collaborator: Collaborator;
   size?: "sm" | "md";
+  locale?: "es" | "en";
 }) {
   const [open, setOpen] = useState(false);
-  const hasLinks = Boolean(collaborator.instagram || collaborator.website);
+  const participants = collaborator.participants ?? [];
+  const hasLinks = Boolean(
+    collaborator.instagram || collaborator.website || participants.length > 0
+  );
   const dim = size === "sm" ? "h-14 w-14" : "h-24 w-24 sm:h-28 sm:w-28";
 
   return (
@@ -95,6 +110,49 @@ export function CollaboratorCard({
                   </a>
                 )}
               </div>
+
+              {participants.length > 0 && (
+                <div className="w-full space-y-2 border-t border-[var(--glass-border)] pt-4">
+                  <p className="font-mono text-[10px] uppercase text-[var(--ink-muted)]">
+                    {locale === "en" ? "Team" : "Participantes"}
+                  </p>
+                  {participants.map((p) => {
+                    const role = locale === "en" ? p.roleEn || p.role : p.role;
+                    return (
+                      <div key={p.id} className="flex items-center justify-between gap-2 text-left">
+                        <div>
+                          {p.name && <p className="font-mono text-xs">{p.name}</p>}
+                          {role && <p className="font-mono text-[10px] text-[var(--ink-muted)]">{role}</p>}
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          {p.website && (
+                            <a
+                              href={p.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-cursor="magnetic"
+                              className="font-mono text-[10px] text-accent underline"
+                            >
+                              Web
+                            </a>
+                          )}
+                          {p.instagram && (
+                            <a
+                              href={p.instagram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-cursor="magnetic"
+                              className="font-mono text-[10px] text-accent underline"
+                            >
+                              IG
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               <button
                 onClick={() => setOpen(false)}

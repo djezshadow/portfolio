@@ -11,6 +11,9 @@ export type CarouselItem = {
   subtitle?: string;
   code: string; // timecode/etiqueta tipo SC-01
   href?: string;
+  /// Portada opcional (item #17) — si está, se muestra de fondo en el
+  /// preset "cards" y como imagen en el círculo del preset "stack".
+  coverImageUrl?: string | null;
 };
 
 export type CarouselPreset = "cards" | "minimal" | "stack";
@@ -107,10 +110,15 @@ export function Carousel({ items, minItems = 3, maxItems = 10, preset = "cards" 
           >
             <ItemWrapper href={item.href} className="flex flex-col items-center gap-2 text-center">
               <span
-                className="glass flex h-20 w-20 items-center justify-center rounded-full font-display text-lg"
+                className="glass relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full font-display text-lg"
                 style={{ zIndex: visible.length - i }}
               >
-                {item.code.replace("SC-", "")}
+                {item.coverImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  item.code.replace("SC-", "")
+                )}
               </span>
               <span className="max-w-[90px] font-mono text-[10px] leading-tight">{item.title}</span>
             </ItemWrapper>
@@ -137,12 +145,29 @@ export function Carousel({ items, minItems = 3, maxItems = 10, preset = "cards" 
           >
             <ItemWrapper
               href={item.href}
-              className="glass group relative block min-w-[280px] snap-start overflow-hidden rounded-2xl p-6"
+              className={`glass group relative block min-w-[280px] snap-start overflow-hidden rounded-2xl p-6 ${item.coverImageUrl ? "flex min-h-[220px] flex-col justify-end" : ""}`}
             >
-              <span className="font-mono text-[11px] text-accent">{item.code}</span>
-              <h3 className="mt-2 font-display text-xl">{item.title}</h3>
+              {item.coverImageUrl && (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.coverImageUrl}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                </>
+              )}
+              <span className={`relative font-mono text-[11px] ${item.coverImageUrl ? "text-white/80" : "text-accent"}`}>
+                {item.code}
+              </span>
+              <h3 className={`relative mt-2 font-display text-xl ${item.coverImageUrl ? "text-white" : ""}`}>
+                {item.title}
+              </h3>
               {item.subtitle && (
-                <p className="mt-1 text-sm text-[var(--ink-muted)]">{item.subtitle}</p>
+                <p className={`relative mt-1 text-sm ${item.coverImageUrl ? "text-white/80" : "text-[var(--ink-muted)]"}`}>
+                  {item.subtitle}
+                </p>
               )}
             </ItemWrapper>
           </motion.div>

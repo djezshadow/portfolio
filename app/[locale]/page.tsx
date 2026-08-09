@@ -118,23 +118,26 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <div className="mx-auto max-w-6xl px-6">
+      {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
+        <Reveal>
+          {/* Logo incrustado (sin caja): esquina superior izquierda de la
+              página, debajo de la barra de timecode — NO adentro del
+              bloque centrado del hero. Solo en desktop; en mobile ya
+              aparece fijo arriba vía FloatingNav. */}
+          <div className="hidden pt-14 sm:block">
+            <SiteLogo
+              locale={locale}
+              noirLogoUrl={embeddedLogo.noirUrl}
+              neonLogoUrl={embeddedLogo.neonUrl}
+              size={embeddedLogo.size}
+              plain
+            />
+          </div>
+        </Reveal>
+      )}
+
       {/* HERO */}
       <section className="flex min-h-[70vh] flex-col justify-center gap-6">
-        {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
-          <Reveal>
-            {/* Logo incrustado en la portada (sin caja) — solo en desktop,
-                en mobile ya aparece fijo arriba vía FloatingNav. */}
-            <div className="hidden sm:block">
-              <SiteLogo
-                locale={locale}
-                noirLogoUrl={embeddedLogo.noirUrl}
-                neonLogoUrl={embeddedLogo.neonUrl}
-                size={embeddedLogo.size}
-                plain
-              />
-            </div>
-          </Reveal>
-        )}
         <Reveal>
           <span className="font-mono text-xs text-accent">{dict.hero.reel} — 00:00:00:00</span>
         </Reveal>

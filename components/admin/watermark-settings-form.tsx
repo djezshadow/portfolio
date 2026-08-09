@@ -98,13 +98,13 @@ export function WatermarkSettingsForm({
 
       <div>
         <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
-          {currentLogoUrl ? "Reemplazar logo" : "Subir logo (PNG transparente)"}
+          {currentLogoUrl ? "Reemplazar logo" : "Subir logo (PNG o WebP, con fondo transparente)"}
         </label>
         <input
           ref={fileInputRef}
           name="logo"
           type="file"
-          accept="image/png"
+          accept="image/png,image/webp"
           onChange={onFileChange}
           className="w-full font-mono text-sm"
         />

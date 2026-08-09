@@ -98,7 +98,7 @@ export function CategoryView({
                     ) : coverMedia?.url ? (
                       <div className="relative aspect-video w-full">
                         <Image
-                          src={`/api/media/${coverMedia.id}?w=800`}
+                          src={coverMedia.bakedThumbUrl || `/api/media/${coverMedia.id}?w=800`}
                           alt={title}
                           fill
                           className="object-cover"
@@ -153,6 +153,7 @@ export function CategoryView({
             groups: openProject.mediaGroups.map((g) => ({
               id: g.id,
               name: loc(g.name, g.nameEn, locale),
+              coverImageUrl: g.coverImageUrl,
             })),
           }}
           onClose={() => setOpenProjectId(null)}

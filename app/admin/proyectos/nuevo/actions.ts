@@ -8,6 +8,8 @@ import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { parseVideoUrl } from "@/lib/video-url";
+import { bakeMediaWatermark } from "@/lib/watermark-bake";
+import { getSiteSettings } from "@/lib/site-settings";
 
 async function assertAdmin() {
   const store = await cookies();
@@ -78,6 +80,7 @@ export async function createProject(formData: FormData) {
   // que este pedido es liviano sin importar cuántas fotos o cuánto pesen.
   const uploadedUrls = formData.getAll("uploadedImageUrls") as string[];
   let order = 0;
+  const watermarkSettings = await getSiteSettings();
 
   for (const tempUrl of uploadedUrls) {
     if (!tempUrl) continue;
@@ -97,7 +100,7 @@ export async function createProject(formData: FormData) {
         contentType: "image/webp",
       });
 
-      await prisma.media.create({
+      const created = await prisma.media.create({
         data: {
           projectId: project.id,
           type: "image",
@@ -107,6 +110,16 @@ export async function createProject(formData: FormData) {
           isThumbnail: order === 0,
         },
       });
+
+      // Horneamos ya mismo la versión pública (con watermark si corresponde)
+      // para que se sirva rápido desde el primer minuto — no depende de que
+      // más adelante alguien apriete "Aplicar" en Configuración.
+      try {
+        await bakeMediaWatermark(created, watermarkSettings);
+      } catch (err) {
+        console.error(`No se pudo hornear el watermark de ${created.id} al subir:`, err);
+        // no cortamos la subida por esto — /api/media/[id] sirve de respaldo
+      }
 
       // Borramos el original temporal, ya no lo necesitamos (ya tenemos
       // la copia webp base en `blob.url`).

@@ -1,6 +1,142 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
-## Watermark personalizado + contacto (última tanda)
+## Fase 8 — watermark horneado, subcategorías como cuadro, portadas propias,
+## mover contenido entre proyectos, navbar rediseñada, y el mail de contacto
+## roto
+
+**El bug crítico: el mail de contacto nunca funcionó.** El flujo pedía
+confirmación por mail al VISITANTE (no a vos) antes de mandarte el mensaje —
+eso requiere un dominio propio verificado en Resend, así que en modo
+sandbox (sin dominio verificado) siempre fallaba con "No se pudo enviar el
+mail". Se simplificó: ahora manda directo a tu casilla (`CONTACT_EMAIL_TO` /
+lo que pongas en Configuración), con "responder a" apuntando a quien
+escribió. Se borró el paso de confirmación (`/contacto/confirmar`,
+`lib/contact-token.ts`).
+
+**El bug del carrusel/hero "cambio algo y no pasa nada":** la home
+(`/[locale]/page.tsx`) era la única página pública sin
+`export const dynamic = "force-dynamic"` — Vercel podía servir una versión
+vieja en caché después de guardar cambios en Configuración. Ya se agregó,
+igual que en el resto de las páginas.
+
+**Watermark: vuelta al esquema horneado (no más al vuelo).** Cada foto
+ahora guarda:
+- `url` — el original SIN marca, se conserva siempre (por si cambiás
+  posición/opacidad y hay que rehornear).
+- `bakedThumbUrl` (800px) y `bakedFullUrl` (2000px) — versiones YA
+  procesadas con el watermark adentro, listas para servir directo desde
+  Vercel Blob sin tocar `sharp` en cada visita.
+
+Las fotos nuevas se hornean solas al subirlas. Si cambiás algo del
+watermark (posición, opacidad, logo) en Configuración, apretás
+**"Aplicar marca de agua a todas las fotos"** y reprocesa todo, borrando
+las versiones viejas y reemplazándolas — puede tardar si tenés muchas
+fotos (corre secuencial, no en paralelo, para no saturar la función de
+Vercel; en plan Hobby el timeout puede cortarlo a mitad de camino, no pasa
+nada, las que ya se procesaron quedan bien, apretás de nuevo). El logo del
+watermark ahora también acepta WebP además de PNG.
+
+**Subcategorías como "cuadro nuevo".** Si un proyecto tiene subcategorías,
+el visor público ya no entra directo a las fotos: primero muestra una
+grilla con una card por subcategoría (portada + nombre + cantidad de
+fotos), y ahí elegís cuál mirar. Cada subcategoría tiene su propia
+portada — subís una personalizada (recomendado **1600×900px**, se recorta
+a 16:9) o si no subís nada usa la primera foto de esa subcategoría.
+
+**Mover contenido entre proyectos/categorías:**
+- Mover un **proyecto** a otra categoría: ya funcionaba (el dropdown
+  "Categoría" en `/admin/proyectos/[id]`), no hizo falta nada nuevo.
+- Mover una **subcategoría completa** (con todas sus fotos) a **otro
+  proyecto**: nuevo, desde el panel de subcategorías en
+  `/admin/proyectos/[id]`.
+
+**Navbar rediseñada:** antes todo (logo, links, EN, tema) vivía en una
+sola píldora. Ahora en desktop son 3 piezas separadas — logo arriba a la
+izquierda, links al centro, EN + tema arriba a la derecha. En celular el
+logo se centra arriba, y en vez de EN+tema aparece un botón de
+hamburguesa (☰) que abre un sidebar deslizable desde la derecha (se cierra
+tocando afuera, con la cruz, o arrastrando el panel hacia la derecha con
+el dedo) con todos los links + EN + tema adentro.
+
+**Importante — schema cambió de nuevo, pero esta vez sin riesgo de
+pérdida de datos** (todo lo nuevo son columnas opcionales y tablas
+nuevas): `Media.bakedThumbUrl`, `Media.bakedFullUrl`,
+`MediaGroup.coverImageUrl`, `Category.coverImageUrl`. Si ya corriste la
+migración de `Collaborator.type` de la fase anterior, esta vez alcanza
+con `npx prisma db push` directo, sin pasos extra.
+
+## Fase 7 — lista de pedidos completa + rendimiento (última tanda)
+
+Todo lo que se agregó respondiendo a la lista de 22 pedidos, más un par de
+arreglos de rendimiento y estética que salieron probando el sitio.
+
+**Nuevo (features):**
+- **Sección "Sobre mí / About Me"** (`/admin/sobre-mi` + página pública
+  `/[locale]/sobre-mi`): se puede prender/apagar del todo, el contenido se
+  escribe en Markdown propio (`lib/markdown.ts`, sin dependencias externas —
+  soporta `##` subtítulos, listas con viñetas y numeradas, negrita, links) con
+  preview en vivo, y admite CSS personalizado (pensado para cuando esto se
+  venda como plantilla a otros clientes).
+- **Subcategorías dentro de proyectos** (modelo `MediaGroup`): en
+  `/admin/proyectos/[id]` se crean/renombran/borran, y cada foto se asigna a
+  una desde un selector. En el lightbox público se ven agrupadas con su
+  nombre como separador en la tira de miniaturas.
+- **Portadas** (`Category.coverImageUrl` + `Media.isThumbnail`, este último ya
+  existía en el schema pero no se usaba en ningún lado): las categorías
+  tienen portada subible desde `/admin/categorias/[id]` (se ve en el carrusel
+  de la home), y cada proyecto elige cuál de sus fotos es la portada con un
+  radio "Portada" en `/admin/proyectos/[id]` — antes siempre se forzaba la
+  primera foto subida.
+- **Tipos de relación personalizables** (`/admin/tipos-colaborador`, modelo
+  `CollaboratorTypeOption`): reemplaza el enum fijo `client`/`creative`. Cada
+  tipo tiene un flag "Es Cliente" que decide si cae en la sección Clientes o
+  Colaboradores de la vista pública. No se puede borrar un tipo en uso.
+- **Participantes dentro de colaboradores** (modelo `Participant`): nombre,
+  rol ES/EN, Instagram y website, todo opcional. Se cargan desde
+  `/admin/colaboradores/[id]` y se muestran en el popup público del
+  colaborador, debajo de sus propios links.
+- **Barras de progreso al subir fotos** (`media-dropzone.tsx`): porcentaje
+  real por foto vía `onUploadProgress` de Vercel Blob, más una barra global
+  del promedio.
+- **Estados de carga en botones del admin** (`components/admin/submit-button.tsx`,
+  usa `useFormStatus`): spinner + "Guardando…" en los formularios principales
+  (proyecto, colaborador, categoría, logos, watermark, contacto, hero, About Me).
+
+**Rendimiento (fotos lentas en producción):**
+- El visor grande (lightbox) pedía la imagen a resolución ORIGINAL sin tope —
+  ahora tiene un techo de 2000px (`LIGHTBOX_WIDTH` en `project-lightbox.tsx`).
+- Al abrir una foto se precargaba el proyecto ENTERO a resolución completa de
+  una — ahora solo precarga la foto siguiente y la anterior.
+- El logo de watermark personalizado se volvía a descargar y reprocesar en
+  cada foto servida — se cachea en memoria (`lib/watermark.ts`).
+- La configuración del sitio (para saber si aplicar watermark) se consultaba
+  en la base de datos en cada foto — se cachea 60s (`app/api/media/[id]/route.ts`).
+- **Progreso de carga también en el sitio público**: `components/progressive-image.tsx`
+  muestra el % real de descarga en el lightbox (no un spinner genérico) —
+  ojo, el componente que lo use no debe disparar OTRO pedido a la misma URL
+  al mismo tiempo (el navegador los une y el progreso deja de reportarse de a poco).
+
+**Fixes puntuales:**
+- Cursor "magnético" (`custom-cursor.tsx`) — ya estaba sin usar en el código,
+  se borró el archivo.
+- Popup de colaborador (Instagram/Website) muy transparente contra el fondo —
+  pasó de `.glass` a `.nav-surface` (mismo fix que ya se había hecho en el navbar).
+- Nombre de colaborador muy largo desacomodaba la grilla — cada ítem tiene
+  ancho fijo ahora, el nombre se acomoda en hasta 2 líneas adentro.
+- Tipografía de "Clientes"/"Colaboradores" en `/colaboradores` (página
+  dedicada) se veía igual de grande y pesada que el título — bajada a
+  etiqueta chica en mono con líneas a los costados, a propósito distinta de
+  cómo se ve la misma sección en la home.
+
+**Importante — cambió el schema.** Además de `npx prisma db push`, si tenías
+colaboradores cargados hacé el paso extra que evita perder el tipo
+(Cliente/Colaborador) de cada uno: correr
+`npx prisma db execute --file ./prisma/fix-collaborator-type.sql --schema ./prisma/schema.prisma`
+ANTES del `db push` (convierte la columna de enum a texto sin perder los
+valores existentes). El archivo `.sql` se armó puntualmente para esa
+migración — si ya lo corriste una vez, no hace falta de nuevo.
+
+## Watermark personalizado + contacto
 
 - **Logo de watermark propio** (`/admin/configuracion`): subís un PNG con transparencia
   y reemplaza al ícono de diafragma en todas las fotos nuevas que subas con el

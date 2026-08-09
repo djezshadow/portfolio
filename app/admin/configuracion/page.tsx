@@ -8,6 +8,12 @@ import { OptimizePhotosButton } from "@/components/admin/optimize-photos-button"
 import { SubmitButton } from "@/components/admin/submit-button";
 
 export const dynamic = "force-dynamic";
+// Le da más tiempo a "Aplicar marca de agua a todas las fotos" (procesa
+// todas las imágenes una por una). Solo tiene efecto real en plan Pro de
+// Vercel o superior — en Hobby el tope sigue siendo ~10s por más que esto
+// pida más, así que con muchas fotos puede cortarse a mitad de camino
+// (no pasa nada, las que ya se procesaron quedan bien; apretás de nuevo).
+export const maxDuration = 300;
 
 export default async function ConfiguracionPage() {
   let settings = {

@@ -7,6 +7,12 @@ import { getDictionary, type Locale } from "@/lib/i18n/dictionaries";
 import { loc, locOrNull } from "@/lib/i18n/content";
 import { getSiteSettings } from "@/lib/site-settings";
 
+// Sin esto, Vercel puede servir una versión en caché vieja de la home
+// después de guardar cambios en Configuración (hero, carrusel, portadas de
+// categoría) — es la causa de "cambio el estilo del carrusel y no pasa
+// nada". El resto de las páginas que dependen de SiteSettings ya la tenían.
+export const dynamic = "force-dynamic";
+
 const fallback: CarouselItem[] = [
   { id: "1", code: "SC-01", title: "Cortometrajes", subtitle: "6 proyectos" },
   { id: "2", code: "SC-02", title: "Comerciales", subtitle: "12 proyectos" },

@@ -58,7 +58,7 @@ export function ContactForm({ dict, locale }: { dict: Dict; locale: string }) {
         </div>
 
         {state?.error && <p className="text-sm text-[var(--accent-contrast)]">{state.error}</p>}
-        {state?.ok && <p className="text-sm text-accent">{dict.contact.confirmSent}</p>}
+        {state?.ok && <p className="text-sm text-accent">{dict.contact.success}</p>}
 
         <button
           type="submit"

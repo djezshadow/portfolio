@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup } from "./actions";
+import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [project, categories, collaborators] = await Promise.all([
+  const [project, categories, collaborators, otherProjectsRaw] = await Promise.all([
     prisma.project.findUnique({
       where: { id },
       include: {
@@ -30,6 +30,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
     }),
     prisma.category.findMany({ orderBy: { order: "asc" } }),
     prisma.collaborator.findMany({ orderBy: { name: "asc" }, include: { typeOption: true } }),
+    prisma.project.findMany({ where: { id: { not: id } }, select: { id: true, title: true }, orderBy: { title: "asc" } }),
   ]);
 
   if (!project) notFound();
@@ -55,9 +56,12 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
         <MediaGroupsPanel
           projectId={project.id}
           groups={project.mediaGroups}
+          otherProjects={otherProjectsRaw}
           createAction={createMediaGroup}
           renameAction={renameMediaGroup}
           deleteAction={deleteMediaGroup}
+          coverAction={updateMediaGroupCover}
+          moveAction={moveMediaGroupToProject}
         />
       </div>
 

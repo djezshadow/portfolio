@@ -184,10 +184,18 @@ model Media {
   projectId     String
   project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   type          MediaType
-  url           String // imagen: ruta al archivo base SIN watermark (el watermark se aplica al vuelo)
+  url           String // imagen: archivo ORIGINAL, sin watermark — se conserva siempre para poder re-hornear si cambiás la marca de agua
   /// Si es false, esta foto puntual nunca lleva watermark aunque esté
   /// activado globalmente (se elige al subirla).
   watermarkEnabled Boolean     @default(true)
+  /// Versión ya HORNEADA (watermark aplicado si corresponde, o solo
+  /// redimensionada si no) lista para servir directo desde el Blob, sin
+  /// procesar nada en cada visita. Se genera al subir la foto y se
+  /// regenera con "Aplicar marca de agua a todas las fotos". Mientras es
+  /// null (foto recién subida antes de tener esto, o justo en medio de un
+  /// reprocesado) se sirve al vuelo por /api/media/[id] como respaldo.
+  bakedThumbUrl String? // ~800px, para grillas/cards
+  bakedFullUrl  String? // ~2000px, para el visor grande
   videoProvider VideoProvider?
   videoId       String? // id de YouTube/Vimeo
   order         Int            @default(0)
@@ -199,15 +207,18 @@ model Media {
 }
 
 /// Subcategoría dentro de un proyecto (ej: "Making of", "Fotos finales",
-/// "Marzo 2026"). El admin las crea/borra libremente por proyecto.
+/// "Marzo 2026"). El admin las crea/borra libremente por proyecto, y cada
+/// una puede tener su propia portada (sube una propia o usa una de las
+/// fotos que ya tiene adentro).
 model MediaGroup {
-  id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name      String
-  nameEn    String?
-  order     Int      @default(0)
-  media     Media[]
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  nameEn         String?
+  order          Int      @default(0)
+  coverImageUrl  String?
+  media          Media[]
 }
 
 /// Fila única de configuración global del sitio.

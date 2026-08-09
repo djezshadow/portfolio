@@ -8,6 +8,8 @@ import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { parseVideoUrl } from "@/lib/video-url";
+import { bakeMediaWatermark } from "@/lib/watermark-bake";
+import { getSiteSettings } from "@/lib/site-settings";
 
 async function assertAdmin() {
   const store = await cookies();
@@ -108,14 +110,15 @@ export async function updateProject(projectId: string, formData: FormData) {
     },
   });
 
-  // Nueva media agregada en esta edición (misma lógica que al crear) — el
-  // watermark ya no se hornea acá, se aplica al vuelo en
-  // app/api/media/[id]/route.ts según la config global.
+  // Nueva media agregada en esta edición: se sube el original y se hornea
+  // la versión pública (con watermark si corresponde) al toque — no
+  // depende de apretar "Aplicar" en Configuración después.
   const watermarkEnabled = formData.get("watermarkEnabled") === "on";
 
   const existingCount = await prisma.media.count({ where: { projectId } });
   const uploadedUrls = formData.getAll("uploadedImageUrls") as string[];
   let order = existingCount;
+  const watermarkSettings = await getSiteSettings();
 
   for (const tempUrl of uploadedUrls) {
     if (!tempUrl) continue;
@@ -133,9 +136,15 @@ export async function updateProject(projectId: string, formData: FormData) {
         contentType: "image/webp",
       });
 
-      await prisma.media.create({
+      const created = await prisma.media.create({
         data: { projectId, type: "image", url: blob.url, watermarkEnabled, order, isThumbnail: order === 0 },
       });
+
+      try {
+        await bakeMediaWatermark(created, watermarkSettings);
+      } catch (err) {
+        console.error(`No se pudo hornear el watermark de ${created.id} al subir:`, err);
+      }
 
       try {
         await del(tempUrl);
@@ -213,8 +222,88 @@ export async function deleteMediaGroup(groupId: string, _formData: FormData) {
   // La media que estaba en este grupo no se borra: onDelete: SetNull la
   // deja sin subcategoría (queda en "Sin subcategoría").
   const group = await prisma.mediaGroup.delete({ where: { id: groupId } });
+  if (group.coverImageUrl) {
+    try {
+      await del(group.coverImageUrl);
+    } catch {
+      // ignorar si ya no existe
+    }
+  }
 
   revalidatePath(`/admin/proyectos/${group.projectId}`);
+}
+
+export async function updateMediaGroupCover(groupId: string, formData: FormData) {
+  await assertAdmin();
+
+  const removeImage = formData.get("removeImage") === "on";
+  const image = formData.get("image") as File | null;
+
+  const group = await prisma.mediaGroup.findUnique({ where: { id: groupId } });
+  if (!group) throw new Error("Subcategoría no encontrada.");
+
+  let coverImageUrl = group.coverImageUrl;
+
+  if (removeImage && coverImageUrl) {
+    try {
+      await del(coverImageUrl);
+    } catch {
+      // ignorar
+    }
+    coverImageUrl = null;
+  }
+
+  if (image && image.size > 0) {
+    if (group.coverImageUrl) {
+      try {
+        await del(group.coverImageUrl);
+      } catch {
+        // ignorar
+      }
+    }
+    const buffer = Buffer.from(await image.arrayBuffer());
+    // 1600x900 (16:9) — mismo formato que las portadas de proyecto/categoría,
+    // así se ve prolijo tanto en la grilla de subcategorías como en el
+    // carrusel si algún día se usa ahí también.
+    const webp = await sharp(buffer)
+      .resize(1600, 900, { fit: "cover" })
+      .webp({ quality: 85 })
+      .toBuffer();
+    const blob = await put(`media/group-cover-${groupId}-${Date.now()}.webp`, webp, {
+      access: "public",
+      contentType: "image/webp",
+    });
+    coverImageUrl = blob.url;
+  }
+
+  await prisma.mediaGroup.update({ where: { id: groupId }, data: { coverImageUrl } });
+
+  revalidatePath(`/admin/proyectos/${group.projectId}`);
+  revalidatePath("/", "layout");
+}
+
+export async function moveMediaGroupToProject(groupId: string, formData: FormData) {
+  await assertAdmin();
+
+  const targetProjectId = String(formData.get("targetProjectId") ?? "");
+  if (!targetProjectId) throw new Error("Elegí a qué proyecto mover la subcategoría.");
+
+  const group = await prisma.mediaGroup.findUnique({ where: { id: groupId } });
+  if (!group) throw new Error("Subcategoría no encontrada.");
+  if (group.projectId === targetProjectId) return;
+
+  // Mueve la subcategoría Y toda su media al proyecto destino — si solo
+  // moviéramos el grupo, las fotos quedarían "huérfanas" (con groupId
+  // apuntando a un grupo de OTRO proyecto), así que van juntos siempre.
+  await prisma.$transaction([
+    prisma.mediaGroup.update({ where: { id: groupId }, data: { projectId: targetProjectId } }),
+    prisma.media.updateMany({ where: { groupId }, data: { projectId: targetProjectId } }),
+  ]);
+
+  revalidatePath(`/admin/proyectos/${group.projectId}`);
+  revalidatePath(`/admin/proyectos/${targetProjectId}`);
+  revalidatePath("/", "layout");
+  redirect(`/admin/proyectos/${targetProjectId}`);
 }
 
 export async function deleteProject(projectId: string, _formData: FormData) {

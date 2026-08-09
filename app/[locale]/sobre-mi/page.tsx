@@ -5,6 +5,7 @@ import { loc, locOrNull } from "@/lib/i18n/content";
 import { type Locale } from "@/lib/i18n/dictionaries";
 import { markdownToHtml } from "@/lib/markdown";
 import { Reveal } from "@/components/reveal";
+import { getProfile } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export default async function AboutMePage({
 
   const settings = await getSiteSettings();
   if (!settings.aboutEnabled) notFound();
+
+  const profile = await getProfile();
 
   const title = loc(settings.aboutTitle || (locale === "en" ? "About me" : "Sobre mí"), settings.aboutTitleEn, locale);
   const content = locOrNull(settings.aboutContent, settings.aboutContentEn, locale) ?? "";
@@ -35,6 +38,20 @@ export default async function AboutMePage({
       <Reveal>
         <h1 className="text-center font-display text-4xl sm:text-5xl">{title}</h1>
       </Reveal>
+
+      {profile.cvEnabled && (
+        <Reveal delay={0.05}>
+          <div className="mt-6 flex justify-center">
+            <a
+              href={`/api/cv-pdf?locale=${locale}`}
+              data-cursor="magnetic"
+              className="inline-block rounded-full bg-[var(--accent)] px-6 py-3 font-mono text-sm text-[var(--bg)]"
+            >
+              {locale === "en" ? "Download CV" : "Descargar CV"} ↓
+            </a>
+          </div>
+        </Reveal>
+      )}
 
       {settings.aboutImageUrl && (
         <Reveal delay={0.1}>

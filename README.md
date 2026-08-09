@@ -1,5 +1,41 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 9 — CV descargable, logo ajustable, un solo botón de optimizar,
+## fix navbar admin
+
+**CV descargable (nuevo).** Sección `/admin/cv` para cargar: nombre
+completo, especialidad, bio, foto, aptitudes, experiencia laboral (con
+fechas), y opcionalmente mail/teléfono/dirección/website — estos dos
+últimos quedan vacíos y AFUERA del CV a menos que vos mismo los
+completes. El botón "Descargar CV" (home, `/sobre-mi`, y nav si está
+habilitado) genera un PDF al vuelo (`/api/cv-pdf`, mismo motor
+`@react-pdf/renderer` que ya usás para el reel) que combina tu perfil +
+experiencia cargada a mano + **todos los proyectos del portfolio con sus
+fechas automáticamente** — no hace falta cargar las fechas de proyectos
+dos veces.
+
+**Logo ajustable con preview.** Nuevo control en Configuración: modo
+"Incrustado en la home" (sin caja, más grande, item pedido) vs "Flotante"
+(como estaba, fijo arriba-izquierda con su caja), tamaño en px separado
+para desktop y celular con preview en vivo de los dos. En celular el
+logo SIEMPRE es fijo arriba centrado y SIN caja (se le sacó el contorno
+liquid glass), independiente del modo elegido para desktop.
+
+**Un solo botón para optimizar + hornear watermark.** El botón
+"Optimizar fotos ya subidas" ahora hace las dos cosas en una pasada:
+achica el original a 2400px si venía más grande, Y vuelve a hornear la
+versión pública de cada foto con el watermark actual ya IMPRESO adentro
+(comprimida a WebP). Antes esto estaba separado en dos acciones
+(`optimizeExistingPhotos` + un botón de "aplicar watermark" que ni
+siquiera llegué a conectar a ninguna página) — se unificó en una sola.
+
+**Fix: navbar de admin pegada a la barra de timecode.** Mismo problema
+(y mismo arreglo) que ya se había hecho en la navbar pública.
+
+**Importante — schema nuevo, sin riesgo de pérdida de datos** (todo
+aditivo): modelos `Profile`, `Skill`, `WorkExperience`, y en
+`SiteSettings`: `logoFloating`, `logoSize`, `logoSizeMobile`.
+
 ## Fase 8 — watermark horneado, subcategorías como cuadro, portadas propias,
 ## mover contenido entre proyectos, navbar rediseñada, y el mail de contacto
 ## roto

@@ -253,6 +253,18 @@ model SiteSettings {
   /// "DJEZSHADOW" como wordmark.
   logoNoirUrl    String?
   logoNeonUrl    String?
+  /// Si es true, el logo vive fijo arriba a la izquierda con su cajita de
+  /// vidrio (nav flotante, como estaba). Si es false (nuevo default), se
+  /// muestra incrustado en la portada de la home, sin caja, más grande.
+  logoFloating   Boolean @default(false)
+  /// Alto del logo en píxeles (desktop) — mismo valor se usa tanto
+  /// flotante como incrustado, así el admin ajusta uno solo y no se
+  /// descoordinan.
+  logoSize       Int     @default(64)
+  /// Alto del logo en celular — independiente del de desktop porque el
+  /// logo en mobile siempre es fijo arriba centrado (sin caja), así que
+  /// necesita su propia medida.
+  logoSizeMobile Int     @default(40)
 
   /// Mail donde llegan los mensajes de contacto — configurable acá para no
   /// depender de una variable de entorno y tener que redeployar para cambiarlo.
@@ -270,4 +282,55 @@ model SiteSettings {
   aboutContentEn   String? @db.Text
   aboutImageUrl    String?
   aboutCustomCss   String? @db.Text
+}
+
+/// Perfil para el CV descargable (item nuevo: "que la gente pueda desde mi
+/// portfolio bajar mi CV actualizado"). Fila única (id fijo "default"),
+/// mismo patrón que SiteSettings. Teléfono/dirección quedan opcionales y
+/// vacíos por default a propósito — el CV nunca los muestra a menos que
+/// vos mismo los cargues acá.
+model Profile {
+  id            String            @id @default("default")
+  fullName      String?
+  specialty     String?
+  specialtyEn   String?
+  bio           String?           @db.Text
+  bioEn         String?           @db.Text
+  photoUrl      String?
+  email         String?
+  phone         String?
+  address       String?
+  website       String?
+  /// Muestra el link/botón "Descargar CV" en el sitio público.
+  cvEnabled     Boolean           @default(false)
+  skills        Skill[]
+  experiences   WorkExperience[]
+}
+
+model Skill {
+  id        String  @id @default(cuid())
+  profileId String  @default("default")
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  nameEn    String?
+  order     Int     @default(0)
+}
+
+/// Experiencia laboral cargada a mano (además de los proyectos del
+/// portfolio, que el CV toma automáticamente con sus fechas — esto es
+/// para trabajos que no necesariamente están como proyecto acá, ej. un
+/// puesto en relación de dependencia).
+model WorkExperience {
+  id            String    @id @default(cuid())
+  profileId     String    @default("default")
+  profile       Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  role          String
+  roleEn        String?
+  company       String?
+  description   String?   @db.Text
+  descriptionEn String?   @db.Text
+  dateStart     DateTime?
+  dateEnd       DateTime?
+  isOngoing     Boolean   @default(false)
+  order         Int       @default(0)
 }

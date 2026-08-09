@@ -6,13 +6,21 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteLogo } from "@/components/site-logo";
 import { MobileNav } from "@/components/mobile-nav";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getProfile } from "@/lib/profile";
 
 export async function FloatingNav({ locale }: { locale: Locale }) {
   const dict = getDictionary(locale);
   const otherLocale = locale === "es" ? "en" : "es";
   let categories: { slug: string; name: string; nameEn: string | null }[] = [];
-  let logos = { logoNoirUrl: null as string | null, logoNeonUrl: null as string | null };
+  let logos = {
+    logoNoirUrl: null as string | null,
+    logoNeonUrl: null as string | null,
+    logoFloating: false,
+    logoSize: 64,
+    logoSizeMobile: 40,
+  };
   let aboutEnabled = false;
+  let cvEnabled = false;
 
   try {
     categories = await prisma.category.findMany({
@@ -32,6 +40,13 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     // sin DB disponible, se usa el wordmark de texto
   }
 
+  try {
+    const profile = await getProfile();
+    cvEnabled = profile.cvEnabled;
+  } catch {
+    // sin DB disponible, no se muestra el link de CV
+  }
+
   const links = [
     ...categories.map((c) => ({
       href: `/${locale}/categoria/${c.slug}`,
@@ -40,17 +55,40 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     ...(aboutEnabled ? [{ href: `/${locale}/sobre-mi`, label: dict.nav.about }] : []),
     { href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" },
     { href: `/${locale}/contacto`, label: dict.nav.contact },
+    ...(cvEnabled ? [{ href: `/api/cv-pdf?locale=${locale}`, label: "CV" }] : []),
   ];
 
   return (
     <div data-floating-nav>
-      {/* Logo: arriba a la izquierda en desktop, centrado arriba en celular
-          (item de rediseño de navbar). */}
-      <div className="fixed inset-x-0 top-14 z-[100] flex justify-center sm:inset-x-auto sm:left-4 sm:justify-start">
-        <div className="nav-surface rounded-full">
-          <SiteLogo locale={locale} noirLogoUrl={logos.logoNoirUrl} neonLogoUrl={logos.logoNeonUrl} />
-        </div>
+      {/* Logo en celular: SIEMPRE fijo arriba centrado, SIN caja (pediste
+          sacarle el contorno liquid glass), con su propio tamaño. Esto no
+          depende del modo flotante/incrustado de desktop — en mobile hace
+          falta algo de marca fijo en todas las páginas igual. */}
+      <div className="fixed inset-x-0 top-14 z-[100] flex justify-center sm:hidden">
+        <SiteLogo
+          locale={locale}
+          noirLogoUrl={logos.logoNoirUrl}
+          neonLogoUrl={logos.logoNeonUrl}
+          size={logos.logoSizeMobile}
+          plain
+        />
       </div>
+
+      {/* Logo en desktop: solo si el modo "Flotante" está activo — si no,
+          va incrustado (sin caja, más grande) arriba de la home y acá no
+          se muestra nada. */}
+      {logos.logoFloating && (
+        <div className="fixed left-4 top-14 z-[100] hidden sm:flex">
+          <div className="nav-surface rounded-full">
+            <SiteLogo
+              locale={locale}
+              noirLogoUrl={logos.logoNoirUrl}
+              neonLogoUrl={logos.logoNeonUrl}
+              size={logos.logoSize}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Links centrales: solo en desktop — en celular viven en el sidebar. */}
       <nav className="fixed inset-x-0 top-14 z-[100] mx-auto hidden w-fit max-w-[calc(100%-24px)] items-center gap-1 rounded-full px-2 py-2 font-mono text-sm sm:flex nav-surface">

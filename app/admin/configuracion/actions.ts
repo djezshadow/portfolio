@@ -190,7 +190,13 @@ export async function updateLogoSettings(formData: FormData) {
 
     await prisma.siteSettings.update({
       where: { id: "default" },
-      data: { logoNoirUrl, logoNeonUrl },
+      data: {
+        logoNoirUrl,
+        logoNeonUrl,
+        logoFloating: formData.get("logoFloating") === "true",
+        logoSize: Number(formData.get("logoSize")) || 64,
+        logoSizeMobile: Number(formData.get("logoSizeMobile")) || 40,
+      },
     });
   } catch (err) {
     console.error("Error en updateLogoSettings:", err);

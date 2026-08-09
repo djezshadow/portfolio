@@ -6,6 +6,7 @@ import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-for
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
 import { OptimizePhotosButton } from "@/components/admin/optimize-photos-button";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { LogoDisplayControls } from "@/components/admin/logo-display-controls";
 
 export const dynamic = "force-dynamic";
 // Le da más tiempo a "Aplicar marca de agua a todas las fotos" (procesa
@@ -30,6 +31,9 @@ export default async function ConfiguracionPage() {
     carouselPreset: "cards",
     logoNoirUrl: null as string | null,
     logoNeonUrl: null as string | null,
+    logoFloating: false,
+    logoSize: 64,
+    logoSizeMobile: 40,
     contactEmail: null as string | null,
   };
   try {
@@ -82,6 +86,13 @@ export default async function ConfiguracionPage() {
         </div>
 
         <SubmitButton className="col-span-full">Guardar logos</SubmitButton>
+
+        <LogoDisplayControls
+          previewUrl={settings.logoNeonUrl || settings.logoNoirUrl}
+          initialFloating={settings.logoFloating}
+          initialSize={settings.logoSize}
+          initialSizeMobile={settings.logoSizeMobile}
+        />
       </form>
 
       {/* --- Título / subtítulo de la home --- */}

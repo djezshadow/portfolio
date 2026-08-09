@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { getDictionary, type Locale } from "@/lib/i18n/dictionaries";
 import { loc, locOrNull } from "@/lib/i18n/content";
 import { getSiteSettings } from "@/lib/site-settings";
+import { SiteLogo } from "@/components/site-logo";
+import { getProfile } from "@/lib/profile";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -56,13 +58,19 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let heroTitle2: string = dict.hero.title2;
   let heroSubtitle: string = dict.hero.subtitle;
   let carouselPreset: "cards" | "minimal" | "stack" = "cards";
+  let embeddedLogo: { noirUrl: string | null; neonUrl: string | null; size: number } | null = null;
+  let cvEnabled = false;
   try {
-    const settings = await getSiteSettings();
+    const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
+    cvEnabled = profile.cvEnabled;
     heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
     heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
     heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;
     if (settings.carouselPreset === "minimal" || settings.carouselPreset === "stack") {
       carouselPreset = settings.carouselPreset;
+    }
+    if (!settings.logoFloating) {
+      embeddedLogo = { noirUrl: settings.logoNoirUrl, neonUrl: settings.logoNeonUrl, size: settings.logoSize };
     }
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
@@ -112,6 +120,21 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     <div className="mx-auto max-w-6xl px-6">
       {/* HERO */}
       <section className="flex min-h-[70vh] flex-col justify-center gap-6">
+        {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
+          <Reveal>
+            {/* Logo incrustado en la portada (sin caja) — solo en desktop,
+                en mobile ya aparece fijo arriba vía FloatingNav. */}
+            <div className="hidden sm:block">
+              <SiteLogo
+                locale={locale}
+                noirLogoUrl={embeddedLogo.noirUrl}
+                neonLogoUrl={embeddedLogo.neonUrl}
+                size={embeddedLogo.size}
+                plain
+              />
+            </div>
+          </Reveal>
+        )}
         <Reveal>
           <span className="font-mono text-xs text-accent">{dict.hero.reel} — 00:00:00:00</span>
         </Reveal>
@@ -161,13 +184,24 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <Carousel items={items} preset={carouselPreset} />
         )}
 
-        <a
-          href="/api/reel-pdf"
-          data-cursor="magnetic"
-          className="glass mt-8 inline-block rounded-full px-5 py-2 font-mono text-xs"
-        >
-          {dict.nav.downloadReel} ↓
-        </a>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <a
+            href="/api/reel-pdf"
+            data-cursor="magnetic"
+            className="glass inline-block rounded-full px-5 py-2 font-mono text-xs"
+          >
+            {dict.nav.downloadReel} ↓
+          </a>
+          {cvEnabled && (
+            <a
+              href={`/api/cv-pdf?locale=${locale}`}
+              data-cursor="magnetic"
+              className="inline-block rounded-full bg-[var(--accent)] px-5 py-2 font-mono text-xs text-[var(--bg)]"
+            >
+              {locale === "en" ? "Download CV" : "Descargar CV"} ↓
+            </a>
+          )}
+        </div>
       </section>
 
       {collaborators.length > 0 && (

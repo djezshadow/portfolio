@@ -10,7 +10,7 @@ export function AdminNav() {
   if (pathname === "/admin/login") return null;
 
   return (
-    <nav className="glass sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <nav className="glass sticky top-10 z-40 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap font-mono text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link href="/admin" data-cursor="magnetic">Admin</Link>
         <Link href="/admin/categorias" data-cursor="magnetic">Categorías</Link>
@@ -18,6 +18,7 @@ export function AdminNav() {
         <Link href="/admin/tipos-colaborador" data-cursor="magnetic">Tipos de relación</Link>
         <Link href="/admin/configuracion" data-cursor="magnetic">Configuración</Link>
         <Link href="/admin/sobre-mi" data-cursor="magnetic">Sobre mí</Link>
+        <Link href="/admin/cv" data-cursor="magnetic">CV</Link>
         <Link href="/admin/proyectos/nuevo" data-cursor="magnetic" className="text-accent">
           + Nuevo
         </Link>

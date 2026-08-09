@@ -46,14 +46,14 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     <div data-floating-nav>
       {/* Logo: arriba a la izquierda en desktop, centrado arriba en celular
           (item de rediseño de navbar). */}
-      <div className="fixed inset-x-0 top-4 z-[100] flex justify-center sm:inset-x-auto sm:left-4 sm:justify-start">
+      <div className="fixed inset-x-0 top-14 z-[100] flex justify-center sm:inset-x-auto sm:left-4 sm:justify-start">
         <div className="nav-surface rounded-full">
           <SiteLogo locale={locale} noirLogoUrl={logos.logoNoirUrl} neonLogoUrl={logos.logoNeonUrl} />
         </div>
       </div>
 
       {/* Links centrales: solo en desktop — en celular viven en el sidebar. */}
-      <nav className="fixed inset-x-0 top-16 z-[100] mx-auto hidden w-fit max-w-[calc(100%-24px)] items-center gap-1 rounded-full px-2 py-2 font-mono text-sm sm:flex sm:top-4 nav-surface">
+      <nav className="fixed inset-x-0 top-14 z-[100] mx-auto hidden w-fit max-w-[calc(100%-24px)] items-center gap-1 rounded-full px-2 py-2 font-mono text-sm sm:flex nav-surface">
         <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {links.map((link) => (
             <Link
@@ -70,7 +70,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
 
       {/* EN/ES + tema: arriba a la derecha en desktop. En celular se
           reemplaza por el botón de hamburguesa que abre el sidebar. */}
-      <div className="fixed right-4 top-4 z-[100] hidden items-center gap-2 sm:flex">
+      <div className="fixed right-4 top-14 z-[100] hidden items-center gap-2 sm:flex">
         <Link
           href={`/${otherLocale}`}
           data-cursor="magnetic"
@@ -81,7 +81,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
         <ThemeToggle />
       </div>
 
-      <div className="fixed right-4 top-4 z-[100] sm:hidden">
+      <div className="fixed right-4 top-14 z-[100] sm:hidden">
         <MobileNav
           links={links}
           otherLocaleHref={`/${otherLocale}`}

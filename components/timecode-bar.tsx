@@ -47,10 +47,6 @@ export function TimecodeBar() {
           style={{ left: playheadX, background: "var(--accent)" }}
         />
       </div>
-
-      <span className="hidden font-mono text-[11px] text-[var(--ink-muted)] sm:inline">
-        DJEZSHADOW
-      </span>
     </div>
   );
 }

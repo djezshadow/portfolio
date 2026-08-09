@@ -1,4 +1,4 @@
-# DJEZSHADOW — Portfolio (completo + watermark personalizado).
+# DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
 ## Fase 8 — watermark horneado, subcategorías como cuadro, portadas propias,
 ## mover contenido entre proyectos, navbar rediseñada, y el mail de contacto

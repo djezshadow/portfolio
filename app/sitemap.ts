@@ -15,6 +15,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const locale of locales) {
     entries.push({ url: `${BASE_URL}/${locale}`, lastModified: new Date(), priority: 1 });
     entries.push({ url: `${BASE_URL}/${locale}/contacto`, lastModified: new Date(), priority: 0.5 });
+    entries.push({ url: `${BASE_URL}/${locale}/colaboradores`, lastModified: new Date(), priority: 0.6 });
+  }
+
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: "default" } });
+    if (settings?.aboutEnabled) {
+      for (const locale of locales) {
+        entries.push({ url: `${BASE_URL}/${locale}/sobre-mi`, lastModified: new Date(), priority: 0.5 });
+      }
+    }
+  } catch {
+    // sin DB disponible, se omite esta entrada nomás
   }
 
   try {

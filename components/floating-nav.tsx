@@ -60,34 +60,33 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
 
   return (
     <div data-floating-nav>
-      {/* Logo en celular: SIEMPRE fijo arriba centrado, SIN caja (pediste
-          sacarle el contorno liquid glass), con su propio tamaño. Esto no
-          depende del modo flotante/incrustado de desktop — en mobile hace
-          falta algo de marca fijo en todas las páginas igual. */}
-      <div className="fixed inset-x-0 top-14 z-[100] flex justify-center sm:hidden">
-        <SiteLogo
-          locale={locale}
-          noirLogoUrl={logos.logoNoirUrl}
-          neonLogoUrl={logos.logoNeonUrl}
-          size={logos.logoSizeMobile}
-          plain
-        />
-      </div>
-
-      {/* Logo en desktop: solo si el modo "Flotante" está activo — si no,
-          va incrustado (sin caja, más grande) arriba de la home y acá no
-          se muestra nada. */}
+      {/* Logo: solo si el modo "Fijo" está activo (default). Sin caja,
+          en las dos plataformas — mobile centrado arriba, desktop en la
+          esquina superior izquierda. Si está en modo "Se desliza",
+          no se muestra acá: aparece incrustado arriba de la portada de
+          la home nomás (ver app/[locale]/page.tsx), y en el resto de las
+          páginas directamente no hay logo fijo. */}
       {logos.logoFloating && (
-        <div className="fixed left-4 top-14 z-[100] hidden sm:flex">
-          <div className="nav-surface rounded-full">
+        <>
+          <div className="fixed inset-x-0 top-14 z-[100] flex justify-center sm:hidden">
+            <SiteLogo
+              locale={locale}
+              noirLogoUrl={logos.logoNoirUrl}
+              neonLogoUrl={logos.logoNeonUrl}
+              size={logos.logoSizeMobile}
+              plain
+            />
+          </div>
+          <div className="fixed left-4 top-14 z-[100] hidden sm:flex">
             <SiteLogo
               locale={locale}
               noirLogoUrl={logos.logoNoirUrl}
               neonLogoUrl={logos.logoNeonUrl}
               size={logos.logoSize}
+              plain
             />
           </div>
-        </div>
+        </>
       )}
 
       {/* Links centrales: solo en desktop — en celular viven en el sidebar. */}

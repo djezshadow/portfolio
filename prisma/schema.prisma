@@ -253,10 +253,14 @@ model SiteSettings {
   /// "DJEZSHADOW" como wordmark.
   logoNoirUrl    String?
   logoNeonUrl    String?
-  /// Si es true, el logo vive fijo arriba a la izquierda con su cajita de
-  /// vidrio (nav flotante, como estaba). Si es false (nuevo default), se
-  /// muestra incrustado en la portada de la home, sin caja, más grande.
-  logoFloating   Boolean @default(false)
+  /// Si es true (default), el logo queda FIJO arriba mientras scrolleás
+  /// (mobile: centrado arriba; desktop: esquina superior izquierda),
+  /// nunca con caja. Si es false, el logo va incrustado arriba de la
+  /// portada de la home y se desliza con la página como el resto del
+  /// contenido — pensado por si en algún momento se prefiere eso, aunque
+  /// el default es que quede fijo (en mobile importa que no se pierda al
+  /// scrollear).
+  logoFloating   Boolean @default(true)
   /// Alto del logo en píxeles (desktop) — mismo valor se usa tanto
   /// flotante como incrustado, así el admin ajusta uno solo y no se
   /// descoordinan.

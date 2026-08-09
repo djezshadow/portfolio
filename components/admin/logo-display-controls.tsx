@@ -20,26 +20,11 @@ export function LogoDisplayControls({
   return (
     <div className="col-span-full space-y-4 border-t border-[var(--glass-border)] pt-5">
       <p className="font-mono text-[11px] text-[var(--ink-muted)]">
-        Dónde y qué tan grande se ve el logo — se aplica tanto en Noir como en Neón.
+        Dónde y qué tan grande se ve el logo — se aplica tanto en Noir como en Neón. Nunca lleva
+        caja/contorno, en ningún modo.
       </p>
 
       <div className="flex flex-wrap gap-3">
-        <label className="flex flex-1 min-w-[10rem] cursor-pointer items-start gap-2 rounded-xl border border-[var(--glass-border)] p-3">
-          <input
-            type="radio"
-            name="logoFloating"
-            value="false"
-            checked={!floating}
-            onChange={() => setFloating(false)}
-            className="mt-1"
-          />
-          <span>
-            <span className="block font-mono text-xs">Incrustado en la home</span>
-            <span className="block font-mono text-[10px] text-[var(--ink-muted)]">
-              Sin caja, arriba de la portada, más grande.
-            </span>
-          </span>
-        </label>
         <label className="flex flex-1 min-w-[10rem] cursor-pointer items-start gap-2 rounded-xl border border-[var(--glass-border)] p-3">
           <input
             type="radio"
@@ -50,9 +35,27 @@ export function LogoDisplayControls({
             className="mt-1"
           />
           <span>
-            <span className="block font-mono text-xs">Flotante</span>
+            <span className="block font-mono text-xs">Fijo (recomendado)</span>
             <span className="block font-mono text-[10px] text-[var(--ink-muted)]">
-              Fijo arriba a la izquierda con su cajita, como estaba.
+              Se queda quieto mientras scrolleás — mobile centrado arriba, desktop arriba a la
+              izquierda. Visible en todas las páginas.
+            </span>
+          </span>
+        </label>
+        <label className="flex flex-1 min-w-[10rem] cursor-pointer items-start gap-2 rounded-xl border border-[var(--glass-border)] p-3">
+          <input
+            type="radio"
+            name="logoFloating"
+            value="false"
+            checked={!floating}
+            onChange={() => setFloating(false)}
+            className="mt-1"
+          />
+          <span>
+            <span className="block font-mono text-xs">Se desliza con la página</span>
+            <span className="block font-mono text-[10px] text-[var(--ink-muted)]">
+              Va arriba de la portada de la home nomás, y se scrollea junto con el resto del
+              contenido (deja de verse al bajar la página).
             </span>
           </span>
         </label>
@@ -97,13 +100,7 @@ export function LogoDisplayControls({
           <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
             Previsualización desktop
           </p>
-          <div
-            className={
-              floating
-                ? "nav-surface inline-flex items-center rounded-full px-4 py-3"
-                : "flex items-center rounded-xl bg-black/10 px-6 py-6"
-            }
-          >
+          <div className="flex items-center rounded-xl bg-black/10 px-6 py-6">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previewUrl} alt="Preview del logo" style={{ height: size }} className="w-auto object-contain" />

@@ -58,7 +58,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let heroTitle2: string = dict.hero.title2;
   let heroSubtitle: string = dict.hero.subtitle;
   let carouselPreset: "cards" | "minimal" | "stack" = "cards";
-  let embeddedLogo: { noirUrl: string | null; neonUrl: string | null; size: number } | null = null;
+  let embeddedLogo: { noirUrl: string | null; neonUrl: string | null; size: number; sizeMobile: number } | null = null;
   let cvEnabled = false;
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
@@ -70,7 +70,12 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       carouselPreset = settings.carouselPreset;
     }
     if (!settings.logoFloating) {
-      embeddedLogo = { noirUrl: settings.logoNoirUrl, neonUrl: settings.logoNeonUrl, size: settings.logoSize };
+      embeddedLogo = {
+        noirUrl: settings.logoNoirUrl,
+        neonUrl: settings.logoNeonUrl,
+        size: settings.logoSize,
+        sizeMobile: settings.logoSizeMobile,
+      };
     }
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
@@ -120,10 +125,20 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     <div className="mx-auto max-w-6xl px-6">
       {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
         <Reveal>
-          {/* Logo incrustado (sin caja): esquina superior izquierda de la
-              página, debajo de la barra de timecode — NO adentro del
-              bloque centrado del hero. Solo en desktop; en mobile ya
-              aparece fijo arriba vía FloatingNav. */}
+          {/* Logo "deslizable" (modo no-fijo): esquina superior izquierda
+              en desktop, centrado arriba en mobile — en las dos casos
+              debajo de la barra de timecode, y en las dos scrollea con
+              el resto del contenido (a diferencia del modo fijo, que
+              vive en FloatingNav). */}
+          <div className="flex justify-center pt-14 sm:hidden">
+            <SiteLogo
+              locale={locale}
+              noirLogoUrl={embeddedLogo.noirUrl}
+              neonLogoUrl={embeddedLogo.neonUrl}
+              size={embeddedLogo.sizeMobile}
+              plain
+            />
+          </div>
           <div className="hidden pt-14 sm:block">
             <SiteLogo
               locale={locale}

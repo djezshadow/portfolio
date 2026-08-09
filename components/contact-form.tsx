@@ -16,7 +16,6 @@ type Dict = {
     whatsapp: string;
     instagram: string;
     success: string;
-    confirmSent: string;
   };
 };
 

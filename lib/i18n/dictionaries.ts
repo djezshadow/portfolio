@@ -29,7 +29,6 @@ const dictionaries = {
       whatsapp: "Escribime por WhatsApp →",
       instagram: "O escribime por Instagram →",
       success: "Mensaje enviado — te respondo a la brevedad.",
-      confirmSent: "¡Casi! Te mandamos un mail para confirmar que sos vos — revisá tu bandeja de entrada (y spam) y tocá el botón de ahí.",
     },
     footer: { rights: "Todos los derechos reservados." },
     comingSoon: {
@@ -63,7 +62,6 @@ const dictionaries = {
       whatsapp: "Message me on WhatsApp →",
       instagram: "Or message me on Instagram →",
       success: "Message sent — I'll reply soon.",
-      confirmSent: "Almost there! We sent you an email to confirm it's you — check your inbox (and spam) and tap the button there.",
     },
     footer: { rights: "All rights reserved." },
     comingSoon: {

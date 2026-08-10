@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Carousel, type CarouselItem } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
 import { CollaboratorCard } from "@/components/collaborator-card";
@@ -26,7 +25,6 @@ async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselI
   try {
     const categories = await prisma.category.findMany({
       orderBy: { order: "asc" },
-      where: { isComingSoon: false },
       include: { projects: true },
     });
     if (categories.length === 0) return { items: fallback, slugs: {}, live: false };
@@ -40,6 +38,9 @@ async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselI
         title: loc(c.name, c.nameEn, locale),
         subtitle: `${c.projects.length} proyectos`,
         coverImageUrl: c.coverImageUrl,
+        href: c.isComingSoon ? undefined : `/${locale}/categoria/${c.slug}`,
+        isComingSoon: c.isComingSoon,
+        hint: locOrNull(c.comingSoonHint, c.comingSoonHintEn, locale),
       };
     });
     return { items, slugs, live: true };
@@ -52,7 +53,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   const dict = getDictionary(locale);
-  const { items, slugs, live } = await getFeaturedCategories(locale);
+  const { items, live } = await getFeaturedCategories(locale);
 
   let heroTitle1: string = dict.hero.title1;
   let heroTitle2: string = dict.hero.title2;
@@ -183,24 +184,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
         </Reveal>
 
-        {live ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/${locale}/categoria/${slugs[item.id]}`}
-                data-cursor="magnetic"
-                className="glass rounded-2xl p-6 transition-transform hover:-translate-y-1"
-              >
-                <span className="font-mono text-[11px] text-accent">{item.code}</span>
-                <h3 className="font-display text-xl">{item.title}</h3>
-                <p className="text-sm text-[var(--ink-muted)]">{item.subtitle}</p>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <Carousel items={items} preset={carouselPreset} />
-        )}
+        <Carousel items={items} preset={carouselPreset} comingSoonLabel={locale === "en" ? "Coming soon" : "Próximamente"} />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <a

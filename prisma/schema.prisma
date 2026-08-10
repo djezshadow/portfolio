@@ -188,6 +188,12 @@ model Media {
   /// Si es false, esta foto puntual nunca lleva watermark aunque esté
   /// activado globalmente (se elige al subirla).
   watermarkEnabled Boolean     @default(true)
+  /// Overrides puntuales por foto — si están seteados, pisan la config
+  /// global de Configuración SOLO para esta foto (pedido: "algunas fotos
+  /// corregirles la marca de agua manualmente... moverlas un poco o
+  /// bajar la opacidad exclusivamente a algunas").
+  watermarkPositionOverride String?
+  watermarkOpacityOverride  Float?
   /// Versión ya HORNEADA (watermark aplicado si corresponde, o solo
   /// redimensionada si no) lista para servir directo desde el Blob, sin
   /// procesar nada en cada visita. Se genera al subir la foto y se
@@ -286,6 +292,18 @@ model SiteSettings {
   aboutContentEn   String? @db.Text
   aboutImageUrl    String?
   aboutCustomCss   String? @db.Text
+
+  /// Animación de carga personalizada (gif o webp animado) — se sube tal
+  /// cual, sin reprocesar con sharp, para no perder los frames de
+  /// animación. Si no hay nada subido, se usa la animación default del
+  /// sitio (tipo claqueta/timecode). Posición y tamaño configurables por
+  /// separado para desktop y celular — pensado como "easter egg": jugá
+  /// con la ubicación y el diseño.
+  loadingAnimationUrl         String?
+  loadingAnimationPosition       String  @default("center")
+  loadingAnimationPositionMobile String  @default("center")
+  loadingAnimationSize            Int    @default(120)
+  loadingAnimationSizeMobile      Int    @default(90)
 }
 
 /// Perfil para el CV descargable (item nuevo: "que la gente pueda desde mi
@@ -305,6 +323,8 @@ model Profile {
   phone         String?
   address       String?
   website       String?
+  instagram     String?
+  linkedin      String?
   /// Muestra el link/botón "Descargar CV" en el sitio público.
   cvEnabled     Boolean           @default(false)
   skills        Skill[]

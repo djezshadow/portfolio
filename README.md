@@ -1,5 +1,51 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 10 — Coming Soon rediseñado, carrusel real en la home, swipe,
+## animación de carga personalizable, watermark manual por foto
+
+**Bug real encontrado: el carrusel nunca se usaba con datos reales.**
+Con categorías de verdad cargadas, la home mostraba una grilla fija en
+vez del componente `Carousel` — por eso el selector "Estilo del
+carrusel" (Cards/Minimal/Stack) en Configuración no se notaba nunca.
+Arreglado: ahora `Carousel` se usa siempre.
+
+**Coming Soon rediseñado.** Antes: la categoría se escondía del todo de
+destacados, y solo mostraba un "coming soon" si entrabas directo por
+URL. Ahora: aparece en destacados Y en la navbar, en gris con candado
+🔒, y tocarla abre un popup con tu pista en vez de navegar — tanto en
+la home (`Carousel`) como en el nav (`NavLinksDesktop` / `MobileNav`).
+
+**Swipe en el visor.** El lightbox ahora tiene `drag="x"` (Framer
+Motion) sobre la imagen/video — deslizás con el dedo (o arrastrás con
+mouse) para pasar de foto.
+
+**Reel y CV: agrupados por categoría + subcategorías.** Los dos PDFs
+ahora muestran el portfolio organizado por categoría, y cada proyecto
+lista sus subcategorías si tiene.
+
+**CV: Instagram + LinkedIn** agregados al perfil y al PDF.
+
+**Énfasis visual en "CV"** dentro de la navbar (desktop y sidebar
+mobile) — fondo de color en vez de texto plano.
+
+**Animación de carga personalizable (`/admin/carga`).** Next.js ya
+muestra esto solo (`loading.tsx`) mientras una página tarda en traer
+datos — pensado para Vercel free, que a veces tarda. Podés subir un gif
+o webp animado (se guarda tal cual, SIN comprimir, para no perder la
+animación), elegir posición y tamaño por separado para desktop y
+celular, con dos marcos de preview en vivo (uno tipo PC, uno tipo
+celular). Sin nada subido, usa un spinner default con la estética del
+sitio.
+
+**Watermark manual por foto individual.** En `/admin/proyectos/[id]`,
+cada foto tiene un link "Ajustar watermark" — podés pisar la posición
+y/o la opacidad SOLO para esa foto (el resto sigue la config global de
+Configuración). Al guardar, esa foto se rehornea sola al toque.
+
+**Importante — schema nuevo, aditivo, sin riesgo de pérdida de datos:**
+`SiteSettings.loadingAnimation*` (5 campos), `Media.watermarkPositionOverride`,
+`Media.watermarkOpacityOverride`, `Profile.instagram`, `Profile.linkedin`.
+
 ## Fase 9 — CV descargable, logo ajustable, un solo botón de optimizar,
 ## fix navbar admin
 

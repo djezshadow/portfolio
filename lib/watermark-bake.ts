@@ -23,6 +23,8 @@ export async function bakeMediaWatermark(
     watermarkEnabled: boolean;
     bakedThumbUrl?: string | null;
     bakedFullUrl?: string | null;
+    watermarkPositionOverride?: string | null;
+    watermarkOpacityOverride?: number | null;
   },
   settings: Settings
 ): Promise<void> {
@@ -35,8 +37,8 @@ export async function bakeMediaWatermark(
 
     if (media.watermarkEnabled) {
       const withMark = await applyWatermark(resized, {
-        opacity: settings.watermarkOpacity,
-        position: settings.watermarkPosition as
+        opacity: media.watermarkOpacityOverride ?? settings.watermarkOpacity,
+        position: (media.watermarkPositionOverride ?? settings.watermarkPosition) as
           | "bottom-right"
           | "bottom-left"
           | "top-right"

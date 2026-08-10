@@ -1,12 +1,13 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject } from "./actions";
+import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, updateMediaWatermarkOverride } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { MediaGroupsPanel } from "@/components/admin/media-groups-panel";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { WatermarkOverrideForm } from "@/components/admin/watermark-override-form";
 import { toMonthInputValue } from "@/lib/date-range";
 
 function toDatetimeLocal(date: Date) {
@@ -245,6 +246,14 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
                     />
                     Portada
                   </label>
+                  {m.type === "image" && (
+                    <WatermarkOverrideForm
+                      mediaId={m.id}
+                      action={updateMediaWatermarkOverride}
+                      initialPosition={m.watermarkPositionOverride}
+                      initialOpacity={m.watermarkOpacityOverride}
+                    />
+                  )}
                 </div>
               ))}
             </div>

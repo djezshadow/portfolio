@@ -306,6 +306,32 @@ export async function moveMediaGroupToProject(groupId: string, formData: FormDat
   redirect(`/admin/proyectos/${targetProjectId}`);
 }
 
+export async function updateMediaWatermarkOverride(mediaId: string, formData: FormData) {
+  await assertAdmin();
+
+  const useCustom = formData.get("useCustom") === "on";
+  const position = String(formData.get("position") ?? "");
+  const opacityRaw = formData.get("opacity");
+
+  const media = await prisma.media.update({
+    where: { id: mediaId },
+    data: {
+      watermarkPositionOverride: useCustom && position ? position : null,
+      watermarkOpacityOverride: useCustom && opacityRaw ? Number(opacityRaw) : null,
+    },
+  });
+
+  const settings = await getSiteSettings();
+  try {
+    await bakeMediaWatermark(media, settings);
+  } catch (err) {
+    console.error(`No se pudo rehornear ${mediaId} tras cambiar el override:`, err);
+  }
+
+  revalidatePath(`/admin/proyectos/${media.projectId}`);
+  revalidatePath("/", "layout");
+}
+
 export async function deleteProject(projectId: string, _formData: FormData) {
   await assertAdmin();
 

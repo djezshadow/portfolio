@@ -78,6 +78,17 @@ export default async function AdminCvPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Instagram (opcional, URL)</label>
+            <input name="instagram" defaultValue={profile.instagram ?? ""} placeholder="https://instagram.com/djezshadow" className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">LinkedIn (opcional, URL)</label>
+            <input name="linkedin" defaultValue={profile.linkedin ?? ""} className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+          </div>
+        </div>
+
         <div className="rounded-xl border border-[var(--glass-border)] p-3">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
             Opcional — vacío por defecto, el CV no los muestra si no completás nada acá

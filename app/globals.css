@@ -1,0 +1,251 @@
+@import "tailwindcss";
+
+/*
+  SISTEMA DE TEMAS — DJEZSHADOW
+  -----------------------------
+  Dos paletas con identidad propia (no dark-mode genérico invertido):
+
+  NOIR   -> claro. "papel fotográfico / copia en plata" — gris cálido, no crema.
+            Acento bronce/ámbar (luz de tungsteno, 3200K).
+  NEÓN   -> oscuro. Vacío casi negro con violeta eléctrico + cian.
+
+  El atributo [data-theme] en <html> decide cuál está activo.
+  El sistema de auto/manual (global y por categoría) vive en
+  components/theme-provider.tsx y solo cambia este atributo.
+*/
+
+:root {
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* NOIR (tema claro por defecto) */
+  --bg: #e9e4dc;
+  --bg-elevated: #f2eee7;
+  --ink: #17140f;
+  --ink-muted: #4a453c;
+  --accent: #b9873f;
+  --accent-strong: #8f6329;
+  --accent-contrast: #6e2a2a;
+  --glass-surface: rgba(255, 255, 255, 0.34);
+  --glass-border: rgba(23, 20, 15, 0.10);
+  --glass-highlight: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="neon"] {
+  --bg: #07070a;
+  --bg-elevated: #0d0d13;
+  --ink: #f3f1ff;
+  --ink-muted: #a9a6c2;
+  --accent: #7c5cff;
+  --accent-strong: #9a80ff;
+  --accent-contrast: #00e5ff;
+  --glass-surface: rgba(24, 22, 36, 0.34);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(124, 92, 255, 0.25);
+}
+
+* {
+  border-color: var(--glass-border);
+}
+
+html {
+  background: var(--bg);
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Envuelto en @layer components a propósito: así las utilidades de Tailwind
+   (fixed, sticky, rounded-2xl, etc.) siguen pudiendo pisar estas propiedades
+   cuando se combinan en el mismo elemento. Sin esto, .glass (CSS "suelto",
+   fuera de cualquier capa) le gana SIEMPRE a las utilidades de Tailwind
+   -aunque tengan la misma especificidad y estén escritas después-, porque el
+   CSS sin capa tiene prioridad sobre cualquier @layer. Eso rompía position:
+   fixed en la barra de timecode y position: sticky en la nav del admin. */
+@layer components {
+  /* Utilidad "liquid glass" — usar sobre paneles, cards, navbar.
+     Se va a seguir refinando fase a fase para acercarse al liquid glass de iOS. */
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.04);
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.04);
+    box-shadow:
+      inset 0 1.5px 1px var(--glass-highlight),
+      inset 0 -8px 16px rgba(0, 0, 0, 0.12),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 12px 40px rgba(0, 0, 0, 0.16);
+  }
+
+  /* Brillo especular: fuerte arriba, se apaga hacia abajo — como una lupa/pastilla
+     de vidrio real, en vez de un shine parejo. Referencia: botón "Liquid Glass" de Apple. */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.12) 30%,
+      rgba(255, 255, 255, 0) 55%,
+      rgba(0, 0, 0, 0.08) 100%
+    );
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  /* Variante con distorsión real del contenido de atrás (no solo blur).
+     Usar en elementos "hero" tipo pill/nav (theme toggle, timecode bar, CTAs
+     principales) — no en todas las cards, por costo de rendimiento y porque
+     Apple tampoco lo usa en superficies grandes, solo en controles.
+     Se degrada solo (queda el .glass normal) en navegadores sin soporte. */
+  @supports (backdrop-filter: url(#liquid-glass-distortion)) {
+    .glass-distort {
+      backdrop-filter: url(#liquid-glass-distortion) blur(6px) saturate(180%) brightness(1.05);
+      -webkit-backdrop-filter: url(#liquid-glass-distortion) blur(6px) saturate(180%) brightness(1.05);
+    }
+  }
+
+  /* Nav flotante: más contraste que el .glass normal (pedido explícito:
+     se perdía contra el fondo, sobre todo en mobile) — fondo bastante
+     más sólido, no solo un tinte translúcido. */
+  .nav-surface {
+    position: relative;
+    background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    box-shadow:
+      inset 0 1px 1px var(--glass-highlight),
+      0 8px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (max-width: 640px) {
+    .nav-surface {
+      /* En mobile, menos "vidrio" y más sólido: mejor legibilidad */
+      background: color-mix(in srgb, var(--bg-elevated) 96%, transparent);
+      backdrop-filter: blur(8px) saturate(120%);
+      -webkit-backdrop-filter: blur(8px) saturate(120%);
+    }
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Texto de acento con la lógica tungsteno/neón */
+.text-accent {
+  color: var(--accent);
+}
+
+/* Cursor normal del sistema en todos lados (se sacó el cursor custom).
+   Acá sí dejamos en claro qué es clickeable, con pointer + feedback al
+   pasar el mouse o tocar. */
+a,
+button,
+[role="button"],
+[data-cursor="magnetic"],
+input[type="submit"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+select {
+  cursor: pointer;
+}
+
+a,
+button,
+[role="button"] {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a:hover,
+  button:hover:not(:disabled),
+  [role="button"]:hover {
+    opacity: 0.82;
+  }
+}
+
+a:active,
+button:active:not(:disabled),
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* La nav flotante se esconde sola mientras el lightbox de fotos/video
+   está abierto (ver components/project-lightbox.tsx) */
+body[data-lightbox-open="true"] [data-floating-nav] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Estilos base para el contenido en Markdown de la sección "Sobre mí"
+   (item #21). Un CSS personalizado cargado desde /admin/sobre-mi se
+   inyecta aparte y puede pisar cualquiera de estas reglas. */
+.about-content {
+  line-height: 1.7;
+}
+.about-content h2 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  margin: 2rem 0 0.75rem;
+}
+.about-content h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin: 1.75rem 0 0.6rem;
+}
+.about-content h4 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 1.5rem 0 0.5rem;
+}
+.about-content p {
+  margin: 0.9rem 0;
+}
+.about-content ul,
+.about-content ol {
+  margin: 0.9rem 0;
+  padding-left: 1.4rem;
+}
+.about-content ul {
+  list-style: disc;
+}
+.about-content ol {
+  list-style: decimal;
+}
+.about-content li {
+  margin: 0.35rem 0;
+}
+.about-content a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.about-content strong {
+  font-weight: 600;
+}

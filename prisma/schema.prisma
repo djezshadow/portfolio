@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ThemeMode {
+  auto
+  manual
+}
+
+enum ThemeName {
+  noir
+  neon
+}
+
+enum LogoSource {
+  upload
+  from_category
+  none
+}
+
+enum MediaType {
+  image
+  video
+}
+
+enum VideoProvider {
+  youtube
+  vimeo
+}
+
+/// Cada categoría es una "carpeta estética": tiene su propio tema
+/// (manual/auto) y su propio estilo tipográfico/visual.
+model Category {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  name            String
+  /// Si queda vacío, se usa `name` (español) también en inglés.
+  nameEn          String?
+  order           Int               @default(0)
+  themeMode       ThemeMode         @default(auto)
+  themeName       ThemeName?
+  /// SEO manual (item #42). Si quedan vacíos, se autogeneran a partir del nombre.
+  metaTitle       String?
+  metaTitleEn     String?
+  metaDescription String?
+  metaDescriptionEn String?
+  /// Categoría "oculta": no aparece en destacados/nav, y su página muestra
+  /// un "coming soon" con pistas en vez de los proyectos (item #47).
+  isComingSoon    Boolean           @default(false)
+  comingSoonHint  String?
+  comingSoonHintEn String?
+  /// Si está en true, aparece como link en el navbar flotante público
+  /// (independiente de isComingSoon — así podés linkear el "coming soon"
+  /// desde la nav aunque no salga en destacados).
+  showInNav       Boolean           @default(false)
+  /// Portada de la categoría (item #17) — se usa en el carrusel de
+  /// destacados de la home para que se vea más atractivo. Si queda vacía,
+  /// se muestra la card sin imagen (como antes).
+  coverImageUrl   String?
+  style           CategoryStyle?
+  projects        ProjectCategory[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+/// Personalización visual por categoría (item #22 del spec).
+model CategoryStyle {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  accentColor   String? // hex, pisa --accent solo dentro de esta categoría
+  fontFamily    String? // "display" | "body" | "mono" (fuentes curadas)
+  bold          Boolean  @default(false)
+  strikethrough Boolean  @default(false)
+  alignment     String   @default("left") // left | center | right
+  strokeWidth   Float? // px, para -webkit-text-stroke en títulos
+}
+
+model Collaborator {
+  id        String           @id @default(cuid())
+  name      String
+  /// Slug del tipo de relación — antes era un enum fijo (client/creative),
+  /// ahora referencia CollaboratorTypeOption.slug para que el admin pueda
+  /// crear/borrar tipos nuevos (item #14). Sigue siendo un string simple
+  /// para no perder los valores "client"/"creative" que ya existen.
+  type      String           @default("client")
+  typeOption CollaboratorTypeOption? @relation(fields: [type], references: [slug])
+  logoUrl   String?
+  instagram String?
+  website   String?
+  /// Participantes opcionales dentro de este colaborador (item #16):
+  /// personas puntuales con su rol y redes, todo opcional.
+  participants Participant[]
+  projects  Project[]
+}
+
+/// Tipos de relación personalizables (item #14). isClient decide en qué
+/// sección de la vista pública cae ("Clientes" o "Colaboradores", item #8).
+model CollaboratorTypeOption {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  nameEn        String?
+  isClient      Boolean        @default(false)
+  order         Int            @default(0)
+  collaborators Collaborator[]
+}
+
+/// Persona puntual dentro de un Collaborator (item #16). Todo opcional
+/// salvo que tenga sentido tener al menos un nombre.
+model Participant {
+  id             String       @id @default(cuid())
+  collaboratorId String
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  name           String?
+  role           String?
+  roleEn         String?
+  instagram      String?
+  website        String?
+  order          Int          @default(0)
+}
+
+model Project {
+  id             String            @id @default(cuid())
+  title          String
+  titleEn        String?
+  description    String?
+  descriptionEn  String?
+  /// Rango de fechas del proyecto/colaboración (item pendiente: "fechas
+  /// año a año, o actualidad"). dateEnd queda null si isOngoing es true.
+  dateStart      DateTime?
+  dateEnd        DateTime?
+  isOngoing      Boolean           @default(false)
+  role           String?
+  roleEn         String?
+  logoSource     LogoSource        @default(none)
+  logoUrl        String?
+  featured       Boolean           @default(false)
+  order          Int               @default(0)
+  /// null = borrador (nunca se muestra en el sitio público).
+  /// fecha futura = programado. fecha pasada/ahora = publicado.
+  publishedAt    DateTime?
+  collaboratorId String?
+  collaborator   Collaborator?     @relation(fields: [collaboratorId], references: [id], onDelete: SetNull)
+  categories     ProjectCategory[]
+  media          Media[]
+  mediaGroups    MediaGroup[]
+  tags           ProjectTag[]
+  createdAt      DateTime          @default(now())
+}
+
+/// Un proyecto puede vivir en más de una categoría (item #8).
+model ProjectCategory {
+  projectId  String
+  categoryId String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, categoryId])
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  projects ProjectTag[]
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+}
+
+model Media {
+  id            String         @id @default(cuid())
+  projectId     String
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type          MediaType
+  url           String // imagen: archivo ORIGINAL, sin watermark — se conserva siempre para poder re-hornear si cambiás la marca de agua
+  /// Si es false, esta foto puntual nunca lleva watermark aunque esté
+  /// activado globalmente (se elige al subirla).
+  watermarkEnabled Boolean     @default(true)
+  /// Versión ya HORNEADA (watermark aplicado si corresponde, o solo
+  /// redimensionada si no) lista para servir directo desde el Blob, sin
+  /// procesar nada en cada visita. Se genera al subir la foto y se
+  /// regenera con "Aplicar marca de agua a todas las fotos". Mientras es
+  /// null (foto recién subida antes de tener esto, o justo en medio de un
+  /// reprocesado) se sirve al vuelo por /api/media/[id] como respaldo.
+  bakedThumbUrl String? // ~800px, para grillas/cards
+  bakedFullUrl  String? // ~2000px, para el visor grande
+  videoProvider VideoProvider?
+  videoId       String? // id de YouTube/Vimeo
+  order         Int            @default(0)
+  isThumbnail   Boolean        @default(false)
+  /// Subcategoría opcional dentro del proyecto (item #13 del pedido:
+  /// dividir un mismo proyecto por fecha, tipo de trabajo, etc).
+  groupId       String?
+  group         MediaGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+}
+
+/// Subcategoría dentro de un proyecto (ej: "Making of", "Fotos finales",
+/// "Marzo 2026"). El admin las crea/borra libremente por proyecto, y cada
+/// una puede tener su propia portada (sube una propia o usa una de las
+/// fotos que ya tiene adentro).
+model MediaGroup {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  nameEn         String?
+  order          Int      @default(0)
+  coverImageUrl  String?
+  media          Media[]
+}
+
+/// Fila única de configuración global del sitio.
+model SiteSettings {
+  id             String  @id @default("default")
+  updatedAt      DateTime @default(now()) @updatedAt
+  /// Logo PNG/WebP subido por el admin. Si está seteado, reemplaza al
+  /// ícono de diafragma en el watermark de todas las fotos nuevas.
+  watermarkUrl   String?
+  /// % del ancho de la foto que ocupa el watermark (por defecto 9%, igual
+  /// que el ícono de diafragma original).
+  watermarkScale Float   @default(9)
+  /// Opacidad y posición por defecto — antes vivían sueltas en cada
+  /// formulario de proyecto y no se guardaban en ningún lado.
+  watermarkOpacity  Float  @default(40)
+  watermarkPosition String @default("bottom-right")
+
+  /// Textos del hero de la home (item pendiente: "título/subtítulo editable").
+  /// Si quedan vacíos, se usa el texto por defecto del diccionario ES/EN.
+  heroTitle1     String?
+  heroTitle1En   String?
+  heroTitle2     String?
+  heroTitle2En   String?
+  heroSubtitle   String?
+  heroSubtitleEn String?
+
+  /// Preset visual del carrusel de destacados: "cards" | "minimal" | "stack"
+  carouselPreset String  @default("cards")
+
+  /// Logo de marca, uno para cada tema (PNG blanco para Neón, negro para
+  /// Noir, por ejemplo). Si no hay ninguno cargado, se muestra el texto
+  /// "DJEZSHADOW" como wordmark.
+  logoNoirUrl    String?
+  logoNeonUrl    String?
+  /// Si es true (default), el logo queda FIJO arriba mientras scrolleás
+  /// (mobile: centrado arriba; desktop: esquina superior izquierda),
+  /// nunca con caja. Si es false, el logo va incrustado arriba de la
+  /// portada de la home y se desliza con la página como el resto del
+  /// contenido — pensado por si en algún momento se prefiere eso, aunque
+  /// el default es que quede fijo (en mobile importa que no se pierda al
+  /// scrollear).
+  logoFloating   Boolean @default(true)
+  /// Alto del logo en píxeles (desktop) — mismo valor se usa tanto
+  /// flotante como incrustado, así el admin ajusta uno solo y no se
+  /// descoordinan.
+  logoSize       Int     @default(64)
+  /// Alto del logo en celular — independiente del de desktop porque el
+  /// logo en mobile siempre es fijo arriba centrado (sin caja), así que
+  /// necesita su propia medida.
+  logoSizeMobile Int     @default(40)
+
+  /// Mail donde llegan los mensajes de contacto — configurable acá para no
+  /// depender de una variable de entorno y tener que redeployar para cambiarlo.
+  /// Si queda vacío, se usa CONTACT_EMAIL_TO del .env como respaldo.
+  contactEmail   String?
+
+  /// Sección "Sobre mí / About Me" (item #21) — ultra personalizable:
+  /// se puede prender/apagar del todo, el contenido se escribe en Markdown
+  /// (listas, numeradas, subtítulos, negrita, etc) y admite CSS propio para
+  /// cuando esto se venda como plantilla a otros clientes.
+  aboutEnabled     Boolean @default(false)
+  aboutTitle       String?
+  aboutTitleEn     String?
+  aboutContent     String? @db.Text
+  aboutContentEn   String? @db.Text
+  aboutImageUrl    String?
+  aboutCustomCss   String? @db.Text
+}
+
+/// Perfil para el CV descargable (item nuevo: "que la gente pueda desde mi
+/// portfolio bajar mi CV actualizado"). Fila única (id fijo "default"),
+/// mismo patrón que SiteSettings. Teléfono/dirección quedan opcionales y
+/// vacíos por default a propósito — el CV nunca los muestra a menos que
+/// vos mismo los cargues acá.
+model Profile {
+  id            String            @id @default("default")
+  fullName      String?
+  specialty     String?
+  specialtyEn   String?
+  bio           String?           @db.Text
+  bioEn         String?           @db.Text
+  photoUrl      String?
+  email         String?
+  phone         String?
+  address       String?
+  website       String?
+  /// Muestra el link/botón "Descargar CV" en el sitio público.
+  cvEnabled     Boolean           @default(false)
+  skills        Skill[]
+  experiences   WorkExperience[]
+}
+
+model Skill {
+  id        String  @id @default(cuid())
+  profileId String  @default("default")
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  nameEn    String?
+  order     Int     @default(0)
+}
+
+/// Experiencia laboral cargada a mano (además de los proyectos del
+/// portfolio, que el CV toma automáticamente con sus fechas — esto es
+/// para trabajos que no necesariamente están como proyecto acá, ej. un
+/// puesto en relación de dependencia).
+model WorkExperience {
+  id            String    @id @default(cuid())
+  profileId     String    @default("default")
+  profile       Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  role          String
+  roleEn        String?
+  company       String?
+  description   String?   @db.Text
+  descriptionEn String?   @db.Text
+  dateStart     DateTime?
+  dateEnd       DateTime?
+  isOngoing     Boolean   @default(false)
+  order         Int       @default(0)
+}

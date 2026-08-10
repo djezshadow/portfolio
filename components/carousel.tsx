@@ -235,7 +235,7 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                className={`glass group relative block min-w-[280px] snap-start overflow-hidden rounded-2xl p-6 text-left ${item.coverImageUrl && !item.isComingSoon ? "flex min-h-[220px] flex-col justify-end" : ""}`}
+                className={`glass group relative block min-w-[280px] snap-start overflow-hidden rounded-2xl p-6 text-left shadow-none ${item.coverImageUrl && !item.isComingSoon ? "flex min-h-[220px] flex-col justify-end" : ""}`}
               >
                 {item.isComingSoon && <LockBadge />}
                 {item.coverImageUrl && (

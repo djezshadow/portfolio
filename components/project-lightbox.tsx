@@ -91,6 +91,20 @@ export function ProjectLightbox({
     groups.length > 0 ? null : "all"
   );
   const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+
+  function goTo(next: number) {
+    setDirection(next > index || (index === media.length - 1 && next === 0) ? 1 : -1);
+    setIndex(next);
+  }
+  function goNext() {
+    setDirection(1);
+    setIndex((i) => (i + 1) % media.length);
+  }
+  function goPrev() {
+    setDirection(-1);
+    setIndex((i) => (i - 1 + media.length) % media.length);
+  }
 
   function selectGroup(id: string | "all") {
     setActiveGroupId(id);
@@ -111,8 +125,8 @@ export function ProjectLightbox({
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
       if (showingPicker) return;
-      if (e.key === "ArrowRight") setIndex((i) => (i + 1) % media.length);
-      if (e.key === "ArrowLeft") setIndex((i) => (i - 1 + media.length) % media.length);
+      if (e.key === "ArrowRight") goNext();
+      if (e.key === "ArrowLeft") goPrev();
     }
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -267,31 +281,43 @@ export function ProjectLightbox({
                 dragElastic={0.6}
                 onDragEnd={(_, info) => {
                   if (info.offset.x < -60 || info.velocity.x < -500) {
-                    setIndex((i) => (i + 1) % media.length);
+                    goNext();
                   } else if (info.offset.x > 60 || info.velocity.x > 500) {
-                    setIndex((i) => (i - 1 + media.length) % media.length);
+                    goPrev();
                   }
                 }}
               >
-                {current?.type === "video" && current.videoProvider && current.videoId ? (
-                  <div className="flex h-full items-center justify-center p-2 sm:p-6">
-                    <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
-                  </div>
-                ) : current?.url ? (
-                  <ProgressiveImage
-                    key={current.id}
-                    src={current.bakedFullUrl || `/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
-                    alt={project.title}
-                    priority
+                <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+                  <motion.div
+                    key={current?.id}
+                    custom={direction}
+                    initial={{ opacity: 0, x: direction * 60 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: direction * -60 }}
+                    transition={{ duration: 0.28, ease: "easeOut" }}
                     className="absolute inset-0"
-                    imgClassName="h-full w-full object-contain"
-                  />
-                ) : null}
+                  >
+                    {current?.type === "video" && current.videoProvider && current.videoId ? (
+                      <div className="flex h-full items-center justify-center p-2 sm:p-6">
+                        <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
+                      </div>
+                    ) : current?.url ? (
+                      <ProgressiveImage
+                        key={current.id}
+                        src={current.bakedFullUrl || `/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
+                        alt={project.title}
+                        priority
+                        className="absolute inset-0"
+                        imgClassName="h-full w-full object-contain"
+                      />
+                    ) : null}
+                  </motion.div>
+                </AnimatePresence>
 
                 {media.length > 1 && (
                   <>
                     <button
-                      onClick={() => setIndex((i) => (i - 1 + media.length) % media.length)}
+                      onClick={goPrev}
                       data-cursor="magnetic"
                       aria-label="Anterior"
                       className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white sm:left-4"
@@ -299,7 +325,7 @@ export function ProjectLightbox({
                       ←
                     </button>
                     <button
-                      onClick={() => setIndex((i) => (i + 1) % media.length)}
+                      onClick={goNext}
                       data-cursor="magnetic"
                       aria-label="Siguiente"
                       className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white sm:right-4"
@@ -320,7 +346,7 @@ export function ProjectLightbox({
                         </span>
                       )}
                       <button
-                        onClick={() => setIndex(i)}
+                        onClick={() => goTo(i)}
                         data-cursor="magnetic"
                         className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md"
                         style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}

@@ -80,9 +80,7 @@ body {
     -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.04);
     box-shadow:
       inset 0 1.5px 1px var(--glass-highlight),
-      inset 0 -8px 16px rgba(0, 0, 0, 0.12),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-      0 12px 40px rgba(0, 0, 0, 0.16);
+      0 6px 20px rgba(0, 0, 0, 0.10);
   }
 
   /* Brillo especular: fuerte arriba, se apaga hacia abajo — como una lupa/pastilla
@@ -126,7 +124,7 @@ body {
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     box-shadow:
       inset 0 1px 1px var(--glass-highlight),
-      0 8px 30px rgba(0, 0, 0, 0.25);
+      0 6px 20px rgba(0, 0, 0, 0.14);
   }
 
   @media (max-width: 640px) {

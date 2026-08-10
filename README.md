@@ -1,4 +1,4 @@
-# DJEZSHADOW — Portfolio (completo + watermark personalizado).
+# DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
 ## Fase 10 — Coming Soon rediseñado, carrusel real en la home, swipe,
 ## animación de carga personalizable, watermark manual por foto

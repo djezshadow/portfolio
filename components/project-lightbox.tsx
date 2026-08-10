@@ -260,7 +260,19 @@ export function ProjectLightbox({
             </div>
           ) : (
             <>
-              <div className="relative min-h-0 flex-1 bg-black">
+              <motion.div
+                className="relative min-h-0 flex-1 touch-pan-y bg-black"
+                drag={media.length > 1 ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.6}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -60 || info.velocity.x < -500) {
+                    setIndex((i) => (i + 1) % media.length);
+                  } else if (info.offset.x > 60 || info.velocity.x > 500) {
+                    setIndex((i) => (i - 1 + media.length) % media.length);
+                  }
+                }}
+              >
                 {current?.type === "video" && current.videoProvider && current.videoId ? (
                   <div className="flex h-full items-center justify-center p-2 sm:p-6">
                     <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
@@ -296,7 +308,7 @@ export function ProjectLightbox({
                     </button>
                   </>
                 )}
-              </div>
+              </motion.div>
 
               {media.length > 1 && (
                 <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto p-3">

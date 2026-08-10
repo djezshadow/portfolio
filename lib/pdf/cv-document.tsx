@@ -17,6 +17,7 @@ const styles = StyleSheet.create({
   entryDesc: { fontSize: 9, color: "#c9c6dc", marginTop: 3, lineHeight: 1.4 },
   skillsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   skillChip: { fontSize: 8.5, color: "#d9d7e8", backgroundColor: "#1a1826", borderRadius: 10, paddingVertical: 3, paddingHorizontal: 8, marginRight: 6, marginBottom: 6 },
+  categoryLabel: { fontSize: 9, color: "#f3f1ff", backgroundColor: "#241f38", paddingVertical: 3, paddingHorizontal: 7, borderRadius: 4, marginTop: 8, marginBottom: 5, alignSelf: "flex-start" },
   footer: { position: "absolute", bottom: 28, left: 44, right: 44, fontSize: 7.5, color: "#6b6885", textAlign: "center" },
 });
 
@@ -35,6 +36,11 @@ export type CvEntry = {
   isOngoing: boolean;
 };
 
+export type CvCategoryGroup = {
+  categoryName: string;
+  entries: CvEntry[];
+};
+
 export type CvData = {
   fullName: string;
   specialty: string | null;
@@ -44,9 +50,15 @@ export type CvData = {
   phone: string | null;
   address: string | null;
   website: string | null;
+  instagram: string | null;
+  linkedin: string | null;
   skills: string[];
   experience: CvEntry[];
-  projects: CvEntry[];
+  /// Proyectos agrupados por categoría (item: "que se muestren los
+  /// proyectos en su categoría, y todas las subcategorías también" —
+  /// cada entry ya trae el nombre de sus subcategorías metido en el
+  /// subtitle).
+  projectsByCategory: CvCategoryGroup[];
   locale: "es" | "en";
 };
 
@@ -57,7 +69,7 @@ export function CvDocument({ data }: { data: CvData }) {
     skills: data.locale === "en" ? "Skills" : "Aptitudes",
   };
 
-  const contactBits = [data.email, data.phone, data.address, data.website].filter(Boolean);
+  const contactBits = [data.email, data.phone, data.address, data.website, data.instagram, data.linkedin].filter(Boolean);
 
   return (
     <Document>
@@ -72,6 +84,30 @@ export function CvDocument({ data }: { data: CvData }) {
         </View>
 
         {data.bio && <Text style={styles.bio}>{data.bio}</Text>}
+
+        {data.projectsByCategory.length > 0 && (
+          <View>
+            <Text style={styles.sectionTitle}>{t.portfolio}</Text>
+            {data.projectsByCategory.map((group, gi) => (
+              <View key={gi}>
+                <Text style={styles.categoryLabel}>{group.categoryName}</Text>
+                {group.entries.map((p, i) => (
+                  <View key={i} style={styles.entry} wrap={false}>
+                    <View style={styles.entryTitleRow}>
+                      <Text style={styles.entryTitle}>{p.title}</Text>
+                      <Text style={styles.entryMeta}>
+                        {formatDate(p.dateStart, false, data.locale)}
+                        {(p.dateStart || p.dateEnd || p.isOngoing) ? " — " : ""}
+                        {formatDate(p.dateEnd, p.isOngoing, data.locale)}
+                      </Text>
+                    </View>
+                    {p.subtitle && <Text style={styles.entryCompany}>{p.subtitle}</Text>}
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
 
         {data.skills.length > 0 && (
           <View wrap={false}>
@@ -101,25 +137,6 @@ export function CvDocument({ data }: { data: CvData }) {
                 </View>
                 {e.subtitle && <Text style={styles.entryCompany}>{e.subtitle}</Text>}
                 {e.description && <Text style={styles.entryDesc}>{e.description}</Text>}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {data.projects.length > 0 && (
-          <View>
-            <Text style={styles.sectionTitle}>{t.portfolio}</Text>
-            {data.projects.map((p, i) => (
-              <View key={i} style={styles.entry} wrap={false}>
-                <View style={styles.entryTitleRow}>
-                  <Text style={styles.entryTitle}>{p.title}</Text>
-                  <Text style={styles.entryMeta}>
-                    {formatDate(p.dateStart, false, data.locale)}
-                    {(p.dateStart || p.dateEnd || p.isOngoing) ? " — " : ""}
-                    {formatDate(p.dateEnd, p.isOngoing, data.locale)}
-                  </Text>
-                </View>
-                {p.subtitle && <Text style={styles.entryCompany}>{p.subtitle}</Text>}
               </View>
             ))}
           </View>

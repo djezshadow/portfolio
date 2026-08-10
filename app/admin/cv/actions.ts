@@ -73,6 +73,8 @@ export async function updateProfile(formData: FormData) {
       phone: field(formData, "phone"),
       address: field(formData, "address"),
       website: field(formData, "website"),
+      instagram: field(formData, "instagram"),
+      linkedin: field(formData, "linkedin"),
       cvEnabled: formData.get("cvEnabled") === "on",
       photoUrl,
     },

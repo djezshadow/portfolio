@@ -6,24 +6,24 @@ export const runtime = "nodejs";
 
 export async function GET() {
   const categories = await prisma.category.findMany({
-    where: { isComingSoon: false },
     orderBy: { order: "asc" },
     include: {
       projects: {
         where: { project: { publishedAt: { lte: new Date() } } },
-        include: { project: { include: { collaborator: true } } },
+        include: { project: { include: { collaborator: true, mediaGroups: true } } },
       },
     },
   });
 
   const data: ReelCategory[] = categories
-    .filter((c) => c.projects.length > 0)
+    .filter((c) => !c.isComingSoon && c.projects.length > 0)
     .map((c) => ({
       name: c.name,
       projects: c.projects.map(({ project }) => ({
         title: project.title,
         role: project.role,
         collaboratorName: project.collaborator?.name ?? null,
+        subcategories: project.mediaGroups.map((g) => g.name),
       })),
     }));
 

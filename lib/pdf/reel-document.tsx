@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
 
 export type ReelCategory = {
   name: string;
-  projects: { title: string; role: string | null; collaboratorName: string | null }[];
+  projects: { title: string; role: string | null; collaboratorName: string | null; subcategories?: string[] }[];
 };
 
 export function ReelDocument({ categories }: { categories: ReelCategory[] }) {
@@ -31,7 +31,9 @@ export function ReelDocument({ categories }: { categories: ReelCategory[] }) {
               <View key={i} style={styles.row}>
                 <Text style={styles.projectTitle}>{p.title}</Text>
                 <Text style={styles.projectMeta}>
-                  {[p.role, p.collaboratorName].filter(Boolean).join(" · ")}
+                  {[p.role, p.collaboratorName, p.subcategories && p.subcategories.length > 0 ? p.subcategories.join(", ") : null]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </Text>
               </View>
             ))}

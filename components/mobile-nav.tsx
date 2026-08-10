@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./theme-toggle";
 
-type NavLink = { href: string; label: string };
+type NavLink = { href: string; label: string; emphasis?: boolean; isComingSoon?: boolean; hint?: string | null };
 
 /**
  * Menú de celular (item de rediseño de navbar): 3 rayitas arriba a la
@@ -23,6 +23,7 @@ export function MobileNav({
   otherLocaleLabel: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [hintOpen, setHintOpen] = useState<{ label: string; hint: string | null } | null>(null);
 
   return (
     <>
@@ -71,17 +72,33 @@ export function MobileNav({
                 ×
               </button>
 
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  data-cursor="magnetic"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl px-3 py-3 text-[var(--ink-muted)] transition-colors hover:text-accent"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {links.map((link) =>
+                link.isComingSoon ? (
+                  <button
+                    key={link.href}
+                    type="button"
+                    onClick={() => setHintOpen({ label: link.label, hint: link.hint ?? null })}
+                    data-cursor="magnetic"
+                    className="rounded-xl px-3 py-3 text-left text-[var(--ink-muted)] opacity-50 grayscale"
+                  >
+                    {link.label} 🔒
+                  </button>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    data-cursor="magnetic"
+                    onClick={() => setOpen(false)}
+                    className={
+                      link.emphasis
+                        ? "rounded-xl bg-[var(--accent)] px-3 py-3 text-center text-[var(--bg)] transition-opacity hover:opacity-85"
+                        : "rounded-xl px-3 py-3 text-[var(--ink-muted)] transition-colors hover:text-accent"
+                    }
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
 
               <div className="mt-4 flex items-center justify-between border-t border-[var(--glass-border)] pt-4">
                 <Link
@@ -96,6 +113,39 @@ export function MobileNav({
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {hintOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setHintOpen(null)}
+            className="fixed inset-0 z-[220] flex items-center justify-center bg-black/60 p-6 sm:hidden"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              onClick={(e) => e.stopPropagation()}
+              className="nav-surface max-w-xs rounded-2xl p-6 text-center"
+            >
+              <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-accent">
+                Próximamente 🔒
+              </p>
+              <h3 className="mb-3 font-display text-lg">{hintOpen.label}</h3>
+              {hintOpen.hint && <p className="text-sm text-[var(--ink-muted)]">{hintOpen.hint}</p>}
+              <button
+                onClick={() => setHintOpen(null)}
+                data-cursor="magnetic"
+                className="mt-4 rounded-full bg-[var(--accent)] px-4 py-1.5 font-mono text-xs text-[var(--bg)]"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

@@ -40,6 +40,42 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     // sin DB disponible, la nav igual muestra Home + Contacto
   }
 
+  let navProjects: {
+    id: string;
+    title: string;
+    titleEn: string | null;
+    isComingSoon: boolean;
+    comingSoonHint: string | null;
+    comingSoonHintEn: string | null;
+    categorySlug: string | null;
+  }[] = [];
+  try {
+    const rows = await prisma.project.findMany({
+      where: { showInNav: true, publishedAt: { lte: new Date() } },
+      orderBy: { order: "asc" },
+      select: {
+        id: true,
+        title: true,
+        titleEn: true,
+        isComingSoon: true,
+        comingSoonHint: true,
+        comingSoonHintEn: true,
+        categories: { take: 1, select: { category: { select: { slug: true } } } },
+      },
+    });
+    navProjects = rows.map((p) => ({
+      id: p.id,
+      title: p.title,
+      titleEn: p.titleEn,
+      isComingSoon: p.isComingSoon,
+      comingSoonHint: p.comingSoonHint,
+      comingSoonHintEn: p.comingSoonHintEn,
+      categorySlug: p.categories[0]?.category.slug ?? null,
+    }));
+  } catch {
+    // sin DB disponible, sin accesos directos de proyecto
+  }
+
   try {
     const settings = await getSiteSettings();
     logos = settings;
@@ -62,6 +98,14 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
       isComingSoon: c.isComingSoon,
       hint: locOrNull(c.comingSoonHint, c.comingSoonHintEn, locale),
     })),
+    ...navProjects
+      .filter((p) => p.categorySlug)
+      .map((p) => ({
+        href: `/${locale}/categoria/${p.categorySlug}?proyecto=${p.id}`,
+        label: loc(p.title, p.titleEn, locale),
+        isComingSoon: p.isComingSoon,
+        hint: locOrNull(p.comingSoonHint, p.comingSoonHintEn, locale),
+      })),
     ...(aboutEnabled ? [{ href: `/${locale}/sobre-mi`, label: dict.nav.about }] : []),
     { href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" },
     { href: `/${locale}/contacto`, label: dict.nav.contact },

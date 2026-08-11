@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
-import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings } from "./actions";
+import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
@@ -35,6 +35,10 @@ export default async function ConfiguracionPage() {
     logoSize: 64,
     logoSizeMobile: 40,
     contactEmail: null as string | null,
+    footerInstagramUrl: null as string | null,
+    footerTiktokUrl: null as string | null,
+    footerLinkedinUrl: null as string | null,
+    footerYoutubeUrl: null as string | null,
   };
   try {
     settings = await getSiteSettings();
@@ -178,6 +182,33 @@ export default async function ConfiguracionPage() {
           />
         </div>
         <SubmitButton>Guardar mail de contacto</SubmitButton>
+      </form>
+
+      {/* --- Footer / redes sociales --- */}
+      <h2 className="mb-1 mt-12 font-display text-xl">Footer — redes sociales</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        Aparecen al pie de todas las páginas. Dejá vacío el que no uses — no se muestra el ícono.
+      </p>
+      <form action={updateFooterSocials} className="glass grid grid-cols-1 gap-4 rounded-2xl p-5 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Instagram</label>
+          <input name="footerInstagramUrl" defaultValue={settings.footerInstagramUrl ?? ""} placeholder="https://instagram.com/djezshadow" className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">TikTok</label>
+          <input name="footerTiktokUrl" defaultValue={settings.footerTiktokUrl ?? ""} className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">LinkedIn</label>
+          <input name="footerLinkedinUrl" defaultValue={settings.footerLinkedinUrl ?? ""} className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">YouTube</label>
+          <input name="footerYoutubeUrl" defaultValue={settings.footerYoutubeUrl ?? ""} className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+        </div>
+        <div className="sm:col-span-2">
+          <SubmitButton>Guardar redes sociales</SubmitButton>
+        </div>
       </form>
     </div>
   );

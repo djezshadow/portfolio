@@ -1,56 +1,54 @@
 "use server";
 
 import { sendEmail } from "@/lib/resend";
-import { getSiteSettings } from "@/lib/site-settings";
+import { createContactToken } from "@/lib/contact-token";
 
 export type ContactState = { ok: boolean; error?: string } | null;
 
 /**
- * Manda el mensaje DIRECTO a tu casilla (CONTACT_EMAIL_TO / lo que hayas
- * puesto en Configuración), con "responder a" apuntando a quien escribió.
+ * Paso 1 (estilo WeTransfer): en vez de mandarte el mensaje directo, le
+ * manda a QUIEN ESCRIBIÓ un mail para que confirme que es su casilla de
+ * verdad — recién cuando toca el link de ahí, el mensaje te llega a vos
+ * (ver confirmContactMessage). Esto evita mensajes de mails inventados y
+ * asegura que siempre tengas un mail real al que responder.
  *
- * Antes había un paso de doble confirmación (le mandaba un mail a la
- * persona que escribió el formulario, pidiéndole que lo confirme). Eso
- * requiere tener un dominio propio verificado en Resend — mientras no lo
- * tengas, Resend en modo sandbox SOLO deja mandar mails a la casilla con la
- * que te registraste, nunca a un tercero. Por eso siempre fallaba con
- * "No se pudo enviar el mail". Mandando directo a tu propia casilla, anda
- * sin necesitar dominio verificado.
+ * Necesita un dominio propio verificado en Resend (no el sandbox) porque
+ * el mail de confirmación va a un tercero, no a tu propia casilla.
  */
 export async function sendContactMessage(
   _prev: ContactState,
   formData: FormData
 ): Promise<ContactState> {
+  const locale = String(formData.get("locale") ?? "es") === "en" ? "en" : "es";
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
 
   if (!name || !email || !message) {
-    return { ok: false, error: "Completá todos los campos." };
+    return { ok: false, error: locale === "en" ? "Fill in every field." : "Completá todos los campos." };
   }
 
   if (!process.env.RESEND_API_KEY) {
-    return { ok: false, error: "El formulario no está configurado todavía. Escribime directo por mail." };
+    return {
+      ok: false,
+      error:
+        locale === "en"
+          ? "The form isn't set up yet. Email me directly instead."
+          : "El formulario no está configurado todavía. Escribime directo por mail.",
+    };
   }
 
-  let to = process.env.CONTACT_EMAIL_TO || "";
-  try {
-    const settings = await getSiteSettings();
-    if (settings.contactEmail) to = settings.contactEmail;
-  } catch {
-    // seguimos con el .env si la DB no está disponible
-  }
+  const token = await createContactToken({ name, email, message });
+  const siteUrl = process.env.SITE_URL || "";
+  const confirmUrl = `${siteUrl}/${locale}/contacto/confirmar?token=${encodeURIComponent(token)}`;
 
-  if (!to) {
-    return { ok: false, error: "Falta configurar a dónde llegan los mensajes (CONTACT_EMAIL_TO)." };
-  }
+  const subject = locale === "en" ? "Confirm your message to DJEZSHADOW" : "Confirmá tu mensaje a DJEZSHADOW";
+  const text =
+    locale === "en"
+      ? `Hey ${name},\n\nTap the link below to confirm it's really you and send your message to DJEZSHADOW:\n\n${confirmUrl}\n\nIf you didn't request this, just ignore this email.`
+      : `Hola ${name},\n\nTocá el link de abajo para confirmar que sos vos y que tu mensaje le llegue a DJEZSHADOW:\n\n${confirmUrl}\n\nSi no pediste esto, ignorá este mail.`;
 
-  const result = await sendEmail({
-    to,
-    subject: `Nuevo contacto de ${name} — DJEZSHADOW`,
-    text: `De: ${name} <${email}>\n\n${message}`,
-    replyTo: email,
-  });
+  const result = await sendEmail({ to: email, subject, text });
 
   if (!result.ok) {
     return { ok: false, error: result.error ?? "No se pudo enviar el mail." };

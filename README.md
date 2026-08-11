@@ -1,5 +1,46 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 11 — footer, Coming Soon por proyecto, confirmación de mail estilo
+## WeTransfer
+
+**Footer nuevo** al pie de todas las páginas: link a Sobre mí (si está
+habilitado) + Contacto, y hasta 4 íconos de redes sociales (Instagram,
+TikTok, LinkedIn, YouTube) configurables desde Configuración — vacío =
+no se muestra ese ícono.
+
+**Coming Soon también a nivel proyecto** (antes solo existía para
+categorías): en `/admin/proyectos/[id]` y `/nuevo` hay un toggle
+"Proyecto en pausa" con mensaje ES/EN propio. Se ve gris/con candado
+dentro de su categoría, y tocarlo muestra el popup en vez de abrir el
+visor. También se puede dar de alta como **acceso directo en el
+navbar** (`showInNav`) — como los proyectos no tienen página propia
+(viven dentro de su categoría), el link usa
+`/categoria/[slug]?proyecto=<id>` y `category-view.tsx` lo detecta al
+cargar para abrir ese proyecto solo (o el popup, si sigue en pausa).
+
+**Mensaje del easter egg de 6 toques, independiente del popup.** Antes
+usaba el mismo texto que el popup de destacados/nav (`comingSoonHint`).
+Ahora es un campo separado (`easterEggMessage`/`En`) — la pista pública
+puede ser una cosa, y el secreto que se descubre tocando 6 veces el
+signo de pregunta (cuando entrás por la URL directa de una categoría
+en pausa) puede ser otra completamente distinta.
+
+**Confirmación de mail estilo WeTransfer, reactivada.** Ahora que hay
+dominio propio verificado en Resend (djezshadow.com), el flujo de doble
+confirmación que se había sacado por el bug del sandbox vuelve, esta
+vez andando: alguien escribe → se le manda un mail para confirmar que
+es su casilla real → recién al tocar ese link te llega el mensaje a
+vos. El formulario avisa esto ANTES de mandar (con la alternativa de
+Instagram si prefieren algo directo) y confirma DESPUÉS que hay que
+revisar el mail. Nuevo: `RESEND_FROM_EMAIL` en `.env` para mandar desde
+tu propio dominio en vez del sandbox de Resend (ej:
+`"DJEZSHADOW <hola@djezshadow.com>"`) — sin configurar, sigue usando el
+sandbox como respaldo.
+
+**Importante — schema nuevo, aditivo:** `Project.isComingSoon`,
+`comingSoonHint(En)`, `showInNav`; `Category.easterEggMessage(En)`;
+`SiteSettings.footer*Url` (4 campos).
+
 ## Fase 10 — Coming Soon rediseñado, carrusel real en la home, swipe,
 ## animación de carga personalizable, watermark manual por foto
 

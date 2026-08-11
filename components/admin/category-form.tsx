@@ -16,6 +16,8 @@ type CategoryFormProps = {
     isComingSoon?: boolean;
     comingSoonHint?: string;
     comingSoonHintEn?: string;
+    easterEggMessage?: string;
+    easterEggMessageEn?: string;
     showInNav?: boolean;
     accentColor?: string;
     fontFamily?: string;
@@ -194,12 +196,12 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
       <div className="glass space-y-3 rounded-2xl p-4">
         <label className="flex items-center gap-2 font-mono text-sm">
           <input type="checkbox" name="isComingSoon" defaultChecked={defaults.isComingSoon} /> Categoría
-          incógnita (item #47) — no aparece en destacados, muestra "coming soon" con easter egg
+          en pausa — aparece gris/bloqueada en destacados y en el navbar, con un mensaje al tocarla
         </label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
-              Pista ES (si no la cargás, usa un texto genérico)
+              Pista ES (se muestra en el popup del home/navbar — si no la cargás, usa un texto genérico)
             </label>
             <input
               name="comingSoonHint"
@@ -216,6 +218,35 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
               defaultValue={defaults.comingSoonHintEn}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             />
+          </div>
+        </div>
+
+        <div className="border-t border-[var(--glass-border)] pt-3">
+          <p className="mb-2 font-mono text-[11px] text-[var(--ink-muted)]">
+            Mensaje del easter egg (independiente de la pista de arriba) — solo lo ve quien entra
+            por la URL directa de esta categoría y toca 6 veces el signo de pregunta.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+                Mensaje secreto ES
+              </label>
+              <input
+                name="easterEggMessage"
+                defaultValue={defaults.easterEggMessage}
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+                Mensaje secreto EN — vacío = usa el ES
+              </label>
+              <input
+                name="easterEggMessageEn"
+                defaultValue={defaults.easterEggMessageEn}
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
           </div>
         </div>
       </div>

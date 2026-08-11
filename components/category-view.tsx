@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Prisma } from "@prisma/client";
 import { useTheme, resolveCategoryTheme } from "./theme-provider";
 import { categoryStyleToCSS } from "@/lib/category-style";
@@ -42,6 +44,7 @@ export function CategoryView({
 }) {
   const { theme: globalTheme } = useTheme();
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  const [hintOpen, setHintOpen] = useState<{ title: string; hint: string | null } | null>(null);
 
   const resolvedTheme = resolveCategoryTheme(globalTheme, {
     mode: category.themeMode,
@@ -52,6 +55,25 @@ export function CategoryView({
   const projects = category.projects.map((pc) => pc.project);
   const categoryName = loc(category.name, category.nameEn, locale);
   const openProject = projects.find((p) => p.id === openProjectId) ?? null;
+
+  // Acceso directo desde la navbar (?proyecto=<id>) — si el proyecto
+  // está en pausa, muestra la pista en vez de abrirlo directo.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const wanted = searchParams.get("proyecto");
+    if (!wanted) return;
+    const target = projects.find((p) => p.id === wanted);
+    if (!target) return;
+    if (target.isComingSoon) {
+      setHintOpen({
+        title: loc(target.title, target.titleEn, locale),
+        hint: locOrNull(target.comingSoonHint, target.comingSoonHintEn, locale),
+      });
+    } else {
+      setOpenProjectId(target.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div data-theme={resolvedTheme} className="min-h-screen px-6 py-16 transition-colors duration-500">
@@ -82,11 +104,23 @@ export function CategoryView({
             return (
               <Reveal key={project.id} delay={i * 0.05}>
                 <article
-                  onClick={() => setOpenProjectId(project.id)}
+                  onClick={() =>
+                    project.isComingSoon
+                      ? setHintOpen({
+                          title,
+                          hint: locOrNull(project.comingSoonHint, project.comingSoonHintEn, locale),
+                        })
+                      : setOpenProjectId(project.id)
+                  }
                   data-cursor="magnetic"
-                  className="glass cursor-pointer overflow-hidden rounded-2xl"
+                  className={`glass cursor-pointer overflow-hidden rounded-2xl ${project.isComingSoon ? "grayscale opacity-60 saturate-0" : ""}`}
                 >
                   <div className="relative">
+                    {project.isComingSoon && (
+                      <span className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-sm text-white">
+                        🔒
+                      </span>
+                    )}
                     {coverMedia?.type === "video" && coverMedia.videoProvider && coverMedia.videoId ? (
                       <div className="pointer-events-none">
                         <VideoEmbed
@@ -159,6 +193,39 @@ export function CategoryView({
           onClose={() => setOpenProjectId(null)}
         />
       )}
+
+      <AnimatePresence>
+        {hintOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setHintOpen(null)}
+            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 p-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              onClick={(e) => e.stopPropagation()}
+              className="nav-surface max-w-xs rounded-2xl p-6 text-center"
+            >
+              <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-accent">
+                {locale === "en" ? "Coming soon" : "Próximamente"} 🔒
+              </p>
+              <h3 className="mb-3 font-display text-lg">{hintOpen.title}</h3>
+              {hintOpen.hint && <p className="text-sm text-[var(--ink-muted)]">{hintOpen.hint}</p>}
+              <button
+                onClick={() => setHintOpen(null)}
+                data-cursor="magnetic"
+                className="mt-4 rounded-full bg-[var(--accent)] px-4 py-1.5 font-mono text-xs text-[var(--bg)]"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

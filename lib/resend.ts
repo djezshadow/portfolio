@@ -9,6 +9,14 @@ export async function sendEmail(opts: {
     return { ok: false, error: "Falta RESEND_API_KEY en las variables de entorno." };
   }
 
+  // Con dominio propio verificado en Resend, mandá desde ahí (ej:
+  // "DJEZSHADOW <hola@djezshadow.com>") — configurable por env var así no
+  // hace falta tocar código cuando cambies de dominio o de casilla.
+  // Sin verificar un dominio, Resend solo deja mandar desde su dominio de
+  // pruebas (onboarding@resend.dev) y ÚNICAMENTE a la casilla con la que
+  // te registraste — por eso ese es el respaldo si no configuraste esto.
+  const from = process.env.RESEND_FROM_EMAIL || "DJEZSHADOW Portfolio <onboarding@resend.dev>";
+
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -17,7 +25,7 @@ export async function sendEmail(opts: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "DJEZSHADOW Portfolio <onboarding@resend.dev>",
+        from,
         to: opts.to,
         reply_to: opts.replyTo,
         subject: opts.subject,

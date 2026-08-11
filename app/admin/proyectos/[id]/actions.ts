@@ -29,6 +29,10 @@ export async function updateProject(projectId: string, formData: FormData) {
   const roleEn = (formData.get("roleEn") as string) || null;
   const categoryId = String(formData.get("categoryId") ?? "");
   const featured = formData.get("featured") === "on";
+  const showInNav = formData.get("showInNav") === "on";
+  const isComingSoon = formData.get("isComingSoon") === "on";
+  const comingSoonHint = (formData.get("comingSoonHint") as string)?.trim() || null;
+  const comingSoonHintEn = (formData.get("comingSoonHintEn") as string)?.trim() || null;
   const collaboratorId = (formData.get("collaboratorId") as string) || null;
 
   const isOngoing = formData.get("isOngoing") === "on";
@@ -98,6 +102,10 @@ export async function updateProject(projectId: string, formData: FormData) {
       role,
       roleEn,
       featured,
+      showInNav,
+      isComingSoon,
+      comingSoonHint,
+      comingSoonHintEn,
       publishedAt,
       dateStart,
       dateEnd,

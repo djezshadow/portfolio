@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { CategoryView } from "@/components/category-view";
@@ -100,9 +101,13 @@ export default async function CategoryPage({
   // Item #47: categoría "incógnita" — muestra un coming soon con pistas en vez
   // de los proyectos, salvo que seas vos mismo logueado como admin (preview).
   if (category.isComingSoon && !isAdmin) {
-    const hint = locOrNull(category.comingSoonHint, category.comingSoonHintEn, locale);
+    const hint = locOrNull(category.easterEggMessage, category.easterEggMessageEn, locale);
     return <ComingSoon hint={hint} dict={dict} />;
   }
 
-  return <CategoryView category={category} isPreview={isAdmin} dict={dict} locale={locale} />;
+  return (
+    <Suspense fallback={null}>
+      <CategoryView category={category} isPreview={isAdmin} dict={dict} locale={locale} />
+    </Suspense>
+  );
 }

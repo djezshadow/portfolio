@@ -199,6 +199,41 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
           <input type="checkbox" name="featured" defaultChecked={project.featured} /> Destacar en el home
         </label>
 
+        <label className="flex items-center gap-2 font-mono text-sm">
+          <input type="checkbox" name="showInNav" defaultChecked={project.showInNav} /> Acceso directo en el
+          navbar flotante
+        </label>
+
+        <div className="glass space-y-3 rounded-2xl p-4">
+          <label className="flex items-center gap-2 font-mono text-sm">
+            <input type="checkbox" name="isComingSoon" defaultChecked={project.isComingSoon} /> Proyecto en
+            pausa — se ve gris/bloqueado (en su categoría y en el navbar si tiene acceso directo), con un
+            mensaje al tocarlo. Subilo así mientras terminás el material y destildá esto cuando esté listo.
+          </label>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+                Mensaje ES (vacío = genérico)
+              </label>
+              <input
+                name="comingSoonHint"
+                defaultValue={project.comingSoonHint ?? ""}
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+                Mensaje EN — vacío = usa el ES
+              </label>
+              <input
+                name="comingSoonHintEn"
+                defaultValue={project.comingSoonHintEn ?? ""}
+                className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+              />
+            </div>
+          </div>
+        </div>
+
         {project.media.length > 0 && (
           <div className="glass space-y-3 rounded-2xl p-4">
             <p className="font-mono text-xs text-[var(--ink-muted)]">Media actual</p>

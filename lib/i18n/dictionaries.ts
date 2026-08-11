@@ -21,6 +21,7 @@ const dictionaries = {
     contact: {
       title: "Hablemos",
       subtitle: "Contame sobre tu proyecto y te respondo en breve.",
+      confirmNotice: "Por seguridad, antes de que me llegue tu mensaje te voy a pedir que confirmes tu mail (un solo toque, como WeTransfer). Si preferís algo más directo, escribime por Instagram.",
       name: "Nombre",
       email: "Email",
       message: "Mensaje",
@@ -28,7 +29,7 @@ const dictionaries = {
       sending: "Enviando…",
       whatsapp: "Escribime por WhatsApp →",
       instagram: "O escribime por Instagram →",
-      success: "Mensaje enviado — te respondo a la brevedad.",
+      success: "¡Casi! Te mandé un mail para confirmar que sos vos — tocá el link de ahí (revisá spam si no lo ves) y recién ahí me llega tu mensaje.",
     },
     footer: { rights: "Todos los derechos reservados." },
     comingSoon: {
@@ -54,6 +55,7 @@ const dictionaries = {
     contact: {
       title: "Let's talk",
       subtitle: "Tell me about your project and I'll get back to you shortly.",
+      confirmNotice: "For security, I'll ask you to confirm your email before your message reaches me (one tap, like WeTransfer). If you'd rather skip that, message me on Instagram instead.",
       name: "Name",
       email: "Email",
       message: "Message",
@@ -61,7 +63,7 @@ const dictionaries = {
       sending: "Sending…",
       whatsapp: "Message me on WhatsApp →",
       instagram: "Or message me on Instagram →",
-      success: "Message sent — I'll reply soon.",
+      success: "Almost there! I sent you an email to confirm it's you — tap the link there (check spam if you don't see it) and your message will reach me right after.",
     },
     footer: { rights: "All rights reserved." },
     comingSoon: {

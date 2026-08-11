@@ -60,6 +60,8 @@ export async function createCategory(formData: FormData) {
       showInNav: formData.get("showInNav") === "on",
       comingSoonHint: (formData.get("comingSoonHint") as string) || null,
       comingSoonHintEn: (formData.get("comingSoonHintEn") as string) || null,
+      easterEggMessage: (formData.get("easterEggMessage") as string) || null,
+      easterEggMessageEn: (formData.get("easterEggMessageEn") as string) || null,
       style: { create: readStyleFields(formData) },
     },
   });
@@ -92,6 +94,8 @@ export async function updateCategory(categoryId: string, formData: FormData) {
       showInNav: formData.get("showInNav") === "on",
       comingSoonHint: (formData.get("comingSoonHint") as string) || null,
       comingSoonHintEn: (formData.get("comingSoonHintEn") as string) || null,
+      easterEggMessage: (formData.get("easterEggMessage") as string) || null,
+      easterEggMessageEn: (formData.get("easterEggMessageEn") as string) || null,
       style: {
         upsert: {
           create: readStyleFields(formData),

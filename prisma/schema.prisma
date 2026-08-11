@@ -49,11 +49,17 @@ model Category {
   metaTitleEn     String?
   metaDescription String?
   metaDescriptionEn String?
-  /// Categoría "oculta": no aparece en destacados/nav, y su página muestra
-  /// un "coming soon" con pistas en vez de los proyectos (item #47).
+  /// Categoría "en pausa": se ve gris/bloqueada en destacados y nav, con
+  /// un popup mostrando `comingSoonHint` al tocarla.
   isComingSoon    Boolean           @default(false)
   comingSoonHint  String?
   comingSoonHintEn String?
+  /// Mensaje del easter egg de 6 toques en la pantalla de "signo de
+  /// pregunta" (cuando entrás por URL directa) — a propósito
+  /// INDEPENDIENTE de comingSoonHint: uno es la pista pública del popup,
+  /// este es el secreto que solo ve quien encuentra el easter egg.
+  easterEggMessage   String?
+  easterEggMessageEn String?
   /// Si está en true, aparece como link en el navbar flotante público
   /// (independiente de isComingSoon — así podés linkear el "coming soon"
   /// desde la nav aunque no salga en destacados).
@@ -142,6 +148,15 @@ model Project {
   logoUrl        String?
   featured       Boolean           @default(false)
   order          Int               @default(0)
+  /// Coming Soon a nivel proyecto (mismo mecanismo que Category, ver
+  /// más abajo): el proyecto se ve pero bloqueado, gris/candado, con un
+  /// mensaje propio al tocarlo — hasta que se destilda.
+  isComingSoon     Boolean @default(false)
+  comingSoonHint   String?
+  comingSoonHintEn String?
+  /// Acceso directo del proyecto en el navbar (además de vivir dentro de
+  /// su categoría) — respeta el mismo bloqueo/desbloqueo de Coming Soon.
+  showInNav        Boolean @default(false)
   /// null = borrador (nunca se muestra en el sitio público).
   /// fecha futura = programado. fecha pasada/ahora = publicado.
   publishedAt    DateTime?
@@ -304,6 +319,14 @@ model SiteSettings {
   loadingAnimationPositionMobile String  @default("center")
   loadingAnimationSize            Int    @default(120)
   loadingAnimationSizeMobile      Int    @default(90)
+
+  /// Redes sociales del footer (item nuevo) — vacío = no se muestra ese
+  /// ícono. Configurable acá, no hace falta tocar código para cambiar un
+  /// link o sacar una red.
+  footerInstagramUrl String?
+  footerTiktokUrl    String?
+  footerLinkedinUrl  String?
+  footerYoutubeUrl   String?
 }
 
 /// Perfil para el CV descargable (item nuevo: "que la gente pueda desde mi

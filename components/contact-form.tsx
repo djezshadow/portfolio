@@ -16,6 +16,7 @@ type Dict = {
     whatsapp: string;
     instagram: string;
     success: string;
+    confirmNotice: string;
   };
 };
 
@@ -27,6 +28,9 @@ export function ContactForm({ dict, locale }: { dict: Dict; locale: string }) {
 
   return (
     <div className="space-y-8">
+      <p className="rounded-xl bg-black/5 px-4 py-3 text-xs text-[var(--ink-muted)]">
+        {dict.contact.confirmNotice}
+      </p>
       <form action={formAction} className="glass space-y-4 rounded-2xl p-6">
         <input type="hidden" name="locale" value={locale} />
         <div>

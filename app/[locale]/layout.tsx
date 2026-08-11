@@ -1,6 +1,7 @@
 import { locales, type Locale } from "@/lib/i18n/dictionaries";
 import { SetHtmlLang } from "@/components/set-html-lang";
 import { FloatingNav } from "@/components/floating-nav";
+import { Footer } from "@/components/footer";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -16,9 +17,10 @@ export default async function LocaleLayout({
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   return (
-    <div className="pt-14">
+    <div className="flex min-h-screen flex-col pt-14">
       <SetHtmlLang locale={locale} />
-      {children}
+      <div className="flex-1">{children}</div>
+      <Footer locale={locale} />
       <FloatingNav locale={locale} />
     </div>
   );

@@ -229,3 +229,29 @@ export async function updateContactSettings(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
 }
+
+export async function updateFooterSocials(formData: FormData) {
+  await assertAdmin();
+
+  const field = (name: string) => (formData.get(name) as string)?.trim() || null;
+
+  await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    update: {
+      footerInstagramUrl: field("footerInstagramUrl"),
+      footerTiktokUrl: field("footerTiktokUrl"),
+      footerLinkedinUrl: field("footerLinkedinUrl"),
+      footerYoutubeUrl: field("footerYoutubeUrl"),
+    },
+    create: {
+      id: "default",
+      footerInstagramUrl: field("footerInstagramUrl"),
+      footerTiktokUrl: field("footerTiktokUrl"),
+      footerLinkedinUrl: field("footerLinkedinUrl"),
+      footerYoutubeUrl: field("footerYoutubeUrl"),
+    },
+  });
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/", "layout");
+}

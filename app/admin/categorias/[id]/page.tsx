@@ -52,6 +52,8 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
           showInNav: category.showInNav,
           comingSoonHint: category.comingSoonHint ?? undefined,
           comingSoonHintEn: category.comingSoonHintEn ?? undefined,
+          easterEggMessage: category.easterEggMessage ?? undefined,
+          easterEggMessageEn: category.easterEggMessageEn ?? undefined,
           accentColor: category.style?.accentColor ?? undefined,
           fontFamily: category.style?.fontFamily ?? undefined,
           bold: category.style?.bold,

@@ -39,7 +39,11 @@ export async function sendContactMessage(
   }
 
   const token = await createContactToken({ name, email, message });
-  const siteUrl = process.env.SITE_URL || "";
+  // Sin SITE_URL configurada, el link quedaba relativo ("/es/contacto/...")
+  // — funciona bien DENTRO del sitio, pero no sirve para nada en un mail
+  // (no hay "página actual" desde la que resolverlo). Con dominio propio
+  // ya andando, este fallback asegura que el link SIEMPRE sea completo.
+  const siteUrl = (process.env.SITE_URL || "https://djezshadow.com").replace(/\/$/, "");
   const confirmUrl = `${siteUrl}/${locale}/contacto/confirmar?token=${encodeURIComponent(token)}`;
 
   const subject = locale === "en" ? "Confirm your message to DJEZSHADOW" : "Confirmá tu mensaje a DJEZSHADOW";

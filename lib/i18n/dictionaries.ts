@@ -55,7 +55,7 @@ const dictionaries = {
     contact: {
       title: "Let's talk",
       subtitle: "Tell me about your project and I'll get back to you shortly.",
-      confirmNotice: "For security, I'll ask you to confirm your email before your message reaches me (one tap, like WeTransfer). If you'd rather skip that, message me on Instagram instead.",
+      confirmNotice: "For security, I'll ask you to confirm your email before your message reaches me. If you'd rather skip that, message me on Instagram instead.",
       name: "Name",
       email: "Email",
       message: "Message",

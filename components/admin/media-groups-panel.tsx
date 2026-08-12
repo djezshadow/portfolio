@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ReorderButtons } from "./reorder-buttons";
 
 type Group = { id: string; name: string; nameEn: string | null; coverImageUrl: string | null };
 type OtherProject = { id: string; title: string };
@@ -14,6 +15,7 @@ export function MediaGroupsPanel({
   deleteAction,
   coverAction,
   moveAction,
+  reorderAction,
 }: {
   projectId: string;
   groups: Group[];
@@ -23,6 +25,7 @@ export function MediaGroupsPanel({
   deleteAction: (groupId: string, formData: FormData) => Promise<void>;
   coverAction: (groupId: string, formData: FormData) => Promise<void>;
   moveAction: (groupId: string, formData: FormData) => Promise<void>;
+  reorderAction: (groupId: string, direction: "up" | "down") => Promise<void>;
 }) {
   const [adding, setAdding] = useState(false);
   const createBound = createAction.bind(null, projectId);
@@ -36,7 +39,7 @@ export function MediaGroupsPanel({
 
       {groups.length > 0 && (
         <ul className="space-y-4">
-          {groups.map((g) => {
+          {groups.map((g, i) => {
             const rename = renameAction.bind(null, g.id);
             const remove = deleteAction.bind(null, g.id);
             const cover = coverAction.bind(null, g.id);
@@ -44,6 +47,11 @@ export function MediaGroupsPanel({
             return (
               <li key={g.id} className="space-y-2 border-b border-[var(--glass-border)] pb-4">
                 <div className="flex flex-wrap items-center gap-3">
+                  <ReorderButtons
+                    onMove={(direction) => reorderAction(g.id, direction)}
+                    disableUp={i === 0}
+                    disableDown={i === groups.length - 1}
+                  />
                   {g.coverImageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={g.coverImageUrl} alt="" className="h-12 w-20 rounded-lg object-cover" />

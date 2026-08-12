@@ -165,3 +165,30 @@ export async function updateCategoryCover(categoryId: string, formData: FormData
   revalidatePath(`/admin/categorias/${categoryId}`);
   revalidatePath("/", "layout");
 }
+
+/**
+ * Mueve una categoría un lugar arriba o abajo en el orden (item: "poder
+ * acomodar el orden de las categorías"). Intercambia el `order` con el
+ * vecino inmediato — simple y sin dependencias de drag-and-drop.
+ */
+export async function moveCategoryOrder(categoryId: string, direction: "up" | "down") {
+  await assertAdmin();
+
+  const all = await prisma.category.findMany({ orderBy: { order: "asc" }, select: { id: true, order: true } });
+  const index = all.findIndex((c) => c.id === categoryId);
+  if (index === -1) return;
+
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= all.length) return;
+
+  const current = all[index];
+  const neighbor = all[swapWith];
+
+  await prisma.$transaction([
+    prisma.category.update({ where: { id: current.id }, data: { order: neighbor.order } }),
+    prisma.category.update({ where: { id: neighbor.id }, data: { order: current.order } }),
+  ]);
+
+  revalidatePath("/admin/categorias");
+  revalidatePath("/", "layout");
+}

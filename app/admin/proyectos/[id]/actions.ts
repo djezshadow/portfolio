@@ -241,6 +241,34 @@ export async function deleteMediaGroup(groupId: string, _formData: FormData) {
   revalidatePath(`/admin/proyectos/${group.projectId}`);
 }
 
+export async function moveMediaGroupOrder(groupId: string, direction: "up" | "down") {
+  await assertAdmin();
+
+  const group = await prisma.mediaGroup.findUnique({ where: { id: groupId } });
+  if (!group) return;
+
+  const all = await prisma.mediaGroup.findMany({
+    where: { projectId: group.projectId },
+    orderBy: { order: "asc" },
+    select: { id: true, order: true },
+  });
+  const index = all.findIndex((g) => g.id === groupId);
+  if (index === -1) return;
+
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= all.length) return;
+
+  const current = all[index];
+  const neighbor = all[swapWith];
+
+  await prisma.$transaction([
+    prisma.mediaGroup.update({ where: { id: current.id }, data: { order: neighbor.order } }),
+    prisma.mediaGroup.update({ where: { id: neighbor.id }, data: { order: current.order } }),
+  ]);
+
+  revalidatePath(`/admin/proyectos/${group.projectId}`);
+}
+
 export async function updateMediaGroupCover(groupId: string, formData: FormData) {
   await assertAdmin();
 

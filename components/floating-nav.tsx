@@ -29,6 +29,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   };
   let aboutEnabled = false;
   let cvEnabled = false;
+  let navOrder: string[] = [];
 
   try {
     categories = await prisma.category.findMany({
@@ -80,6 +81,13 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     const settings = await getSiteSettings();
     logos = settings;
     aboutEnabled = settings.aboutEnabled;
+    if (settings.navOrder) {
+      try {
+        navOrder = JSON.parse(settings.navOrder);
+      } catch {
+        // JSON inválido — se usa el orden natural
+      }
+    }
   } catch {
     // sin DB disponible, se usa el wordmark de texto
   }
@@ -93,6 +101,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
 
   const links = [
     ...categories.map((c) => ({
+      key: `category:${c.slug}`,
       href: `/${locale}/categoria/${c.slug}`,
       label: loc(c.name, c.nameEn, locale),
       isComingSoon: c.isComingSoon,
@@ -101,16 +110,31 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     ...navProjects
       .filter((p) => p.categorySlug)
       .map((p) => ({
+        key: `project:${p.id}`,
         href: `/${locale}/categoria/${p.categorySlug}?proyecto=${p.id}`,
         label: loc(p.title, p.titleEn, locale),
         isComingSoon: p.isComingSoon,
         hint: locOrNull(p.comingSoonHint, p.comingSoonHintEn, locale),
       })),
-    ...(aboutEnabled ? [{ href: `/${locale}/sobre-mi`, label: dict.nav.about }] : []),
-    { href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" },
-    { href: `/${locale}/contacto`, label: dict.nav.contact },
-    ...(cvEnabled ? [{ href: `/api/cv-pdf?locale=${locale}`, label: "CV", emphasis: true }] : []),
+    ...(aboutEnabled ? [{ key: "about", href: `/${locale}/sobre-mi`, label: dict.nav.about }] : []),
+    { key: "colaboradores", href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" },
+    { key: "contacto", href: `/${locale}/contacto`, label: dict.nav.contact },
+    ...(cvEnabled ? [{ key: "cv", href: `/api/cv-pdf?locale=${locale}`, label: "CV", emphasis: true }] : []),
   ];
+
+  // Orden custom del navbar (item nuevo: "dejame elegir el orden") — los
+  // items sin posición guardada (categorías/proyectos nuevos) quedan al
+  // final, en su orden natural.
+  if (navOrder.length > 0) {
+    links.sort((a, b) => {
+      const ia = navOrder.indexOf(a.key);
+      const ib = navOrder.indexOf(b.key);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
 
   return (
     <div data-floating-nav>

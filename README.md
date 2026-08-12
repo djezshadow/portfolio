@@ -1,5 +1,33 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 12 — 5 diseños de carrusel nuevos + reordenar todo
+
+**5 presets nuevos de carrusel** (+ preview en vivo en admin): Filmstrip
+(tiras tipo negativo 35mm), Editorial (grid asimétrico tipo revista),
+Marquee (loop horizontal automático, se pausa al hover), Split (imagen +
+panel de color con efecto cortina al hover), Polaroid (fotos apiladas y
+rotadas al azar, se enderezan al hover). Se suman a los 3 que ya
+existían (Cards/Minimal/Stack) — 8 en total, todos con soporte de
+portada. De paso: bug encontrado — la validación del preset en la home
+solo reconocía "minimal"/"stack" a mano, cualquier otro valor caía
+siempre a "cards"; ahora valida contra la lista completa.
+
+**Reordenar categorías, subcategorías y navbar** — con flechas
+arriba/abajo (no drag-and-drop, más confiable y sin dependencias
+nuevas):
+- Categorías: en `/admin/categorias`.
+- Subcategorías de un proyecto: en el panel de subcategorías dentro de
+  `/admin/proyectos/[id]`.
+- Orden del navbar completo (categorías, proyectos con acceso directo,
+  Sobre mí, Colaboradores, Contacto, CV): nueva página `/admin/navbar`.
+  Se guarda como JSON (`SiteSettings.navOrder`) — los ítems nuevos que
+  no estén todavía en ese orden guardado van al final, en su orden
+  natural.
+
+**Importante — schema nuevo, aditivo:** solo se agregó
+`SiteSettings.navOrder` (texto, JSON). El resto de esta fase usa campos
+`order` que ya existían en Category/MediaGroup.
+
 ## Fase 11 — footer, Coming Soon por proyecto, confirmación de mail estilo
 ## WeTransfer
 

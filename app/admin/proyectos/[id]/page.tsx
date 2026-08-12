@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, updateMediaWatermarkOverride } from "./actions";
+import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
@@ -63,6 +63,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
           deleteAction={deleteMediaGroup}
           coverAction={updateMediaGroupCover}
           moveAction={moveMediaGroupToProject}
+          reorderAction={moveMediaGroupOrder}
         />
       </div>
 

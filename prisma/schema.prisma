@@ -327,6 +327,12 @@ model SiteSettings {
   footerTiktokUrl    String?
   footerLinkedinUrl  String?
   footerYoutubeUrl   String?
+
+  /// Orden custom del navbar (JSON: array de keys, ej:
+  /// ["category:filmmaker","cv","contacto","colaboradores"]) — los items
+  /// que no estén en la lista (categorías/proyectos nuevos) van al final
+  /// en su orden natural. Se edita desde /admin/navbar.
+  navOrder String? @db.Text
 }
 
 /// Perfil para el CV descargable (item nuevo: "que la gente pueda desde mi

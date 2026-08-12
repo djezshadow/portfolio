@@ -20,6 +20,7 @@ export function AdminNav() {
         <Link href="/admin/sobre-mi" data-cursor="magnetic">Sobre mí</Link>
         <Link href="/admin/cv" data-cursor="magnetic">CV</Link>
         <Link href="/admin/carga" data-cursor="magnetic">Carga</Link>
+        <Link href="/admin/navbar" data-cursor="magnetic">Navbar</Link>
         <Link href="/admin/proyectos/nuevo" data-cursor="magnetic" className="text-accent">
           + Nuevo
         </Link>

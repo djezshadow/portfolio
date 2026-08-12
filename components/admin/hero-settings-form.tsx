@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { SubmitButton } from "./submit-button";
+import { Carousel, type CarouselItem, type CarouselPreset } from "../carousel";
+
+const SAMPLE_ITEMS: CarouselItem[] = [
+  { id: "1", code: "SC-01", title: "Filmmaker", subtitle: "3 proyectos" },
+  { id: "2", code: "SC-02", title: "Fotógrafo", subtitle: "5 proyectos" },
+  { id: "3", code: "SC-03", title: "Animación 3D", subtitle: "2 proyectos" },
+];
 
 type Props = {
   action: (formData: FormData) => Promise<void>;
@@ -25,6 +32,7 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
   const [title1, setTitle1] = useState(initial.heroTitle1 ?? "");
   const [title2, setTitle2] = useState(initial.heroTitle2 ?? "");
   const [subtitle, setSubtitle] = useState(initial.heroSubtitle ?? "");
+  const [preset, setPreset] = useState<CarouselPreset>((initial.carouselPreset as CarouselPreset) || "cards");
 
   return (
     <form action={action} className="glass mb-10 space-y-4 rounded-2xl p-5">
@@ -121,13 +129,28 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
         </label>
         <select
           name="carouselPreset"
-          defaultValue={initial.carouselPreset}
+          value={preset}
+          onChange={(e) => setPreset(e.target.value as CarouselPreset)}
           className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
         >
           <option value="cards">Cards (tarjetas grandes, el original)</option>
           <option value="minimal">Minimal (lista prolija, sin tarjetas)</option>
           <option value="stack">Stack (círculos superpuestos)</option>
+          <option value="filmstrip">Filmstrip (tiras tipo negativo 35mm)</option>
+          <option value="editorial">Editorial (grid asimétrico tipo revista)</option>
+          <option value="marquee">Marquee (loop horizontal automático)</option>
+          <option value="split">Split (imagen + panel de color, cortina al hover)</option>
+          <option value="polaroid">Polaroid (fotos apiladas y rotadas)</option>
         </select>
+      </div>
+
+      <div>
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
+          Previsualización (con datos de ejemplo)
+        </p>
+        <div className="overflow-hidden rounded-xl bg-black/20 p-5">
+          <Carousel items={SAMPLE_ITEMS} preset={preset} />
+        </div>
       </div>
 
       <SubmitButton>Guardar título y subtítulo</SubmitButton>

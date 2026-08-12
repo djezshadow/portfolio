@@ -10,16 +10,25 @@ export type CarouselItem = {
   subtitle?: string;
   code: string; // timecode/etiqueta tipo SC-01
   href?: string;
-  /// Portada opcional (item #17) — si está, se muestra de fondo en el
-  /// preset "cards" y como imagen en el círculo del preset "stack".
+  /// Portada opcional — todos los presets la soportan de alguna forma
+  /// (fondo, círculo, franja, etc). Sin portada, cada preset cae a un
+  /// estilo tipográfico propio.
   coverImageUrl?: string | null;
-  /// Coming soon (rediseño): la card se ve gris/bloqueada y al tocarla
-  /// muestra un popup con `hint` en vez de navegar.
+  /// Coming soon: la card se ve gris/bloqueada y al tocarla muestra un
+  /// popup con `hint` en vez de navegar.
   isComingSoon?: boolean;
   hint?: string | null;
 };
 
-export type CarouselPreset = "cards" | "minimal" | "stack";
+export type CarouselPreset =
+  | "cards"
+  | "minimal"
+  | "stack"
+  | "filmstrip"
+  | "editorial"
+  | "marquee"
+  | "split"
+  | "polaroid";
 
 type CarouselProps = {
   items: CarouselItem[];
@@ -34,12 +43,14 @@ function ItemWrapper({
   comingSoon,
   onComingSoonClick,
   className,
+  style,
   children,
 }: {
   href?: string;
   comingSoon?: boolean;
   onComingSoonClick?: () => void;
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   if (comingSoon) {
@@ -48,6 +59,7 @@ function ItemWrapper({
         type="button"
         onClick={onComingSoonClick}
         data-cursor="magnetic"
+        style={style}
         className={`${className} grayscale opacity-60 saturate-0 transition-opacity hover:opacity-75`}
       >
         {children}
@@ -56,13 +68,13 @@ function ItemWrapper({
   }
   if (href) {
     return (
-      <Link href={href} data-cursor="magnetic" className={className}>
+      <Link href={href} data-cursor="magnetic" style={style} className={className}>
         {children}
       </Link>
     );
   }
   return (
-    <div data-cursor="magnetic" className={className}>
+    <div data-cursor="magnetic" style={style} className={className}>
       {children}
     </div>
   );
@@ -76,6 +88,13 @@ function LockBadge() {
   );
 }
 
+/** Rotación pseudo-random pero DETERMINÍSTICA (mismo resultado en server
+ * y cliente, así no hay hydration mismatch) — usada por el preset Polaroid. */
+function pseudoRotation(i: number): number {
+  const values = [-6, 4, -3, 6, -5, 3, -4, 5, -2, 2];
+  return values[i % values.length];
+}
+
 export function Carousel({
   items,
   maxItems = 10,
@@ -86,9 +105,7 @@ export function Carousel({
   const [hintOpen, setHintOpen] = useState<{ title: string; hint: string | null } | null>(null);
 
   // Con 0 categorías no hay nada que mostrar. Con 1 o más, se muestran
-  // todas — nunca se esconde la sección entera por tener "pocas" (eso
-  // causó que el carrusel entero desapareciera de la home con solo 1-2
-  // categorías cargadas).
+  // todas — nunca se esconde la sección entera por tener "pocas".
   if (items.length === 0) return null;
 
   const visible = items.slice(0, maxItems);
@@ -134,7 +151,7 @@ export function Carousel({
     </AnimatePresence>
   );
 
-  // --- Preset "minimal": lista vertical de filas, sin cards grandes ---
+  // ============================= MINIMAL =============================
   if (preset === "minimal") {
     return (
       <>
@@ -172,7 +189,7 @@ export function Carousel({
     );
   }
 
-  // --- Preset "stack": círculos superpuestos tipo avatar-stack, título abajo ---
+  // ============================== STACK ===============================
   if (preset === "stack") {
     return (
       <>
@@ -215,7 +232,290 @@ export function Carousel({
     );
   }
 
-  // --- Preset "cards" (default): el diseño original ---
+  // ============================ FILMSTRIP =============================
+  // Tiras angostas y altas tipo negativo de 35mm, con perforaciones
+  // decorativas arriba/abajo — coherente con la estética timecode.
+  if (preset === "filmstrip") {
+    return (
+      <>
+        <div className="flex gap-3 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {visible.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+            >
+              <ItemWrapper
+                href={item.href}
+                comingSoon={item.isComingSoon}
+                onComingSoonClick={() => openHint(item)}
+                className="group relative block w-[160px] shrink-0 overflow-hidden rounded-sm bg-black text-left"
+              >
+                {item.isComingSoon && <LockBadge />}
+                {/* perforaciones */}
+                <div className="flex justify-between bg-black px-1.5 py-1">
+                  {Array.from({ length: 6 }).map((_, h) => (
+                    <span key={h} className="h-2 w-2 rounded-[2px] bg-[var(--bg)]" />
+                  ))}
+                </div>
+                <div className="relative aspect-[3/4] w-full">
+                  {item.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.coverImageUrl}
+                      alt=""
+                      className="h-full w-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[var(--glass-border)]">
+                      <span className="font-mono text-2xl text-white/40">{item.code.replace("SC-", "")}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-between bg-black px-1.5 py-1">
+                  {Array.from({ length: 6 }).map((_, h) => (
+                    <span key={h} className="h-2 w-2 rounded-[2px] bg-[var(--bg)]" />
+                  ))}
+                </div>
+                <div className="bg-black p-2 text-white">
+                  <p className="font-mono text-[9px] text-accent">{item.isComingSoon ? comingSoonLabel : item.code}</p>
+                  <p className="truncate font-display text-sm">{item.title}</p>
+                </div>
+              </ItemWrapper>
+            </motion.div>
+          ))}
+        </div>
+        {HintPopup}
+      </>
+    );
+  }
+
+  // ============================ EDITORIAL =============================
+  // Grid asimétrico tipo portada de revista: el primer ítem grande, el
+  // resto chico al lado.
+  if (preset === "editorial") {
+    return (
+      <>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {visible.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, scale: 0.96 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+              className={i === 0 ? "col-span-2 row-span-2" : ""}
+            >
+              <ItemWrapper
+                href={item.href}
+                comingSoon={item.isComingSoon}
+                onComingSoonClick={() => openHint(item)}
+                className={`group relative block h-full w-full overflow-hidden rounded-xl text-left ${i === 0 ? "min-h-[220px]" : "min-h-[100px]"}`}
+              >
+                {item.isComingSoon && <LockBadge />}
+                {item.coverImageUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.coverImageUrl}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-[var(--glass-border)]" />
+                )}
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <p className={`font-mono text-[10px] ${item.coverImageUrl ? "text-white/80" : "text-accent"}`}>
+                    {item.isComingSoon ? comingSoonLabel : item.code}
+                  </p>
+                  <h3 className={`font-display ${i === 0 ? "text-2xl" : "text-sm"} ${item.coverImageUrl ? "text-white" : ""}`}>
+                    {item.title}
+                  </h3>
+                </div>
+              </ItemWrapper>
+            </motion.div>
+          ))}
+        </div>
+        {HintPopup}
+      </>
+    );
+  }
+
+  // ============================= MARQUEE ==============================
+  // Loop horizontal automático, se pausa al pasar el mouse.
+  if (preset === "marquee") {
+    const loopItems = [...visible, ...visible];
+    const duration = Math.max(visible.length * 4, 16);
+    return (
+      <>
+        <style>{`
+          @keyframes djez-marquee {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+          .djez-marquee-track {
+            animation: djez-marquee var(--marquee-duration, 20s) linear infinite;
+          }
+          .djez-marquee-track:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
+        <div className="overflow-hidden">
+          <div
+            className="djez-marquee-track flex w-max gap-4"
+            style={{ "--marquee-duration": `${duration}s` } as React.CSSProperties}
+          >
+            {loopItems.map((item, i) => (
+              <ItemWrapper
+                key={`${item.id}-${i}`}
+                href={item.href}
+                comingSoon={item.isComingSoon}
+                onComingSoonClick={() => openHint(item)}
+                className="glass group/card relative block min-w-[240px] shrink-0 overflow-hidden rounded-2xl p-5 text-left shadow-none"
+              >
+                {item.isComingSoon && <LockBadge />}
+                {item.coverImageUrl && (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.coverImageUrl}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-70 transition-opacity group-hover/card:opacity-90"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                  </>
+                )}
+                <span className={`relative font-mono text-[11px] ${item.coverImageUrl ? "text-white/80" : "text-accent"}`}>
+                  {item.isComingSoon ? comingSoonLabel : item.code}
+                </span>
+                <h3 className={`relative mt-1 font-display text-lg ${item.coverImageUrl ? "text-white" : ""}`}>
+                  {item.title}
+                </h3>
+              </ItemWrapper>
+            ))}
+          </div>
+        </div>
+        {HintPopup}
+      </>
+    );
+  }
+
+  // =============================== SPLIT ===============================
+  // Imagen arriba / panel de color abajo con el título — al hover el
+  // panel "sube" como una cortina y revela el subtítulo.
+  if (preset === "split") {
+    return (
+      <>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {visible.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+            >
+              <ItemWrapper
+                href={item.href}
+                comingSoon={item.isComingSoon}
+                onComingSoonClick={() => openHint(item)}
+                className="group relative block overflow-hidden rounded-2xl text-left"
+              >
+                {item.isComingSoon && <LockBadge />}
+                <div className="relative aspect-square w-full overflow-hidden">
+                  {item.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.coverImageUrl}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[var(--glass-border)]">
+                      <span className="font-display text-3xl text-[var(--ink-muted)]">{item.code.replace("SC-", "")}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="relative -mt-6 rounded-t-2xl bg-[var(--accent)] p-4 text-[var(--bg)] transition-transform duration-300 group-hover:-translate-y-2">
+                  <p className="font-mono text-[10px] opacity-70">{item.isComingSoon ? comingSoonLabel : item.code}</p>
+                  <h3 className="font-display text-lg">{item.title}</h3>
+                  {item.subtitle && !item.isComingSoon && (
+                    <p className="mt-1 max-h-0 overflow-hidden text-xs opacity-0 transition-all duration-300 group-hover:max-h-8 group-hover:opacity-80">
+                      {item.subtitle}
+                    </p>
+                  )}
+                </div>
+              </ItemWrapper>
+            </motion.div>
+          ))}
+        </div>
+        {HintPopup}
+      </>
+    );
+  }
+
+  // ============================= POLAROID ==============================
+  // Fotos superpuestas rotadas al azar (determinístico), se enderezan y
+  // agrandan al hover — pila de fotos física.
+  if (preset === "polaroid") {
+    return (
+      <>
+        <style>{`
+          .djez-polaroid {
+            transform: rotate(var(--rot, 0deg));
+            transition: transform 0.3s ease;
+          }
+          .djez-polaroid:hover {
+            transform: rotate(0deg) scale(1.1);
+            z-index: 50;
+          }
+        `}</style>
+        <div className="flex flex-wrap justify-center gap-x-1 gap-y-10 py-4">
+          {visible.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+              style={{ marginLeft: i === 0 ? 0 : -28, zIndex: i }}
+            >
+              <ItemWrapper
+                href={item.href}
+                comingSoon={item.isComingSoon}
+                onComingSoonClick={() => openHint(item)}
+                style={{ "--rot": `${pseudoRotation(i)}deg` } as React.CSSProperties}
+                className="djez-polaroid group relative block w-[150px] rounded-sm bg-white p-2 pb-8 text-left shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
+              >
+                {item.isComingSoon && <LockBadge />}
+                <div className="relative aspect-square w-full overflow-hidden bg-black/10">
+                  {item.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <span className="font-display text-2xl text-black/30">{item.code.replace("SC-", "")}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 truncate text-center font-display text-sm text-black">
+                  {item.isComingSoon ? "🔒" : item.title}
+                </p>
+              </ItemWrapper>
+            </motion.div>
+          ))}
+        </div>
+        {HintPopup}
+      </>
+    );
+  }
+
+  // ============================== CARDS ================================
+  // Default: el diseño original.
   return (
     <>
       <div className="relative">

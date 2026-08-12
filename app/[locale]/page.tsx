@@ -1,4 +1,4 @@
-import { Carousel, type CarouselItem } from "@/components/carousel";
+import { Carousel, type CarouselItem, type CarouselPreset } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
 import { CollaboratorCard } from "@/components/collaborator-card";
 import { prisma } from "@/lib/prisma";
@@ -58,7 +58,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let heroTitle1: string = dict.hero.title1;
   let heroTitle2: string = dict.hero.title2;
   let heroSubtitle: string = dict.hero.subtitle;
-  let carouselPreset: "cards" | "minimal" | "stack" = "cards";
+  let carouselPreset: CarouselPreset = "cards";
   let embeddedLogo: { noirUrl: string | null; neonUrl: string | null; size: number; sizeMobile: number } | null = null;
   let cvEnabled = false;
   try {
@@ -67,8 +67,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
     heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
     heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;
-    if (settings.carouselPreset === "minimal" || settings.carouselPreset === "stack") {
-      carouselPreset = settings.carouselPreset;
+    const validPresets: CarouselPreset[] = ["cards", "minimal", "stack", "filmstrip", "editorial", "marquee", "split", "polaroid"];
+    if (validPresets.includes(settings.carouselPreset as CarouselPreset)) {
+      carouselPreset = settings.carouselPreset as CarouselPreset;
     }
     if (!settings.logoFloating) {
       embeddedLogo = {

@@ -20,8 +20,8 @@ const dictionaries = {
     },
     contact: {
       title: "Hablemos",
-      subtitle: "Contame sobre tu proyecto y te respondo en breve.",
-      confirmNotice: "Por seguridad, antes de que me llegue tu mensaje te voy a pedir que confirmes tu mail. Si preferís algo más directo, escribime por Instagram.",
+      subtitle: "Podés contactarme por acá y te respondo en breve.",
+      confirmNotice: "Por seguridad, cuando envíes el formulario vas a recibir un mail de confirmación. Tu mensaje me llegará recién después de que confirmes tu dirección de correo electronico. Si preferís algo más directo, escribime por Instagram.",
       name: "Nombre",
       email: "Email",
       message: "Mensaje",
@@ -29,7 +29,7 @@ const dictionaries = {
       sending: "Enviando…",
       whatsapp: "Escribime por WhatsApp →",
       instagram: "O escribime por Instagram →",
-      success: "¡Casi! Te mandé un mail para confirmar que sos vos — tocá el link de ahí (revisá spam si no lo ves) y recién ahí me llega tu mensaje.",
+      success: "Revisá tu correo para confirmar tu dirección. Una vez completada la verificación, tu mensaje será enviado. Si no ves el correo, revisá la carpeta de spam.",
     },
     footer: { rights: "Todos los derechos reservados." },
     comingSoon: {
@@ -54,8 +54,8 @@ const dictionaries = {
     },
     contact: {
       title: "Let's talk",
-      subtitle: "Tell me about your project and I'll get back to you shortly.",
-      confirmNotice: "For security, I'll ask you to confirm your email before your message reaches me. If you'd rather skip that, message me on Instagram instead.",
+      subtitle: "You can contact me here, and I’ll get back to you shortly.",
+      confirmNotice: "For security reasons, when you submit the form, you’ll receive a confirmation email. Your message will only reach me after you confirm your email address. If you prefer a more direct way to get in touch, feel free to message me on Instagram.",
       name: "Name",
       email: "Email",
       message: "Message",
@@ -63,7 +63,7 @@ const dictionaries = {
       sending: "Sending…",
       whatsapp: "Message me on WhatsApp →",
       instagram: "Or message me on Instagram →",
-      success: "Almost there! I sent you an email to confirm it's you — tap the link there (check spam if you don't see it) and your message will reach me right after.",
+      success: "Check your email to confirm your address. Once the verification is complete, your message will be sent. If you don’t see the email, check your spam folder.",
     },
     footer: { rights: "All rights reserved." },
     comingSoon: {

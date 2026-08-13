@@ -17,7 +17,7 @@ export default async function LocaleLayout({
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   return (
-    <div className="flex min-h-screen flex-col pt-14">
+    <div className="djez-content-offset flex min-h-screen flex-col">
       <SetHtmlLang locale={locale} />
       <div className="flex-1">{children}</div>
       <Footer locale={locale} />

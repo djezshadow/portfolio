@@ -30,6 +30,9 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   let aboutEnabled = false;
   let cvEnabled = false;
   let navOrder: string[] = [];
+  let colaboradoresInNav = true;
+  let contactoInNav = true;
+  let customLinks: { id: string; label: string; labelEn: string | null; url: string }[] = [];
 
   try {
     categories = await prisma.category.findMany({
@@ -81,6 +84,8 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     const settings = await getSiteSettings();
     logos = settings;
     aboutEnabled = settings.aboutEnabled;
+    colaboradoresInNav = settings.colaboradoresInNav;
+    contactoInNav = settings.contactoInNav;
     if (settings.navOrder) {
       try {
         navOrder = JSON.parse(settings.navOrder);
@@ -93,6 +98,12 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   }
 
   try {
+    customLinks = await prisma.customNavLink.findMany({ orderBy: { order: "asc" } });
+  } catch {
+    // sin DB disponible, sin links custom
+  }
+
+  try {
     const profile = await getProfile();
     cvEnabled = profile.cvEnabled;
   } catch {
@@ -100,6 +111,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   }
 
   const links = [
+    { key: "home", href: `/${locale}`, label: locale === "en" ? "Home" : "Home" },
     ...categories.map((c) => ({
       key: `category:${c.slug}`,
       href: `/${locale}/categoria/${c.slug}`,
@@ -117,9 +129,16 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
         hint: locOrNull(p.comingSoonHint, p.comingSoonHintEn, locale),
       })),
     ...(aboutEnabled ? [{ key: "about", href: `/${locale}/sobre-mi`, label: dict.nav.about }] : []),
-    { key: "colaboradores", href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" },
-    { key: "contacto", href: `/${locale}/contacto`, label: dict.nav.contact },
-    ...(cvEnabled ? [{ key: "cv", href: `/api/cv-pdf?locale=${locale}`, label: "CV", emphasis: true }] : []),
+    ...(colaboradoresInNav
+      ? [{ key: "colaboradores", href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" }]
+      : []),
+    ...(contactoInNav ? [{ key: "contacto", href: `/${locale}/contacto`, label: dict.nav.contact }] : []),
+    ...(cvEnabled ? [{ key: "cv", href: `/api/cv-pdf?locale=${locale}`, label: "CV", emphasis: true, isCv: true }] : []),
+    ...customLinks.map((c) => ({
+      key: `custom:${c.id}`,
+      href: c.url,
+      label: loc(c.label, c.labelEn, locale),
+    })),
   ];
 
   // Orden custom del navbar (item nuevo: "dejame elegir el orden") — los

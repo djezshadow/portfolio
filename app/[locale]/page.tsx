@@ -7,6 +7,7 @@ import { loc, locOrNull } from "@/lib/i18n/content";
 import { getSiteSettings } from "@/lib/site-settings";
 import { SiteLogo } from "@/components/site-logo";
 import { getProfile } from "@/lib/profile";
+import { CvDownloadLink } from "@/components/cv-download-link";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -196,13 +197,12 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             {dict.nav.downloadReel} ↓
           </a>
           {cvEnabled && (
-            <a
+            <CvDownloadLink
               href={`/api/cv-pdf?locale=${locale}`}
-              data-cursor="magnetic"
+              label={`${locale === "en" ? "Download CV" : "Descargar CV"} ↓`}
+              locale={locale}
               className="inline-block rounded-full bg-[var(--accent)] px-5 py-2 font-mono text-xs text-[var(--bg)]"
-            >
-              {locale === "en" ? "Download CV" : "Descargar CV"} ↓
-            </a>
+            />
           )}
         </div>
       </section>

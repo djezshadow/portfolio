@@ -6,6 +6,7 @@ import { type Locale } from "@/lib/i18n/dictionaries";
 import { markdownToHtml } from "@/lib/markdown";
 import { Reveal } from "@/components/reveal";
 import { getProfile } from "@/lib/profile";
+import { CvDownloadLink } from "@/components/cv-download-link";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +43,12 @@ export default async function AboutMePage({
       {profile.cvEnabled && (
         <Reveal delay={0.05}>
           <div className="mt-6 flex justify-center">
-            <a
+            <CvDownloadLink
               href={`/api/cv-pdf?locale=${locale}`}
-              data-cursor="magnetic"
+              label={`${locale === "en" ? "Download CV" : "Descargar CV"} ↓`}
+              locale={locale}
               className="inline-block rounded-full bg-[var(--accent)] px-6 py-3 font-mono text-sm text-[var(--bg)]"
-            >
-              {locale === "en" ? "Download CV" : "Descargar CV"} ↓
-            </a>
+            />
           </div>
         </Reveal>
       )}

@@ -123,7 +123,13 @@ export function ProjectLightbox({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (!showingPicker && groups.length > 0) {
+          setActiveGroupId(null);
+        } else {
+          onClose();
+        }
+      }
       if (showingPicker) return;
       if (e.key === "ArrowRight") goNext();
       if (e.key === "ArrowLeft") goPrev();
@@ -198,25 +204,24 @@ export function ProjectLightbox({
                 {project.title}
               </span>
             ) : (
-              <div className="flex items-center gap-3">
-                {groups.length > 0 && (
-                  <button
-                    onClick={() => setActiveGroupId(null)}
-                    data-cursor="magnetic"
-                    className="font-mono text-[11px] text-[var(--ink-muted)] underline"
-                  >
-                    ← Subcategorías
-                  </button>
-                )}
-                <span className="font-mono text-[11px] text-[var(--ink-muted)]">
-                  {media.length > 1 ? `${index + 1} / ${media.length}` : ""}
-                </span>
-              </div>
+              <span className="font-mono text-[11px] text-[var(--ink-muted)]">
+                {media.length > 1 ? `${index + 1} / ${media.length}` : ""}
+              </span>
             )}
             <button
-              onClick={onClose}
+              onClick={() => {
+                // Dentro de un álbum (con subcategorías arriba), la cruz
+                // vuelve al selector en vez de cerrar todo — la jerarquía
+                // se siente natural: álbum → cruz → subcategorías → cruz
+                // → cierra. Ya no hace falta el link "← Subcategorías".
+                if (!showingPicker && groups.length > 0) {
+                  setActiveGroupId(null);
+                } else {
+                  onClose();
+                }
+              }}
               data-cursor="magnetic"
-              aria-label="Cerrar"
+              aria-label={!showingPicker && groups.length > 0 ? "Volver a subcategorías" : "Cerrar"}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-black/10 text-xl transition-colors hover:bg-black/20"
             >
               ×

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CvDownloadLink } from "./cv-download-link";
 
 type ComingSoonLink = {
   href: string;
@@ -9,6 +10,7 @@ type ComingSoonLink = {
   isComingSoon?: boolean;
   hint?: string | null;
   emphasis?: boolean;
+  isCv?: boolean;
 };
 
 /**
@@ -33,6 +35,13 @@ export function NavLinksDesktop({ links }: { links: ComingSoonLink[] }) {
           >
             {link.label} 🔒
           </button>
+        ) : link.isCv ? (
+          <CvDownloadLink
+            key={link.href}
+            href={link.href}
+            label={link.label}
+            className="shrink-0 rounded-full bg-[var(--accent)] px-3 py-2 text-[var(--bg)] transition-opacity hover:opacity-85"
+          />
         ) : (
           <a
             key={link.href}

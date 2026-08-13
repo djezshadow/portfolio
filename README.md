@@ -1,5 +1,47 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 13 — botón Home, links custom del navbar, ojito de mostrar/ocultar,
+## confirmación de descarga del CV, fix de cruz en álbum, fix de footer
+## duplicado, ajustes de horizontal (PDF "Correcciones y mejoras v2")
+
+Arrancando a implementar el PDF que mandaste. Lo que quedó cerrado esta
+tanda:
+
+- **1.1 Botón Home** en el navbar (desktop + sidebar mobile).
+- **1.2 Links personalizados del navbar** — modelo nuevo `CustomNavLink`,
+  con su propio panel en `/admin/navbar` (nombre ES/EN + URL, para
+  internos o externos).
+- **1.3 Confirmación antes de descargar el CV** — los 4 lugares donde
+  aparecía el link de CV (nav desktop, sidebar mobile, home, sobre-mí)
+  ahora abren un popup "¿Descargar el CV?" con Cancelar/Descargar; la
+  descarga arranca recién al confirmar.
+- **Ojito de mostrar/ocultar en el navbar** (pedido tuyo, no estaba en
+  el PDF): cada ítem de `/admin/navbar` — categorías, proyectos, Sobre
+  mí, Colaboradores, Contacto, CV — tiene un toggle 👁️/🚫 para
+  prender/apagarlo sin ir a buscarlo a otra sección. Sumé
+  `colaboradoresInNav`/`contactoInNav` porque esos dos no tenían forma
+  de ocultarse antes.
+- **5.1 La cruz dentro de un álbum ahora vuelve a las subcategorías**
+  en vez de cerrar todo el visor — y saqué el link "← Subcategorías"
+  que ya no hace falta (la cruz cumple esa función).
+- **Bug encontrado: footer duplicado.** Cuando armé el `Footer` nuevo
+  (fase 11), no vi que ya existía un footer viejo con el copyright en
+  `app/layout.tsx` — por eso en mobile se veían dos textos de copyright
+  pegados/superpuestos. Saqué el viejo.
+- **2.1/8.2 Footer responsive real**: en mobile vertical (y horizontal
+  angosto) se ve solo el copyright corto; en desktop, o mobile
+  horizontal con espacio real (≥700px de ancho), se ve todo (links +
+  redes + copyright).
+- **8.4 Espacio navbar↔contenido en horizontal**: un poco más de aire
+  en landscape con poca altura, para que no se pisen.
+- **8.5 Íconos gigantes en horizontal**: revisé todo el código y no
+  encontré ningún ícono medido en `vw`/`vh` que lo explique — todos
+  usan px fijos. Necesito una captura del problema puntual para poder
+  arreglarlo (puede ser algo de un navegador/dispositivo específico).
+
+**Importante — schema nuevo, aditivo:** modelo `CustomNavLink`, y en
+`SiteSettings`: `colaboradoresInNav`, `contactoInNav`.
+
 ## Fase 12 — 5 diseños de carrusel nuevos + reordenar todo
 
 **5 presets nuevos de carrusel** (+ preview en vivo en admin): Filmstrip

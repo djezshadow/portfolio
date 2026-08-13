@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./theme-toggle";
+import { CvDownloadLink } from "./cv-download-link";
 
-type NavLink = { href: string; label: string; emphasis?: boolean; isComingSoon?: boolean; hint?: string | null };
+type NavLink = { href: string; label: string; emphasis?: boolean; isComingSoon?: boolean; hint?: string | null; isCv?: boolean };
 
 /**
  * Menú de celular (item de rediseño de navbar): 3 rayitas arriba a la
@@ -83,6 +84,13 @@ export function MobileNav({
                   >
                     {link.label} 🔒
                   </button>
+                ) : link.isCv ? (
+                  <CvDownloadLink
+                    key={link.href}
+                    href={link.href}
+                    label={link.label}
+                    className="rounded-xl bg-[var(--accent)] px-3 py-3 text-center text-[var(--bg)] transition-opacity hover:opacity-85"
+                  />
                 ) : (
                   <Link
                     key={link.href}

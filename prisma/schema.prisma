@@ -333,6 +333,23 @@ model SiteSettings {
   /// que no estén en la lista (categorías/proyectos nuevos) van al final
   /// en su orden natural. Se edita desde /admin/navbar.
   navOrder String? @db.Text
+  /// Colaboradores/Contacto no tenían forma de ocultarse del navbar (a
+  /// diferencia de categorías/proyectos que ya tienen showInNav, o Sobre
+  /// mí/CV que se controlan con su propio enabled). Solo afecta el link
+  /// del navbar — las páginas siguen accesibles por URL directa.
+  colaboradoresInNav Boolean @default(true)
+  contactoInNav      Boolean @default(true)
+}
+
+/// Links manuales del navbar (item PDF #1.2) — para enlaces externos o
+/// internos que no son ni categoría, ni proyecto, ni ninguna de las
+/// secciones fijas del sitio.
+model CustomNavLink {
+  id      String @id @default(cuid())
+  label   String
+  labelEn String?
+  url     String
+  order   Int    @default(0)
 }
 
 /// Perfil para el CV descargable (item nuevo: "que la gente pueda desde mi

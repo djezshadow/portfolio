@@ -48,9 +48,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <TimecodeBar />
           <AdminModeBadge />
           <main className="pt-14">{children}</main>
-          <footer className="px-6 py-10 text-center font-mono text-xs text-[var(--ink-muted)]">
-            © {new Date().getFullYear()} DJEZSHADOW®. Todos los derechos reservados.
-          </footer>
         </ThemeProvider>
         <Analytics />
       </body>

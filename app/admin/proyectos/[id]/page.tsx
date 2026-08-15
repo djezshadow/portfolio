@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride } from "./actions";
+import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, moveMediaOrder } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { MediaGroupsPanel } from "@/components/admin/media-groups-panel";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { WatermarkOverrideForm } from "@/components/admin/watermark-override-form";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { toMonthInputValue } from "@/lib/date-range";
 
 function toDatetimeLocal(date: Date) {
@@ -239,8 +240,16 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
           <div className="glass space-y-3 rounded-2xl p-4">
             <p className="font-mono text-xs text-[var(--ink-muted)]">Media actual</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {project.media.map((m) => (
+              {project.media.map((m, mi) => (
                 <div key={m.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[9px] text-[var(--ink-muted)]">#{mi + 1}</span>
+                    <ReorderButtons
+                      onMove={(direction) => moveMediaOrder(m.id, direction)}
+                      disableUp={mi === 0}
+                      disableDown={mi === project.media.length - 1}
+                    />
+                  </div>
                   <label className="relative block cursor-pointer">
                     {m.type === "image" ? (
                       <Image

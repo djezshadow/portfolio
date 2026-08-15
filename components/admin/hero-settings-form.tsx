@@ -19,6 +19,9 @@ type Props = {
     heroTitle2En: string | null;
     heroSubtitle: string | null;
     heroSubtitleEn: string | null;
+    heroKicker: string | null;
+    heroKickerEn: string | null;
+    heroKickerShowTimecode: boolean;
     carouselPreset: string;
   };
   placeholders: {
@@ -32,6 +35,8 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
   const [title1, setTitle1] = useState(initial.heroTitle1 ?? "");
   const [title2, setTitle2] = useState(initial.heroTitle2 ?? "");
   const [subtitle, setSubtitle] = useState(initial.heroSubtitle ?? "");
+  const [kicker, setKicker] = useState(initial.heroKicker ?? "");
+  const [showTimecode, setShowTimecode] = useState(initial.heroKickerShowTimecode);
   const [preset, setPreset] = useState<CarouselPreset>((initial.carouselPreset as CarouselPreset) || "cards");
 
   return (
@@ -39,7 +44,10 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
       {/* Previsualización en vivo (item #15) — así se ve el hero de la home
           con estos textos, antes de guardar nada. */}
       <div className="rounded-xl bg-black/20 px-5 py-8">
-        <span className="font-mono text-xs text-accent">REEL — 00:00:00:00</span>
+        <span className="font-mono text-xs text-accent">
+          {(kicker || "REEL").toUpperCase()}
+          {showTimecode && " — 00:00:00:00"}
+        </span>
         <h1 className="mt-2 font-display text-3xl leading-[1.05] sm:text-4xl">
           {title1 || placeholders.title1}
           <br />
@@ -121,6 +129,47 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
             className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
           />
         </div>
+      </div>
+
+      <div className="rounded-xl border border-[var(--glass-border)] p-3">
+        <p className="mb-2 font-mono text-[10px] text-[var(--ink-muted)]">
+          La etiqueta chica arriba del título ("REEL — 00:00:00:00") es puramente decorativa —
+          simula el timecode de un editor de video, para acompañar la estética de "cada corte
+          cuenta algo". No tiene ninguna función, es solo texto de marca. La podés cambiar o
+          apagar el timecode acá.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Palabra (ES) — vacío = "REEL"
+            </label>
+            <input
+              name="heroKicker"
+              value={kicker}
+              onChange={(e) => setKicker(e.target.value)}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Palabra (EN) — vacío = usa la ES
+            </label>
+            <input
+              name="heroKickerEn"
+              defaultValue={initial.heroKickerEn ?? ""}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
+          </div>
+        </div>
+        <label className="mt-2 flex items-center gap-2 font-mono text-xs">
+          <input
+            type="checkbox"
+            name="heroKickerShowTimecode"
+            checked={showTimecode}
+            onChange={(e) => setShowTimecode(e.target.checked)}
+          />
+          Mostrar "— 00:00:00:00" (siempre en ceros, es decorativo)
+        </label>
       </div>
 
       <div>

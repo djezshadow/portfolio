@@ -1,5 +1,46 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 14 — bug de tipos de colaborador, nombres del navbar editables,
+## reordenar fotos, CV con @usuario, kicker del hero editable
+
+**Bug real corregido: tipos de colaborador custom caían siempre en
+"Colaboradores".** El sistema solo tenía 2 baldes fijos (Clientes/
+Colaboradores) según un flag `isClient`. Si creabas un tipo nuevo (ej.
+"Prensa") sin marcarlo como cliente, quedaba mezclado en el balde
+genérico "Colaboradores" en vez de tener su propia sección. Ahora tanto
+la home como `/colaboradores` agrupan dinámicamente **por cada tipo**,
+en el orden en que están definidos en `/admin/tipos-colaborador` — ya
+no son 2 secciones fijas, son tantas como tipos tengas con al menos un
+colaborador cargado.
+
+**Nombres del navbar editables.** En `/admin/navbar`, los 5 ítems fijos
+(Home, Sobre mí, Colaboradores, Contacto, CV) tienen un lápiz ✏️ para
+renombrarlos en ES/EN — las categorías/proyectos siguen usando su
+nombre real (se editan en su propia sección). De paso: el botón Home
+decía "Home" en los dos idiomas por error de copy/paste — ahora dice
+"Inicio" en español por default.
+
+**Reordenar fotos/videos subidos** — flechas arriba/abajo en la grilla
+de `/admin/proyectos/[id]`, mismo patrón que categorías/subcategorías.
+
+**CV: Instagram/LinkedIn ahora piden solo tu usuario** (ej. `djezshadow`,
+no la URL completa) — se limpia automáticamente si pegás una URL por
+costumbre. En el PDF aparecen como chips con "IG ·" / "in ·" (react-pdf
+no soporta bien logos SVG de marca reales sin bundlear assets de imagen,
+así que usé esta versión minimalista en vez de los logos oficiales).
+
+**El "REEL — 00:00:00:00" del hero ahora es editable.** Es 100%
+decorativo — simula el timecode de un editor de video para la estética
+"cada corte cuenta algo", no tiene ninguna función. Podés cambiar la
+palabra (ES/EN) o apagar el "— 00:00:00:00" desde Configuración, con
+la explicación en el propio panel.
+
+**Fix: logo pegado al "REEL" en mobile horizontal** — le agregué
+separación.
+
+**Importante — schema nuevo, aditivo:** `SiteSettings.navLabels`,
+`heroKicker(En)`, `heroKickerShowTimecode`.
+
 ## Fase 13 — botón Home, links custom del navbar, ojito de mostrar/ocultar,
 ## confirmación de descarga del CV, fix de cruz en álbum, fix de footer
 ## duplicado, ajustes de horizontal (PDF "Correcciones y mejoras v2")

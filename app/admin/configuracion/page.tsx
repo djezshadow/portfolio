@@ -28,6 +28,9 @@ export default async function ConfiguracionPage() {
     heroTitle2En: null as string | null,
     heroSubtitle: null as string | null,
     heroSubtitleEn: null as string | null,
+    heroKicker: null as string | null,
+    heroKickerEn: null as string | null,
+    heroKickerShowTimecode: true,
     carouselPreset: "cards",
     logoNoirUrl: null as string | null,
     logoNeonUrl: null as string | null,
@@ -113,6 +116,9 @@ export default async function ConfiguracionPage() {
           heroTitle2En: settings.heroTitle2En,
           heroSubtitle: settings.heroSubtitle,
           heroSubtitleEn: settings.heroSubtitleEn,
+          heroKicker: settings.heroKicker,
+          heroKickerEn: settings.heroKickerEn,
+          heroKickerShowTimecode: settings.heroKickerShowTimecode,
           carouselPreset: settings.carouselPreset,
         }}
         placeholders={{

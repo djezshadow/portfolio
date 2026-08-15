@@ -30,6 +30,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
   let aboutEnabled = false;
   let cvEnabled = false;
   let navOrder: string[] = [];
+  let navLabels: Record<string, { es?: string; en?: string }> = {};
   let colaboradoresInNav = true;
   let contactoInNav = true;
   let customLinks: { id: string; label: string; labelEn: string | null; url: string }[] = [];
@@ -93,6 +94,13 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
         // JSON inválido — se usa el orden natural
       }
     }
+    if (settings.navLabels) {
+      try {
+        navLabels = JSON.parse(settings.navLabels);
+      } catch {
+        // JSON inválido — se usan los defaults
+      }
+    }
   } catch {
     // sin DB disponible, se usa el wordmark de texto
   }
@@ -110,8 +118,13 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
     // sin DB disponible, no se muestra el link de CV
   }
 
+  function labelFor(key: string, fallback: string) {
+    const override = navLabels[key]?.[locale];
+    return override && override.trim() ? override : fallback;
+  }
+
   const links = [
-    { key: "home", href: `/${locale}`, label: locale === "en" ? "Home" : "Home" },
+    { key: "home", href: `/${locale}`, label: labelFor("home", locale === "en" ? "Home" : "Inicio") },
     ...categories.map((c) => ({
       key: `category:${c.slug}`,
       href: `/${locale}/categoria/${c.slug}`,
@@ -128,12 +141,12 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
         isComingSoon: p.isComingSoon,
         hint: locOrNull(p.comingSoonHint, p.comingSoonHintEn, locale),
       })),
-    ...(aboutEnabled ? [{ key: "about", href: `/${locale}/sobre-mi`, label: dict.nav.about }] : []),
+    ...(aboutEnabled ? [{ key: "about", href: `/${locale}/sobre-mi`, label: labelFor("about", dict.nav.about) }] : []),
     ...(colaboradoresInNav
-      ? [{ key: "colaboradores", href: `/${locale}/colaboradores`, label: locale === "en" ? "Collaborators" : "Colaboradores" }]
+      ? [{ key: "colaboradores", href: `/${locale}/colaboradores`, label: labelFor("colaboradores", locale === "en" ? "Collaborators" : "Colaboradores") }]
       : []),
-    ...(contactoInNav ? [{ key: "contacto", href: `/${locale}/contacto`, label: dict.nav.contact }] : []),
-    ...(cvEnabled ? [{ key: "cv", href: `/api/cv-pdf?locale=${locale}`, label: "CV", emphasis: true, isCv: true }] : []),
+    ...(contactoInNav ? [{ key: "contacto", href: `/${locale}/contacto`, label: labelFor("contacto", dict.nav.contact) }] : []),
+    ...(cvEnabled ? [{ key: "cv", href: `/api/cv-pdf?locale=${locale}`, label: labelFor("cv", "CV"), emphasis: true, isCv: true }] : []),
     ...customLinks.map((c) => ({
       key: `custom:${c.id}`,
       href: c.url,

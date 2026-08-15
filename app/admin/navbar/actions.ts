@@ -75,6 +75,24 @@ export async function toggleContactoNav() {
   revalidatePath("/", "layout");
 }
 
+export async function saveNavLabel(key: string, es: string, en: string) {
+  await assertAdmin();
+
+  const settings = await prisma.siteSettings.upsert({ where: { id: "default" }, update: {}, create: { id: "default" } });
+  let navLabels: Record<string, { es?: string; en?: string }> = {};
+  try {
+    if (settings.navLabels) navLabels = JSON.parse(settings.navLabels);
+  } catch {
+    // JSON inválido, arrancamos de cero
+  }
+  navLabels[key] = { es, en };
+
+  await prisma.siteSettings.update({ where: { id: "default" }, data: { navLabels: JSON.stringify(navLabels) } });
+
+  revalidatePath("/admin/navbar");
+  revalidatePath("/", "layout");
+}
+
 export async function createCustomNavLink(formData: FormData) {
   await assertAdmin();
   const label = String(formData.get("label") ?? "").trim();

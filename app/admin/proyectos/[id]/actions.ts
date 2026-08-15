@@ -368,6 +368,35 @@ export async function updateMediaWatermarkOverride(mediaId: string, formData: Fo
   revalidatePath("/", "layout");
 }
 
+export async function moveMediaOrder(mediaId: string, direction: "up" | "down") {
+  await assertAdmin();
+
+  const media = await prisma.media.findUnique({ where: { id: mediaId } });
+  if (!media) return;
+
+  const all = await prisma.media.findMany({
+    where: { projectId: media.projectId },
+    orderBy: { order: "asc" },
+    select: { id: true, order: true },
+  });
+  const index = all.findIndex((m) => m.id === mediaId);
+  if (index === -1) return;
+
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= all.length) return;
+
+  const current = all[index];
+  const neighbor = all[swapWith];
+
+  await prisma.$transaction([
+    prisma.media.update({ where: { id: current.id }, data: { order: neighbor.order } }),
+    prisma.media.update({ where: { id: neighbor.id }, data: { order: current.order } }),
+  ]);
+
+  revalidatePath(`/admin/proyectos/${media.projectId}`);
+  revalidatePath("/", "layout");
+}
+
 export async function deleteProject(projectId: string, _formData: FormData) {
   await assertAdmin();
 

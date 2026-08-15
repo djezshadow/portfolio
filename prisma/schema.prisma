@@ -266,6 +266,13 @@ model SiteSettings {
   heroSubtitle   String?
   heroSubtitleEn String?
 
+  /// La etiqueta chica arriba del título del hero (default "REEL —
+  /// 00:00:00:00", estética de timecode de editor de video). Editable
+  /// porque no es obligatorio mantener el look de timecode.
+  heroKicker             String?
+  heroKickerEn           String?
+  heroKickerShowTimecode Boolean @default(true)
+
   /// Preset visual del carrusel de destacados: "cards" | "minimal" | "stack"
   carouselPreset String  @default("cards")
 
@@ -339,6 +346,11 @@ model SiteSettings {
   /// del navbar — las páginas siguen accesibles por URL directa.
   colaboradoresInNav Boolean @default(true)
   contactoInNav      Boolean @default(true)
+  /// Nombres personalizados para los ítems fijos del navbar (item nuevo:
+  /// "que se puedan cambiar el nombre de las cosas del navbar"). JSON:
+  /// {"home":{"es":"Inicio","en":"Home"}, "about":{...}, ...}. Vacío =
+  /// usa el default de cada uno.
+  navLabels String? @db.Text
 }
 
 /// Links manuales del navbar (item PDF #1.2) — para enlaces externos o

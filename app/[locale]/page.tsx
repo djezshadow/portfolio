@@ -8,6 +8,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { SiteLogo } from "@/components/site-logo";
 import { getProfile } from "@/lib/profile";
 import { CvDownloadLink } from "@/components/cv-download-link";
+import { getCollaboratorTypes } from "@/lib/collaborator-types";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -59,6 +60,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let heroTitle1: string = dict.hero.title1;
   let heroTitle2: string = dict.hero.title2;
   let heroSubtitle: string = dict.hero.subtitle;
+  let heroKicker: string = dict.hero.reel;
+  let heroKickerShowTimecode = true;
   let carouselPreset: CarouselPreset = "cards";
   let embeddedLogo: { noirUrl: string | null; neonUrl: string | null; size: number; sizeMobile: number } | null = null;
   let cvEnabled = false;
@@ -68,6 +71,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
     heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
     heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;
+    heroKicker = locOrNull(settings.heroKicker, settings.heroKickerEn, locale) || dict.hero.reel;
+    heroKickerShowTimecode = settings.heroKickerShowTimecode;
     const validPresets: CarouselPreset[] = ["cards", "minimal", "stack", "filmstrip", "editorial", "marquee", "split", "polaroid"];
     if (validPresets.includes(settings.carouselPreset as CarouselPreset)) {
       carouselPreset = settings.carouselPreset as CarouselPreset;
@@ -91,7 +96,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     type: string;
     instagram: string | null;
     website: string | null;
-    typeOption: { isClient: boolean } | null;
     participants: {
       id: string;
       name: string | null;
@@ -101,28 +105,39 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       website: string | null;
     }[];
   }[] = [];
+  let collaboratorTypes: { slug: string; name: string; nameEn: string | null }[] = [];
   try {
-    collaborators = await prisma.collaborator.findMany({
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        logoUrl: true,
-        type: true,
-        instagram: true,
-        website: true,
-        typeOption: { select: { isClient: true } },
-        participants: {
-          orderBy: { order: "asc" },
-          select: { id: true, name: true, role: true, roleEn: true, instagram: true, website: true },
+    [collaborators, collaboratorTypes] = await Promise.all([
+      prisma.collaborator.findMany({
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          type: true,
+          instagram: true,
+          website: true,
+          participants: {
+            orderBy: { order: "asc" },
+            select: { id: true, name: true, role: true, roleEn: true, instagram: true, website: true },
+          },
         },
-      },
-    });
+      }),
+      getCollaboratorTypes(),
+    ]);
   } catch {
     // sin DB disponible
   }
-  const clients = collaborators.filter((c) => c.typeOption?.isClient ?? c.type === "client");
-  const creatives = collaborators.filter((c) => !(c.typeOption?.isClient ?? c.type === "client"));
+  // Cada tipo de relación tiene su propia sección en la home, en el
+  // orden en que están definidos (mismo criterio que /colaboradores) —
+  // ya no son solo "Clientes"/"Colaboradores" fijos.
+  const collaboratorSections = collaboratorTypes
+    .map((t) => ({
+      key: t.slug,
+      title: loc(t.name, t.nameEn, locale),
+      list: collaborators.filter((c) => c.type === t.slug),
+    }))
+    .filter((s) => s.list.length > 0);
 
   return (
     <div className="mx-auto max-w-6xl px-6">
@@ -133,7 +148,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               debajo de la barra de timecode, y en las dos scrollea con
               el resto del contenido (a diferencia del modo fijo, que
               vive en FloatingNav). */}
-          <div className="flex justify-center pt-14 sm:hidden">
+          <div className="flex justify-center pb-4 pt-14 sm:hidden">
             <SiteLogo
               locale={locale}
               noirLogoUrl={embeddedLogo.noirUrl}
@@ -142,7 +157,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               plain
             />
           </div>
-          <div className="hidden pt-14 sm:block">
+          <div className="hidden pb-4 pt-14 sm:block">
             <SiteLogo
               locale={locale}
               noirLogoUrl={embeddedLogo.noirUrl}
@@ -157,7 +172,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       {/* HERO */}
       <section className="flex min-h-[70vh] flex-col justify-center gap-6">
         <Reveal>
-          <span className="font-mono text-xs text-accent">{dict.hero.reel} — 00:00:00:00</span>
+          <span className="font-mono text-xs text-accent">
+            {heroKicker.toUpperCase()}
+            {heroKickerShowTimecode && " — 00:00:00:00"}
+          </span>
         </Reveal>
         <Reveal delay={0.1}>
           <h1 className="font-display text-5xl leading-[1.05] sm:text-7xl">
@@ -213,31 +231,18 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             {locale === "en" ? "Who I've worked with" : "Con quién trabajé"}
           </h2>
 
-          {clients.length > 0 && (
-            <div className="mb-14">
+          {collaboratorSections.map((s, i) => (
+            <div key={s.key} className={i < collaboratorSections.length - 1 ? "mb-14" : ""}>
               <p className="mb-6 text-center font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
-                {locale === "en" ? "Clients" : "Clientes"}
+                {s.title}
               </p>
               <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
-                {clients.map((c) => (
+                {s.list.map((c) => (
                   <CollaboratorCard key={c.id} collaborator={c} locale={locale} />
                 ))}
               </div>
             </div>
-          )}
-
-          {creatives.length > 0 && (
-            <div>
-              <p className="mb-6 text-center font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
-                {locale === "en" ? "Collaborators" : "Colaboradores"}
-              </p>
-              <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
-                {creatives.map((c) => (
-                  <CollaboratorCard key={c.id} collaborator={c} locale={locale} />
-                ))}
-              </div>
-            </div>
-          )}
+          ))}
         </section>
       )}
     </div>

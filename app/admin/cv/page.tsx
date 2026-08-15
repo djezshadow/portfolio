@@ -80,12 +80,26 @@ export default async function AdminCvPage() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Instagram (opcional, URL)</label>
-            <input name="instagram" defaultValue={profile.instagram ?? ""} placeholder="https://instagram.com/djezshadow" className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Instagram (opcional) — solo tu usuario
+            </label>
+            <input
+              name="instagram"
+              defaultValue={profile.instagram ?? ""}
+              placeholder="djezshadow"
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">LinkedIn (opcional, URL)</label>
-            <input name="linkedin" defaultValue={profile.linkedin ?? ""} className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2" />
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              LinkedIn (opcional) — solo tu usuario
+            </label>
+            <input
+              name="linkedin"
+              defaultValue={profile.linkedin ?? ""}
+              placeholder="ezequiel-sanchez (lo que va después de /in/)"
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            />
           </div>
         </div>
 

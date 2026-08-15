@@ -7,6 +7,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, marginBottom: 2 },
   specialty: { fontSize: 11, color: "#7c5cff", marginBottom: 6 },
   contactLine: { fontSize: 8.5, color: "#a9a6c2" },
+  socialRow: { flexDirection: "row", gap: 6, marginTop: 4 },
+  socialChip: { flexDirection: "row", alignItems: "center", fontSize: 8, color: "#f3f1ff", backgroundColor: "#241f38", borderRadius: 10, paddingVertical: 2, paddingHorizontal: 7 },
   sectionTitle: { fontSize: 12, color: "#7c5cff", marginTop: 18, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 },
   bio: { fontSize: 9.5, color: "#d9d7e8", lineHeight: 1.5, marginBottom: 4 },
   entry: { marginBottom: 10 },
@@ -69,7 +71,7 @@ export function CvDocument({ data }: { data: CvData }) {
     skills: data.locale === "en" ? "Skills" : "Aptitudes",
   };
 
-  const contactBits = [data.email, data.phone, data.address, data.website, data.instagram, data.linkedin].filter(Boolean);
+  const contactBits = [data.email, data.phone, data.address, data.website].filter(Boolean);
 
   return (
     <Document>
@@ -80,6 +82,12 @@ export function CvDocument({ data }: { data: CvData }) {
             <Text style={styles.name}>{data.fullName || "DJEZSHADOW"}</Text>
             {data.specialty && <Text style={styles.specialty}>{data.specialty}</Text>}
             {contactBits.length > 0 && <Text style={styles.contactLine}>{contactBits.join("  ·  ")}</Text>}
+            {(data.instagram || data.linkedin) && (
+              <View style={styles.socialRow}>
+                {data.instagram && <Text style={styles.socialChip}>IG · @{data.instagram}</Text>}
+                {data.linkedin && <Text style={styles.socialChip}>in · {data.linkedin}</Text>}
+              </View>
+            )}
           </View>
         </View>
 

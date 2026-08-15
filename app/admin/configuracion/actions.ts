@@ -95,6 +95,9 @@ export async function updateHeroSettings(formData: FormData) {
         heroTitle2En: field("heroTitle2En"),
         heroSubtitle: field("heroSubtitle"),
         heroSubtitleEn: field("heroSubtitleEn"),
+        heroKicker: field("heroKicker"),
+        heroKickerEn: field("heroKickerEn"),
+        heroKickerShowTimecode: formData.get("heroKickerShowTimecode") === "on",
         carouselPreset,
       },
       create: {
@@ -105,6 +108,9 @@ export async function updateHeroSettings(formData: FormData) {
         heroTitle2En: field("heroTitle2En"),
         heroSubtitle: field("heroSubtitle"),
         heroSubtitleEn: field("heroSubtitleEn"),
+        heroKicker: field("heroKicker"),
+        heroKickerEn: field("heroKickerEn"),
+        heroKickerShowTimecode: formData.get("heroKickerShowTimecode") === "on",
         carouselPreset,
       },
     });

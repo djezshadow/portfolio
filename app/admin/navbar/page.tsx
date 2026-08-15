@@ -11,6 +11,7 @@ import {
   toggleContactoNav,
   createCustomNavLink,
   deleteCustomNavLink,
+  saveNavLabel,
 } from "./actions";
 import { NavOrderPanel } from "@/components/admin/nav-order-panel";
 import { CustomNavLinksPanel } from "@/components/admin/custom-nav-links-panel";
@@ -26,8 +27,24 @@ export default async function AdminNavbarPage() {
     prisma.customNavLink.findMany({ orderBy: { order: "asc" } }),
   ]);
 
+  let navLabels: Record<string, { es?: string; en?: string }> = {};
+  try {
+    if (settings.navLabels) navLabels = JSON.parse(settings.navLabels);
+  } catch {
+    // JSON inválido, se ignora
+  }
+
   const defaultItems = [
-    { key: "home", label: "Home", type: "fixed" as const, enabled: true, toggleAction: null },
+    {
+      key: "home",
+      label: navLabels.home?.es || "Inicio",
+      type: "fixed" as const,
+      enabled: true,
+      toggleAction: null,
+      renameable: true,
+      currentEs: navLabels.home?.es ?? "Inicio",
+      currentEn: navLabels.home?.en ?? "Home",
+    },
     ...allCategories.map((c) => ({
       key: `category:${c.slug}`,
       label: c.name,
@@ -42,22 +59,46 @@ export default async function AdminNavbarPage() {
       enabled: true,
       toggleAction: toggleProjectNav.bind(null, p.id),
     })),
-    { key: "about", label: "Sobre mí", type: "fixed" as const, enabled: settings.aboutEnabled, toggleAction: toggleAboutNav },
+    {
+      key: "about",
+      label: navLabels.about?.es || "Sobre mí",
+      type: "fixed" as const,
+      enabled: settings.aboutEnabled,
+      toggleAction: toggleAboutNav,
+      renameable: true,
+      currentEs: navLabels.about?.es ?? "Sobre mí",
+      currentEn: navLabels.about?.en ?? "About me",
+    },
     {
       key: "colaboradores",
-      label: "Colaboradores",
+      label: navLabels.colaboradores?.es || "Colaboradores",
       type: "fixed" as const,
       enabled: settings.colaboradoresInNav,
       toggleAction: toggleColaboradoresNav,
+      renameable: true,
+      currentEs: navLabels.colaboradores?.es ?? "Colaboradores",
+      currentEn: navLabels.colaboradores?.en ?? "Collaborators",
     },
     {
       key: "contacto",
-      label: "Contacto",
+      label: navLabels.contacto?.es || "Contacto",
       type: "fixed" as const,
       enabled: settings.contactoInNav,
       toggleAction: toggleContactoNav,
+      renameable: true,
+      currentEs: navLabels.contacto?.es ?? "Contacto",
+      currentEn: navLabels.contacto?.en ?? "Contact",
     },
-    { key: "cv", label: "CV", type: "fixed" as const, enabled: profile.cvEnabled, toggleAction: toggleCvNav },
+    {
+      key: "cv",
+      label: navLabels.cv?.es || "CV",
+      type: "fixed" as const,
+      enabled: profile.cvEnabled,
+      toggleAction: toggleCvNav,
+      renameable: true,
+      currentEs: navLabels.cv?.es ?? "CV",
+      currentEn: navLabels.cv?.en ?? "CV",
+    },
     ...customLinks.map((c) => ({
       key: `custom:${c.id}`,
       label: c.label,
@@ -96,7 +137,7 @@ export default async function AdminNavbarPage() {
         accesible por URL directa, solo desaparece del navbar.
       </p>
 
-      <NavOrderPanel initialItems={ordered} saveAction={saveNavOrder} />
+      <NavOrderPanel initialItems={ordered} saveAction={saveNavOrder} renameAction={saveNavLabel} />
 
       <div className="mt-8">
         <CustomNavLinksPanel links={customLinks} createAction={createCustomNavLink} deleteAction={deleteCustomNavLink} />

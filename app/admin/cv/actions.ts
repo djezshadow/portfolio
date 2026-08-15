@@ -18,6 +18,18 @@ function field(formData: FormData, name: string) {
   return (formData.get(name) as string)?.trim() || null;
 }
 
+/** Limpia lo que pongan (usuario solo, @usuario, o hasta una URL completa
+ * pegada por costumbre) y deja siempre solo el @usuario limpio. */
+function cleanHandle(formData: FormData, name: string): string | null {
+  const raw = field(formData, name);
+  if (!raw) return null;
+  return raw
+    .replace(/^https?:\/\/(www\.)?(instagram\.com|linkedin\.com\/in)\//i, "")
+    .replace(/^@/, "")
+    .replace(/\/$/, "")
+    .trim() || null;
+}
+
 export async function updateProfile(formData: FormData) {
   await assertAdmin();
 
@@ -73,8 +85,8 @@ export async function updateProfile(formData: FormData) {
       phone: field(formData, "phone"),
       address: field(formData, "address"),
       website: field(formData, "website"),
-      instagram: field(formData, "instagram"),
-      linkedin: field(formData, "linkedin"),
+      instagram: cleanHandle(formData, "instagram"),
+      linkedin: cleanHandle(formData, "linkedin"),
       cvEnabled: formData.get("cvEnabled") === "on",
       photoUrl,
     },

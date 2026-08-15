@@ -1,4 +1,4 @@
-# DJEZSHADOW — Portfolio (completo + watermark personalizado).
+# DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
 ## Fase 14 — bug de tipos de colaborador, nombres del navbar editables,
 ## reordenar fotos, CV con @usuario, kicker del hero editable

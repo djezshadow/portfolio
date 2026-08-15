@@ -245,7 +245,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] text-[var(--ink-muted)]">#{mi + 1}</span>
                     <ReorderButtons
-                      onMove={(direction) => moveMediaOrder(m.id, direction)}
+                      onMove={moveMediaOrder.bind(null, m.id)}
                       disableUp={mi === 0}
                       disableDown={mi === project.media.length - 1}
                     />

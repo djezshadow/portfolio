@@ -248,35 +248,6 @@ body[data-lightbox-open="true"] [data-floating-nav] {
   font-weight: 600;
 }
 
-/* Footer responsive por orientación real, no solo por ancho (PDF #2.1 /
-   #8.2): en mobile vertical (o horizontal muy angosto) se ve SOLO el
-   copyright corto, para que nunca se pise con los links/redes. En
-   desktop, o mobile horizontal con espacio real, se ve todo junto. El
-   umbral de 700px en landscape es la aproximación práctica a "entra
-   bien" sin depender de detectar modelos de celular puntuales. */
-.djez-footer-compact {
-  display: block;
-}
-.djez-footer-full {
-  display: none;
-}
-@media (min-width: 640px) {
-  .djez-footer-compact {
-    display: none;
-  }
-  .djez-footer-full {
-    display: flex;
-  }
-}
-@media (orientation: landscape) and (min-width: 700px) {
-  .djez-footer-compact {
-    display: none;
-  }
-  .djez-footer-full {
-    display: flex;
-  }
-}
-
 /* Espacio entre el navbar fijo y el contenido inicial (PDF #8.4) —
    en portrait 56px alcanza, pero en mobile horizontal (poca altura,
    notch/safe-area) el navbar necesita un poco más de aire para no

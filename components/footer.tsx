@@ -55,14 +55,7 @@ export async function Footer({ locale }: { locale: Locale }) {
 
   return (
     <footer className="mt-24 border-t border-[var(--glass-border)] px-6 py-10">
-      {/* Mobile vertical (y horizontal angosto): solo el copyright, para
-          que no se pise con el resto — ver .djez-footer-full/-compact en
-          globals.css. Desktop y horizontal con espacio: todo junto. */}
-      <div className="djez-footer-compact text-center font-mono text-[10px] text-[var(--ink-muted)]">
-        © {new Date().getFullYear()} DJEZSHADOW®. Todos los derechos reservados.
-      </div>
-
-      <div className="djez-footer-full mx-auto max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
         <div className="flex items-center gap-4 font-mono text-xs text-[var(--ink-muted)]">
           {settings.aboutEnabled && (
             <Link href={`/${locale}/sobre-mi`} data-cursor="magnetic" className="hover:text-accent">
@@ -92,7 +85,7 @@ export async function Footer({ locale }: { locale: Locale }) {
           </div>
         )}
 
-        <p className="font-mono text-[10px] text-[var(--ink-muted)]">
+        <p className="text-center font-mono text-[10px] text-[var(--ink-muted)]">
           © {new Date().getFullYear()} DJEZSHADOW®. Todos los derechos reservados.
         </p>
       </div>

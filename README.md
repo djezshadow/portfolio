@@ -1,5 +1,30 @@
 # DJEZSHADOW — Portfolio (completo + watermark personalizado)
 
+## Fase 15 — fix del reordenar fotos (bug real de Server Actions), redes
+## sociales de vuelta en el footer mobile, zoom a pantalla completa en
+## el visor
+
+**Bug real: "Reordenar fotos" no hacía nada.** La causa: le pasaba a
+`ReorderButtons` (client component) una función flecha armada en el
+Server Component (`onMove={(direction) => moveMediaOrder(m.id,
+direction)}`) — Next.js NO puede mandar closures arbitrarias del
+servidor al cliente, solo Server Actions reales o un `.bind()` de una.
+Se arregló con `onMove={moveMediaOrder.bind(null, m.id)}`. Revisé el
+resto del código buscando el mismo error y no encontré otro caso.
+
+**Redes sociales de vuelta en el footer mobile.** El ajuste anterior
+(mobile vertical = solo copyright) fue de más — la causa real de la
+superposición ya se había arreglado antes (el footer duplicado). Ahora
+el footer se ve completo (links + redes + copyright) en todos los
+tamaños de pantalla.
+
+**Zoom a pantalla completa en el visor.** Tocás la foto que ya está
+abierta y el visor pasa a ocupar toda la pantalla (sin el marco, título
+ni tira de miniaturas alrededor) — la imagen se agranda al máximo
+posible manteniendo su proporción, sin recortarse ni deformarse. Tocás
+de nuevo (o la cruz) para volver al tamaño normal. La cruz ahora tiene
+3 niveles: zoom → tamaño normal → subcategorías (si las hay) → cierra.
+
 ## Fase 14 — bug de tipos de colaborador, nombres del navbar editables,
 ## reordenar fotos, CV con @usuario, kicker del hero editable
 

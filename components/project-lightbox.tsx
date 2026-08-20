@@ -92,23 +92,28 @@ export function ProjectLightbox({
   );
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
 
   function goTo(next: number) {
     setDirection(next > index || (index === media.length - 1 && next === 0) ? 1 : -1);
     setIndex(next);
+    setZoomed(false);
   }
   function goNext() {
     setDirection(1);
     setIndex((i) => (i + 1) % media.length);
+    setZoomed(false);
   }
   function goPrev() {
     setDirection(-1);
     setIndex((i) => (i - 1 + media.length) % media.length);
+    setZoomed(false);
   }
 
   function selectGroup(id: string | "all") {
     setActiveGroupId(id);
     setIndex(0);
+    setZoomed(false);
   }
 
   const rawMedia = activeGroupId === "all" || activeGroupId === null
@@ -124,7 +129,9 @@ export function ProjectLightbox({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (!showingPicker && groups.length > 0) {
+        if (zoomed) {
+          setZoomed(false);
+        } else if (!showingPicker && groups.length > 0) {
           setActiveGroupId(null);
         } else {
           onClose();
@@ -184,7 +191,7 @@ export function ProjectLightbox({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-2 sm:p-6"
+        className={`fixed inset-0 z-[200] flex items-center justify-center bg-black/90 ${zoomed ? "" : "p-2 sm:p-6"}`}
         onClick={onClose}
       >
         <motion.div
@@ -193,36 +200,51 @@ export function ProjectLightbox({
           exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.25 }}
           onClick={(e) => e.stopPropagation()}
-          className="glass relative flex h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl"
+          className={
+            zoomed
+              ? "relative flex h-full w-full flex-col overflow-hidden bg-black"
+              : "glass relative flex h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl"
+          }
         >
           {/* La cruz vive en su propia franja, separada del video/foto —
               así nunca choca con el botón de calidad de YouTube ni nada
-              que esté dentro del reproductor. */}
-          <div className="flex shrink-0 items-center justify-between px-4 py-3">
-            {showingPicker ? (
-              <span className="font-mono text-[11px] text-[var(--ink-muted)]">
-                {project.title}
-              </span>
-            ) : (
-              <span className="font-mono text-[11px] text-[var(--ink-muted)]">
-                {media.length > 1 ? `${index + 1} / ${media.length}` : ""}
-              </span>
-            )}
+              que esté dentro del reproductor. En modo zoom flota encima
+              de la imagen en vez de ocupar su propia franja, para no
+              robarle espacio a la foto. */}
+          <div
+            className={
+              zoomed
+                ? "absolute right-3 top-3 z-10 flex items-center justify-end"
+                : "flex shrink-0 items-center justify-between px-4 py-3"
+            }
+          >
+            {!zoomed &&
+              (showingPicker ? (
+                <span className="font-mono text-[11px] text-[var(--ink-muted)]">
+                  {project.title}
+                </span>
+              ) : (
+                <span className="font-mono text-[11px] text-[var(--ink-muted)]">
+                  {media.length > 1 ? `${index + 1} / ${media.length}` : ""}
+                </span>
+              ))}
             <button
               onClick={() => {
-                // Dentro de un álbum (con subcategorías arriba), la cruz
-                // vuelve al selector en vez de cerrar todo — la jerarquía
-                // se siente natural: álbum → cruz → subcategorías → cruz
-                // → cierra. Ya no hace falta el link "← Subcategorías".
-                if (!showingPicker && groups.length > 0) {
+                // Jerarquía: foto en zoom → cruz sale del zoom. Álbum
+                // (con subcategorías arriba) → cruz vuelve al selector.
+                // Si no, cierra todo. Ya no hace falta el link
+                // "← Subcategorías", la cruz cumple esa función.
+                if (zoomed) {
+                  setZoomed(false);
+                } else if (!showingPicker && groups.length > 0) {
                   setActiveGroupId(null);
                 } else {
                   onClose();
                 }
               }}
               data-cursor="magnetic"
-              aria-label={!showingPicker && groups.length > 0 ? "Volver a subcategorías" : "Cerrar"}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/10 text-xl transition-colors hover:bg-black/20"
+              aria-label={zoomed ? "Achicar" : !showingPicker && groups.length > 0 ? "Volver a subcategorías" : "Cerrar"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-xl text-white transition-colors hover:bg-black/70"
             >
               ×
             </button>
@@ -307,14 +329,16 @@ export function ProjectLightbox({
                         <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
                       </div>
                     ) : current?.url ? (
-                      <ProgressiveImage
-                        key={current.id}
-                        src={current.bakedFullUrl || `/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
-                        alt={project.title}
-                        priority
-                        className="absolute inset-0"
-                        imgClassName="h-full w-full object-contain"
-                      />
+                      <div onClick={() => setZoomed((z) => !z)} className="absolute inset-0 cursor-zoom-in">
+                        <ProgressiveImage
+                          key={current.id}
+                          src={current.bakedFullUrl || `/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
+                          alt={project.title}
+                          priority
+                          className="absolute inset-0"
+                          imgClassName="h-full w-full object-contain"
+                        />
+                      </div>
                     ) : null}
                   </motion.div>
                 </AnimatePresence>
@@ -341,7 +365,7 @@ export function ProjectLightbox({
                 )}
               </motion.div>
 
-              {media.length > 1 && (
+              {!zoomed && media.length > 1 && (
                 <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto p-3">
                   {media.map((m, i) => (
                     <div key={m.id} className="flex shrink-0 items-center gap-1.5">
@@ -394,21 +418,23 @@ export function ProjectLightbox({
             </>
           )}
 
-          <div className="shrink-0 space-y-1 px-5 pb-5">
-            <span className="font-mono text-[11px] text-accent">{project.role ?? "—"}</span>
-            {project.dateLabel && (
-              <span className="ml-2 font-mono text-[11px] text-[var(--ink-muted)]">{project.dateLabel}</span>
-            )}
-            <h2 className="font-display text-xl">{project.title}</h2>
-            {project.description && (
-              <p className="text-sm text-[var(--ink-muted)]">{project.description}</p>
-            )}
-            {project.collaboratorName && (
-              <p className="font-mono text-[11px] text-[var(--ink-muted)]">
-                con {project.collaboratorName}
-              </p>
-            )}
-          </div>
+          {!zoomed && (
+            <div className="shrink-0 space-y-1 px-5 pb-5">
+              <span className="font-mono text-[11px] text-accent">{project.role ?? "—"}</span>
+              {project.dateLabel && (
+                <span className="ml-2 font-mono text-[11px] text-[var(--ink-muted)]">{project.dateLabel}</span>
+              )}
+              <h2 className="font-display text-xl">{project.title}</h2>
+              {project.description && (
+                <p className="text-sm text-[var(--ink-muted)]">{project.description}</p>
+              )}
+              {project.collaboratorName && (
+                <p className="font-mono text-[11px] text-[var(--ink-muted)]">
+                  con {project.collaboratorName}
+                </p>
+              )}
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

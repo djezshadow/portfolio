@@ -25,7 +25,7 @@ function normalizeInstagramUrl(raw: string): { url: string } | { error: string }
   } catch {
     return { error: "Ese link no es una URL válida." };
   }
-  if (!/(^|\.)instagram\.com$/.test(url.hostname.replace(/^www\./, "instagram.com"))) {
+  if (!/(^|\.)instagram\.com$/.test(url.hostname.replace(/^www\./, ""))) {
     return { error: "Tiene que ser un link de instagram.com (un post o un reel)." };
   }
   if (!/^\/(p|reel)\//.test(url.pathname)) {

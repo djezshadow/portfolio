@@ -75,9 +75,12 @@ export default async function InstagramAdminPage() {
 
       <h2 className="mb-1 font-display text-xl">Posts</h2>
       <p className="mb-4 text-sm text-[var(--ink-muted)]">
-        "Destacadas" son los que vos elegís mostrar primero (equivalente a las historias
-        destacadas) — "Feed" es el resto. Si cargás las dos, en el sitio aparece un selector para
-        pasar de una a otra; si solo cargás una, se muestra directo.
+        "Destacadas" acá NO son las historias destacadas de tu perfil de Instagram (esas no se
+        pueden embeber — Instagram no lo permite desde afuera de la app). Es una curación tuya:
+        elegís posts o reels puntuales para que aparezcan primero en esta sección — "Feed" es el
+        resto. Si cargás las dos, en el sitio aparece un selector para pasar de una a otra; si
+        solo cargás una, se muestra directo. En los dos casos, pegá el link de un post o reel
+        específico (no el link a un álbum de destacadas ni al perfil).
       </p>
       <InstagramPostsPanel
         posts={posts}

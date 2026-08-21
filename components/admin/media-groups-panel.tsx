@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { compressImageForUpload } from "@/lib/compress-image";
 import { ReorderButtons } from "./reorder-buttons";
 
 type Group = { id: string; name: string; nameEn: string | null; coverImageUrl: string | null };
@@ -79,7 +80,20 @@ export function MediaGroupsPanel({
                   </form>
                 </div>
 
-                <form action={cover} className="flex flex-wrap items-center gap-2">
+                <form
+                  action={async (formData: FormData) => {
+                    // Mismo fix que en la portada de categoría: comprimir
+                    // acá evita el error "Algo falló — unexpected
+                    // response" con fotos de celular sin comprimir.
+                    const file = formData.get("image") as File | null;
+                    if (file && file.size > 0) {
+                      const compressed = await compressImageForUpload(file);
+                      formData.set("image", compressed);
+                    }
+                    await cover(formData);
+                  }}
+                  className="flex flex-wrap items-center gap-2"
+                >
                   <input type="file" name="image" accept="image/*" className="font-mono text-[11px]" />
                   <button
                     type="submit"

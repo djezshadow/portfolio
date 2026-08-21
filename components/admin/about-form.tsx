@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { markdownToHtml } from "@/lib/markdown";
+import { compressImageForUpload } from "@/lib/compress-image";
 import { SubmitButton } from "./submit-button";
 
 type Props = {
@@ -23,7 +24,21 @@ export function AboutForm({ action, initial }: Props) {
   const [enabled, setEnabled] = useState(initial.aboutEnabled);
 
   return (
-    <form action={action} className="space-y-6">
+    <form
+      action={async (formData: FormData) => {
+        // Misma causa que el error "Algo falló" al subir portadas de
+        // categoría: comprimimos en el navegador antes de que la foto de
+        // perfil viaje al servidor, para no chocar con el límite duro de
+        // tamaño de request de Vercel.
+        const file = formData.get("image") as File | null;
+        if (file && file.size > 0) {
+          const compressed = await compressImageForUpload(file);
+          formData.set("image", compressed);
+        }
+        await action(formData);
+      }}
+      className="space-y-6"
+    >
       <label className="flex items-center gap-2 font-mono text-sm">
         <input
           type="checkbox"

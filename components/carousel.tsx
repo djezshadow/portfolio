@@ -14,6 +14,12 @@ export type CarouselItem = {
   /// (fondo, círculo, franja, etc). Sin portada, cada preset cae a un
   /// estilo tipográfico propio.
   coverImageUrl?: string | null;
+  /// Se calcula en el server a partir del brillo real de la foto de
+  /// portada (pendiente del PDF: "que los textos se adapten al fondo").
+  /// true = la portada es clara y necesita texto/degradé oscuro; false
+  /// (default) = portada oscura o sin portada, sigue como antes (texto
+  /// claro sobre degradé negro).
+  coverTextDark?: boolean;
   /// Coming soon: la card se ve gris/bloqueada y al tocarla muestra un
   /// popup con `hint` en vez de navegar.
   isComingSoon?: boolean;
@@ -42,6 +48,12 @@ export type CarouselStyleConfig = {
   background?: "transparent" | "surface";
   shadow?: boolean;
   glass?: boolean;
+  /// Alineación de la fila/grilla completa dentro de su contenedor
+  /// (pendiente del PDF: "que el carrusel tenga opciones de alineación").
+  /// Se nota sobre todo cuando hay pocos ítems y sobra espacio horizontal
+  /// — con la fila llena (scroll horizontal) el efecto es mínimo, algo
+  /// esperable ya que no hay "aire" de sobra para mover.
+  align?: "left" | "center" | "right";
 };
 
 type CarouselProps = {
@@ -136,6 +148,15 @@ export function Carousel({
   const cardGlass = style?.glass ?? true;
   const cardShadow = style?.shadow ? "shadow-[0_12px_30px_rgba(0,0,0,0.35)]" : "shadow-none";
   const cardBg = cardGlass ? "glass" : style?.background === "surface" ? "bg-[var(--glass-border)]" : "bg-transparent";
+  // Clases de alineación — flexJustify para presets con fila flex,
+  // gridJustify para los que usan grid (justify-items en vez de
+  // justify-content, porque en grid las columnas tienen ancho fijo y lo
+  // que hay que mover es el bloque de columnas dentro del contenedor).
+  // Polaroid ya centraba por defecto antes de que existiera esta opción
+  // — si nadie toca "align", que siga viéndose igual que siempre.
+  const effectiveAlign = style?.align ?? (preset === "polaroid" ? "center" : "left");
+  const alignFlex =
+    effectiveAlign === "center" ? "justify-center" : effectiveAlign === "right" ? "justify-end" : "justify-start";
 
   const scrollBy = (dir: 1 | -1) => {
     trackRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
@@ -220,7 +241,7 @@ export function Carousel({
   if (preset === "stack") {
     return (
       <>
-        <div className="flex flex-wrap" style={{ columnGap: gapPx / 2, rowGap: gapPx * 1.5 }}>
+        <div className={`flex flex-wrap ${alignFlex}`} style={{ columnGap: gapPx / 2, rowGap: gapPx * 1.5 }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -266,7 +287,7 @@ export function Carousel({
     return (
       <>
         <div
-          className="flex overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className={`flex overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${alignFlex}`}
           style={{ gap: gapPx * 0.75 }}
         >
           {visible.map((item, i) => (
@@ -355,16 +376,22 @@ export function Carousel({
                       alt=""
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-t ${item.coverTextDark ? "from-white/90 via-white/15" : "from-black/85 via-black/10"} to-transparent`}
+                    />
                   </>
                 ) : (
                   <div className="absolute inset-0 bg-[var(--glass-border)]" />
                 )}
                 <div className="absolute inset-x-0 bottom-0 p-3">
-                  <p className={`font-mono text-[10px] ${item.coverImageUrl ? "text-white/80" : "text-accent"}`}>
+                  <p
+                    className={`font-mono text-[10px] ${item.coverImageUrl ? (item.coverTextDark ? "text-black/70" : "text-white/80") : "text-accent"}`}
+                  >
                     {item.isComingSoon ? comingSoonLabel : item.code}
                   </p>
-                  <h3 className={`font-display ${i === 0 ? "text-2xl" : "text-sm"} ${item.coverImageUrl ? "text-white" : ""}`}>
+                  <h3
+                    className={`font-display ${i === 0 ? "text-2xl" : "text-sm"} ${item.coverImageUrl ? (item.coverTextDark ? "text-black" : "text-white") : ""}`}
+                  >
                     {item.title}
                   </h3>
                 </div>
@@ -419,13 +446,19 @@ export function Carousel({
                       alt=""
                       className="absolute inset-0 h-full w-full object-cover opacity-70 transition-opacity group-hover/card:opacity-90"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-t ${item.coverTextDark ? "from-white/85" : "from-black/80"} to-transparent`}
+                    />
                   </>
                 )}
-                <span className={`relative font-mono text-[11px] ${item.coverImageUrl ? "text-white/80" : "text-accent"}`}>
+                <span
+                  className={`relative font-mono text-[11px] ${item.coverImageUrl ? (item.coverTextDark ? "text-black/70" : "text-white/80") : "text-accent"}`}
+                >
                   {item.isComingSoon ? comingSoonLabel : item.code}
                 </span>
-                <h3 className={`relative mt-1 font-display text-lg ${item.coverImageUrl ? "text-white" : ""}`}>
+                <h3
+                  className={`relative mt-1 font-display text-lg ${item.coverImageUrl ? (item.coverTextDark ? "text-black" : "text-white") : ""}`}
+                >
                   {item.title}
                 </h3>
               </ItemWrapper>
@@ -508,7 +541,7 @@ export function Carousel({
             z-index: 50;
           }
         `}</style>
-        <div className="flex flex-wrap justify-center py-4" style={{ columnGap: gapPx / 4, rowGap: gapPx * 2.5 }}>
+        <div className={`flex flex-wrap py-4 ${alignFlex}`} style={{ columnGap: gapPx / 4, rowGap: gapPx * 2.5 }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -555,7 +588,7 @@ export function Carousel({
       <div className="relative">
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className={`flex snap-x snap-mandatory overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${alignFlex}`}
           style={{ gap: gapPx }}
         >
           {visible.map((item, i) => (
@@ -582,17 +615,25 @@ export function Carousel({
                       alt=""
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-t ${item.coverTextDark ? "from-white/90 via-white/25" : "from-black/80 via-black/20"} to-transparent`}
+                    />
                   </>
                 )}
-                <span className={`relative font-mono text-[11px] ${item.coverImageUrl ? "text-white/80" : "text-accent"}`}>
+                <span
+                  className={`relative font-mono text-[11px] ${item.coverImageUrl ? (item.coverTextDark ? "text-black/70" : "text-white/80") : "text-accent"}`}
+                >
                   {item.isComingSoon ? comingSoonLabel : item.code}
                 </span>
-                <h3 className={`relative mt-2 font-display text-xl ${item.coverImageUrl ? "text-white" : ""}`}>
+                <h3
+                  className={`relative mt-2 font-display text-xl ${item.coverImageUrl ? (item.coverTextDark ? "text-black" : "text-white") : ""}`}
+                >
                   {item.title}
                 </h3>
                 {item.subtitle && !item.isComingSoon && (
-                  <p className={`relative mt-1 text-sm ${item.coverImageUrl ? "text-white/80" : "text-[var(--ink-muted)]"}`}>
+                  <p
+                    className={`relative mt-1 text-sm ${item.coverImageUrl ? (item.coverTextDark ? "text-black/70" : "text-white/80") : "text-[var(--ink-muted)]"}`}
+                  >
                     {item.subtitle}
                   </p>
                 )}

@@ -29,6 +29,7 @@ type Props = {
     carouselBackground: string;
     carouselShadow: boolean;
     carouselGlass: boolean;
+    carouselAlign: string;
   };
   placeholders: {
     title1: string;
@@ -56,6 +57,7 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
   const [background, setBackground] = useState(initial.carouselBackground || "transparent");
   const [shadow, setShadow] = useState(initial.carouselShadow ?? false);
   const [glass, setGlass] = useState(initial.carouselGlass ?? true);
+  const [align, setAlign] = useState(initial.carouselAlign || "left");
 
   return (
     <form action={action} className="glass mb-10 space-y-4 rounded-2xl p-5">
@@ -276,6 +278,25 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
               <option value="surface">Superficie sólida</option>
             </select>
           </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+              Alineación del carrusel
+            </label>
+            <select
+              name="carouselAlign"
+              value={align}
+              onChange={(e) => setAlign(e.target.value)}
+              className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+            >
+              <option value="left">Izquierda (default)</option>
+              <option value="center">Centro</option>
+              <option value="right">Derecha</option>
+            </select>
+            <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
+              Se nota más cuando hay pocos ítems y sobra espacio — con la fila llena de tarjetas
+              (scroll horizontal) el efecto es mínimo, porque no queda aire libre para mover.
+            </p>
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-4">
           <label className="flex items-center gap-2 font-mono text-xs">
@@ -307,7 +328,14 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
           <Carousel
             items={SAMPLE_ITEMS}
             preset={preset}
-            style={{ itemSize: itemSize as "sm" | "md" | "lg", gap, background: background as "transparent" | "surface", shadow, glass }}
+            style={{
+              itemSize: itemSize as "sm" | "md" | "lg",
+              gap,
+              background: background as "transparent" | "surface",
+              shadow,
+              glass,
+              align: align as "left" | "center" | "right",
+            }}
           />
         </div>
       </div>

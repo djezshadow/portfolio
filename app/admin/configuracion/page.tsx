@@ -38,6 +38,7 @@ export default async function ConfiguracionPage() {
     carouselBackground: "transparent",
     carouselShadow: false,
     carouselGlass: true,
+    carouselAlign: "left",
     logoNoirUrl: null as string | null,
     logoNeonUrl: null as string | null,
     logoFloating: false,
@@ -132,6 +133,7 @@ export default async function ConfiguracionPage() {
           carouselBackground: settings.carouselBackground,
           carouselShadow: settings.carouselShadow,
           carouselGlass: settings.carouselGlass,
+          carouselAlign: settings.carouselAlign,
         }}
         placeholders={{
           title1: es.hero.title1,

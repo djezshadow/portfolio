@@ -97,6 +97,8 @@ export async function updateHeroSettings(formData: FormData) {
   const carouselBackground = validBackgrounds.includes(rawBackground) ? rawBackground : "transparent";
   const carouselShadow = formData.get("carouselShadow") === "on";
   const carouselGlass = formData.get("carouselGlass") === "on";
+  const rawCarouselAlign = (formData.get("carouselAlign") as string) || "left";
+  const carouselAlign = validAligns.includes(rawCarouselAlign) ? rawCarouselAlign : "left";
 
   const sharedFields = {
     heroTitle1: field("heroTitle1"),
@@ -115,6 +117,7 @@ export async function updateHeroSettings(formData: FormData) {
     carouselBackground,
     carouselShadow,
     carouselGlass,
+    carouselAlign,
   };
 
   try {

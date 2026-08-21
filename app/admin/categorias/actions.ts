@@ -130,6 +130,7 @@ export async function updateCategoryCover(categoryId: string, formData: FormData
   if (!category) throw new Error("Categoría no encontrada.");
 
   let coverImageUrl = category.coverImageUrl;
+  let coverTextDark = category.coverTextDark;
 
   if (removeImage && coverImageUrl) {
     try {
@@ -138,6 +139,7 @@ export async function updateCategoryCover(categoryId: string, formData: FormData
       // ignorar si ya no existe
     }
     coverImageUrl = null;
+    coverTextDark = false;
   }
 
   if (image && image.size > 0) {
@@ -149,10 +151,29 @@ export async function updateCategoryCover(categoryId: string, formData: FormData
       }
     }
     const buffer = Buffer.from(await image.arrayBuffer());
-    const webp = await sharp(buffer)
-      .resize({ width: 1200, withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toBuffer();
+    const resized = sharp(buffer).resize({ width: 1200, withoutEnlargement: true });
+
+    // Item pendiente: "que los textos se adapten al fondo" — en vez de
+    // asumir siempre texto blanco (que se pierde en fotos claras), medimos
+    // el brillo real de la foto acá, una sola vez al subirla, y guardamos
+    // el resultado. Solo miramos la franja INFERIOR de la imagen (donde
+    // se superpone el texto en el carrusel — ver bg-gradient-to-t en
+    // carousel.tsx), no la foto entera: una foto con cielo oscuro arriba
+    // y piso claro abajo necesita texto oscuro igual, aunque el promedio
+    // total dé "oscuro".
+    const meta = await resized.metadata();
+    const bottomStripHeight = Math.max(1, Math.round((meta.height ?? 400) * 0.35));
+    const { channels } = await resized
+      .clone()
+      .extract({ left: 0, top: Math.max(0, (meta.height ?? 400) - bottomStripHeight), width: meta.width ?? 1, height: bottomStripHeight })
+      .stats();
+    // Luminancia perceptual estándar (ITU-R BT.601) a partir del
+    // promedio de cada canal — 0 (negro) a 255 (blanco).
+    const [r, g, b] = channels;
+    const luminance = 0.299 * r.mean + 0.587 * g.mean + 0.114 * b.mean;
+    coverTextDark = luminance > 165; // umbral con margen: fotos "medias" siguen usando texto claro
+
+    const webp = await resized.webp({ quality: 85 }).toBuffer();
     const blob = await put(`settings/category-cover-${categoryId}-${Date.now()}.webp`, webp, {
       access: "public",
       contentType: "image/webp",
@@ -160,7 +181,7 @@ export async function updateCategoryCover(categoryId: string, formData: FormData
     coverImageUrl = blob.url;
   }
 
-  await prisma.category.update({ where: { id: categoryId }, data: { coverImageUrl } });
+  await prisma.category.update({ where: { id: categoryId }, data: { coverImageUrl, coverTextDark } });
 
   revalidatePath(`/admin/categorias/${categoryId}`);
   revalidatePath("/", "layout");

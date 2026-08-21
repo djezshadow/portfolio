@@ -68,6 +68,12 @@ model Category {
   /// destacados de la home para que se vea más atractivo. Si queda vacía,
   /// se muestra la card sin imagen (como antes).
   coverImageUrl   String?
+  /// Se calcula solo al subir la portada (item #22-bis: "que el texto se
+  /// adapte al fondo") — analiza el brillo real de la foto con sharp y
+  /// decide si el texto sobre ella necesita ser claro u oscuro para
+  /// tener contraste, así no importa qué tan clara u oscura sea la foto
+  /// que subas.
+  coverTextDark   Boolean           @default(false)
   style           CategoryStyle?
   projects        ProjectCategory[]
   createdAt       DateTime          @default(now())
@@ -289,6 +295,9 @@ model SiteSettings {
   carouselBackground String  @default("transparent") // transparent | surface
   carouselShadow     Boolean @default(false)
   carouselGlass      Boolean @default(true)
+  /// Alineación de la fila/grilla del carrusel dentro de su contenedor
+  /// (pendiente del PDF: "opciones de alineación del carrusel").
+  carouselAlign      String  @default("left") // left | center | right
 
   /// Logo de marca, uno para cada tema (PNG blanco para Neón, negro para
   /// Noir, por ejemplo). Si no hay ninguno cargado, se muestra el texto

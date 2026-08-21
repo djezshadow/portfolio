@@ -2,6 +2,7 @@
 
 import { sendEmail } from "@/lib/resend";
 import { createContactToken } from "@/lib/contact-token";
+import { confirmContactEmailHtml } from "@/lib/email-templates";
 
 export type ContactState = { ok: boolean; error?: string } | null;
 
@@ -52,7 +53,12 @@ export async function sendContactMessage(
       ? `Hey ${name},\n\nTap the link below to confirm it's really you and send your message to DJEZSHADOW:\n\n${confirmUrl}\n\nIf you didn't request this, just ignore this email.`
       : `Hola ${name},\n\nTocá el link de abajo para confirmar que sos vos y que tu mensaje le llegue a DJEZSHADOW:\n\n${confirmUrl}\n\nSi no pediste esto, ignorá este mail.`;
 
-  const result = await sendEmail({ to: email, subject, text });
+  const result = await sendEmail({
+    to: email,
+    subject,
+    text,
+    html: confirmContactEmailHtml({ name, confirmUrl, locale }),
+  });
 
   if (!result.ok) {
     return { ok: false, error: result.error ?? "No se pudo enviar el mail." };

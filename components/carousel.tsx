@@ -30,12 +30,27 @@ export type CarouselPreset =
   | "split"
   | "polaroid";
 
+/** Personalización fina por encima del preset elegido (pendiente del PDF:
+ * "personalización individual por carrusel"). Todo opcional — sin pasar
+ * nada, se ve exactamente como antes. `background`/`shadow`/`glass` se
+ * notan sobre todo en los presets tipo tarjeta (Cards, Marquee); en los
+ * presets con una identidad física propia (Polaroid, Filmstrip, Split,
+ * Stack) solo afectan tamaño y separación, para no romper su estética. */
+export type CarouselStyleConfig = {
+  itemSize?: "sm" | "md" | "lg";
+  gap?: number;
+  background?: "transparent" | "surface";
+  shadow?: boolean;
+  glass?: boolean;
+};
+
 type CarouselProps = {
   items: CarouselItem[];
   /** Máximo de ítems a mostrar (no hay mínimo — con 1 alcanza) */
   maxItems?: number;
   preset?: CarouselPreset;
   comingSoonLabel?: string;
+  style?: CarouselStyleConfig;
 };
 
 function ItemWrapper({
@@ -100,6 +115,7 @@ export function Carousel({
   maxItems = 10,
   preset = "cards",
   comingSoonLabel = "Próximamente",
+  style,
 }: CarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [hintOpen, setHintOpen] = useState<{ title: string; hint: string | null } | null>(null);
@@ -109,6 +125,17 @@ export function Carousel({
   if (items.length === 0) return null;
 
   const visible = items.slice(0, maxItems);
+
+  // Escala de tamaño (sm/md/lg) sobre las dimensiones base de cada
+  // preset, y separación configurable entre ítems.
+  const sizeScale = style?.itemSize === "sm" ? 0.82 : style?.itemSize === "lg" ? 1.2 : 1;
+  const gapPx = style?.gap ?? 16;
+  // Fondo/sombra/glass tienen más sentido en los presets tipo tarjeta
+  // (Cards, Marquee) — los demás ya tienen una identidad visual propia
+  // (negativo de 35mm, foto Polaroid, etc.) que no queremos taparle.
+  const cardGlass = style?.glass ?? true;
+  const cardShadow = style?.shadow ? "shadow-[0_12px_30px_rgba(0,0,0,0.35)]" : "shadow-none";
+  const cardBg = cardGlass ? "glass" : style?.background === "surface" ? "bg-[var(--glass-border)]" : "bg-transparent";
 
   const scrollBy = (dir: 1 | -1) => {
     trackRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
@@ -193,7 +220,7 @@ export function Carousel({
   if (preset === "stack") {
     return (
       <>
-        <div className="flex flex-wrap gap-x-2 gap-y-6">
+        <div className="flex flex-wrap" style={{ columnGap: gapPx / 2, rowGap: gapPx * 1.5 }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -201,7 +228,7 @@ export function Carousel({
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.05 }}
-              style={{ marginLeft: i === 0 ? 0 : -16 }}
+              style={{ marginLeft: i === 0 ? 0 : -16 * sizeScale }}
             >
               <ItemWrapper
                 href={item.href}
@@ -210,8 +237,8 @@ export function Carousel({
                 className="flex flex-col items-center gap-2 text-center"
               >
                 <span
-                  className="glass relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full font-display text-lg"
-                  style={{ zIndex: visible.length - i }}
+                  className="glass relative flex items-center justify-center overflow-hidden rounded-full font-display text-lg"
+                  style={{ zIndex: visible.length - i, height: 80 * sizeScale, width: 80 * sizeScale }}
                 >
                   {item.isComingSoon ? (
                     "🔒"
@@ -238,7 +265,10 @@ export function Carousel({
   if (preset === "filmstrip") {
     return (
       <>
-        <div className="flex gap-3 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          className="flex overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ gap: gapPx * 0.75 }}
+        >
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -251,7 +281,8 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                className="group relative block w-[160px] shrink-0 overflow-hidden rounded-sm bg-black text-left"
+                style={{ width: 160 * sizeScale }}
+                className="group relative block shrink-0 overflow-hidden rounded-sm bg-black text-left"
               >
                 {item.isComingSoon && <LockBadge />}
                 {/* perforaciones */}
@@ -298,7 +329,7 @@ export function Carousel({
   if (preset === "editorial") {
     return (
       <>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3" style={{ gap: gapPx * 0.75 }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -312,7 +343,8 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                className={`group relative block h-full w-full overflow-hidden rounded-xl text-left ${i === 0 ? "min-h-[220px]" : "min-h-[100px]"}`}
+                style={{ minHeight: (i === 0 ? 220 : 100) * sizeScale }}
+                className="group relative block h-full w-full overflow-hidden rounded-xl text-left"
               >
                 {item.isComingSoon && <LockBadge />}
                 {item.coverImageUrl ? (
@@ -366,8 +398,8 @@ export function Carousel({
         `}</style>
         <div className="overflow-hidden">
           <div
-            className="djez-marquee-track flex w-max gap-4"
-            style={{ "--marquee-duration": `${duration}s` } as React.CSSProperties}
+            className="djez-marquee-track flex w-max"
+            style={{ "--marquee-duration": `${duration}s`, gap: gapPx } as React.CSSProperties}
           >
             {loopItems.map((item, i) => (
               <ItemWrapper
@@ -375,7 +407,8 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                className="glass group/card relative block min-w-[240px] shrink-0 overflow-hidden rounded-2xl p-5 text-left shadow-none"
+                style={{ minWidth: 240 * sizeScale }}
+                className={`${cardBg} group/card relative block shrink-0 overflow-hidden rounded-2xl p-5 text-left ${cardShadow}`}
               >
                 {item.isComingSoon && <LockBadge />}
                 {item.coverImageUrl && (
@@ -410,7 +443,7 @@ export function Carousel({
   if (preset === "split") {
     return (
       <>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: gapPx }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -424,6 +457,7 @@ export function Carousel({
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
                 className="group relative block overflow-hidden rounded-2xl text-left"
+                style={{ maxWidth: sizeScale !== 1 ? `${100 * sizeScale}%` : undefined }}
               >
                 {item.isComingSoon && <LockBadge />}
                 <div className="relative aspect-square w-full overflow-hidden">
@@ -474,7 +508,7 @@ export function Carousel({
             z-index: 50;
           }
         `}</style>
-        <div className="flex flex-wrap justify-center gap-x-1 gap-y-10 py-4">
+        <div className="flex flex-wrap justify-center py-4" style={{ columnGap: gapPx / 4, rowGap: gapPx * 2.5 }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -482,14 +516,14 @@ export function Carousel({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.05 }}
-              style={{ marginLeft: i === 0 ? 0 : -28, zIndex: i }}
+              style={{ marginLeft: i === 0 ? 0 : -28 * sizeScale, zIndex: i }}
             >
               <ItemWrapper
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                style={{ "--rot": `${pseudoRotation(i)}deg` } as React.CSSProperties}
-                className="djez-polaroid group relative block w-[150px] rounded-sm bg-white p-2 pb-8 text-left shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
+                style={{ "--rot": `${pseudoRotation(i)}deg`, width: 150 * sizeScale } as React.CSSProperties}
+                className="djez-polaroid group relative block rounded-sm bg-white p-2 pb-8 text-left shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
               >
                 {item.isComingSoon && <LockBadge />}
                 <div className="relative aspect-square w-full overflow-hidden bg-black/10">
@@ -521,7 +555,8 @@ export function Carousel({
       <div className="relative">
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ gap: gapPx }}
         >
           {visible.map((item, i) => (
             <motion.div
@@ -535,7 +570,8 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                className={`glass group relative block min-w-[280px] snap-start overflow-hidden rounded-2xl p-6 text-left shadow-none ${item.coverImageUrl && !item.isComingSoon ? "flex min-h-[220px] flex-col justify-end" : ""}`}
+                style={{ minWidth: 280 * sizeScale, minHeight: item.coverImageUrl && !item.isComingSoon ? 220 * sizeScale : undefined }}
+                className={`${cardBg} group relative block snap-start overflow-hidden rounded-2xl p-6 text-left ${cardShadow} ${item.coverImageUrl && !item.isComingSoon ? "flex flex-col justify-end" : ""}`}
               >
                 {item.isComingSoon && <LockBadge />}
                 {item.coverImageUrl && (

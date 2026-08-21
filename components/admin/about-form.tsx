@@ -13,6 +13,7 @@ type Props = {
     aboutContent: string | null;
     aboutContentEn: string | null;
     aboutCustomCss: string | null;
+    aboutCustomCssNeon: string | null;
     aboutImageUrl: string | null;
   };
 };
@@ -106,18 +107,56 @@ export function AboutForm({ action, initial }: Props) {
         />
       </div>
 
-      <div>
-        <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
-          CSS personalizado (opcional, avanzado) — se inserta en un &lt;style&gt; propio de esta
-          sección. Útil para cuando esto se venda como plantilla a otros clientes.
-        </label>
-        <textarea
-          name="aboutCustomCss"
-          rows={6}
-          defaultValue={initial.aboutCustomCss ?? ""}
-          className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2 font-mono text-xs"
-          placeholder={".about-content h2 { color: hotpink; }"}
-        />
+      <div className="glass space-y-3 rounded-2xl p-4">
+        <p className="mb-1 font-mono text-[11px] text-[var(--ink-muted)]">
+          CSS personalizado (opcional, avanzado) — pensado para cuando esto se venda como plantilla
+          y cada cliente quiera su propio toque. Separado en dos cuadros porque el sitio tiene dos
+          temas (Noir = claro, Neón = oscuro): el de Noir se aplica solo cuando el visitante está
+          en modo Noir, y el de Neón solo en modo Neón — así podés, por ejemplo, usar un color de
+          título distinto en cada uno sin pelearte con la especificidad de CSS.
+        </p>
+        <p className="mb-3 rounded-lg bg-black/20 px-3 py-2 font-mono text-[11px] leading-relaxed text-[var(--ink-muted)]">
+          Selectores disponibles — todo el contenido de esta sección cuelga de{" "}
+          <code className="text-[var(--accent)]">.about-content</code>:
+          <br />
+          <code className="text-[var(--accent)]">.about-content h2</code>,{" "}
+          <code className="text-[var(--accent)]">h3</code>,{" "}
+          <code className="text-[var(--accent)]">h4</code> — subtítulos (## / ### / #### en el
+          contenido de arriba)
+          <br />
+          <code className="text-[var(--accent)]">.about-content p</code> — párrafos ·{" "}
+          <code className="text-[var(--accent)]">strong</code>/<code className="text-[var(--accent)]">em</code> — negrita/cursiva ·{" "}
+          <code className="text-[var(--accent)]">a</code> — enlaces
+          <br />
+          <code className="text-[var(--accent)]">.about-content ul</code>,{" "}
+          <code className="text-[var(--accent)]">ul li</code> — listas con viñetas ·{" "}
+          <code className="text-[var(--accent)]">ol</code>, <code className="text-[var(--accent)]">ol li</code> — listas numeradas
+        </p>
+
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            CSS — tema Noir (claro)
+          </label>
+          <textarea
+            name="aboutCustomCss"
+            rows={5}
+            defaultValue={initial.aboutCustomCss ?? ""}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2 font-mono text-xs"
+            placeholder={".about-content h2 { color: #b9873f; }"}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            CSS — tema Neón (oscuro)
+          </label>
+          <textarea
+            name="aboutCustomCssNeon"
+            rows={5}
+            defaultValue={initial.aboutCustomCssNeon ?? ""}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2 font-mono text-xs"
+            placeholder={".about-content h2 { color: #39ff14; }"}
+          />
+        </div>
       </div>
 
       <SubmitButton>Guardar cambios</SubmitButton>

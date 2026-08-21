@@ -275,6 +275,20 @@ model SiteSettings {
 
   /// Preset visual del carrusel de destacados: "cards" | "minimal" | "stack"
   carouselPreset String  @default("cards")
+  /// Alineación general de la home (pendiente del PDF: "alineación
+  /// configurable del Home") — aplica al hero (kicker/título/subtítulo/
+  /// botones) y al encabezado de la sección de destacados.
+  homeAlign String @default("left") // left | center | right
+
+  /// Personalización fina del carrusel de destacados, por encima del
+  /// preset elegido (pendiente del PDF: "personalización individual por
+  /// carrusel"). Todo opcional — sin tocar nada, cada preset se ve como
+  /// siempre.
+  carouselItemSize   String  @default("md") // sm | md | lg — alto de las cards
+  carouselGap        Int     @default(16) // separación entre ítems, en px
+  carouselBackground String  @default("transparent") // transparent | surface
+  carouselShadow     Boolean @default(false)
+  carouselGlass      Boolean @default(true)
 
   /// Logo de marca, uno para cada tema (PNG blanco para Neón, negro para
   /// Noir, por ejemplo). Si no hay ninguno cargado, se muestra el texto
@@ -313,7 +327,13 @@ model SiteSettings {
   aboutContent     String? @db.Text
   aboutContentEn   String? @db.Text
   aboutImageUrl    String?
-  aboutCustomCss   String? @db.Text
+  /// CSS personalizado, separado por tema (pedido: "separar el CSS en
+  /// dos cuadros NOIR/NEON") — cada uno se inyecta SOLO cuando ese tema
+  /// está activo, así podés, por ejemplo, usar colores distintos en cada
+  /// modo sin pelear con especificidad. `aboutCustomCss` (a secas) queda
+  /// como el cuadro de Noir por compatibilidad con lo ya cargado.
+  aboutCustomCss     String? @db.Text // CSS del tema Noir
+  aboutCustomCssNeon String? @db.Text // CSS del tema Neón
 
   /// Animación de carga personalizada (gif o webp animado) — se sube tal
   /// cual, sin reprocesar con sharp, para no perder los frames de
@@ -351,6 +371,31 @@ model SiteSettings {
   /// {"home":{"es":"Inicio","en":"Home"}, "about":{...}, ...}. Vacío =
   /// usa el default de cada uno.
   navLabels String? @db.Text
+
+  /// Integración con Instagram (pedido: "compartir mis destacadas y
+  /// feed acá en mi portfolio"). Sin API de Meta de por medio — usa el
+  /// embed público oficial de Instagram (oEmbed), por eso alcanza con
+  /// guardar las URLs de los posts/reels que querés mostrar (ver modelo
+  /// InstagramPost más abajo). Estos campos son solo la config general
+  /// de la sección.
+  instagramFeedEnabled Boolean @default(false)
+  instagramHandle      String?
+  instagramFeedTitle   String?
+  instagramFeedTitleEn String?
+}
+
+/// Un post o reel de Instagram elegido a mano para mostrarse en el
+/// portfolio (pedido: integración con Instagram para feed/destacadas).
+/// `section` separa "lo más reciente" de "lo que quiero destacar" —
+/// misma idea que Feed vs Historias Destacadas de Instagram, pero
+/// curado por vos en vez de automático.
+model InstagramPost {
+  id        String   @id @default(cuid())
+  url       String // link al post o reel (instagram.com/p/... o /reel/...)
+  caption   String?
+  section   String   @default("feed") // feed | highlight
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 /// Links manuales del navbar (item PDF #1.2) — para enlaces externos o

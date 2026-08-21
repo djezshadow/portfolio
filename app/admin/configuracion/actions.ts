@@ -84,35 +84,44 @@ export async function updateHeroSettings(formData: FormData) {
 
   const field = (name: string) => (formData.get(name) as string)?.trim() || null;
   const carouselPreset = (formData.get("carouselPreset") as string) || "cards";
+  const validAligns = ["left", "center", "right"];
+  const rawAlign = (formData.get("homeAlign") as string) || "left";
+  const homeAlign = validAligns.includes(rawAlign) ? rawAlign : "left";
+
+  const validSizes = ["sm", "md", "lg"];
+  const rawItemSize = (formData.get("carouselItemSize") as string) || "md";
+  const carouselItemSize = validSizes.includes(rawItemSize) ? rawItemSize : "md";
+  const carouselGap = Math.min(64, Math.max(0, Number(formData.get("carouselGap") ?? 16) || 16));
+  const validBackgrounds = ["transparent", "surface"];
+  const rawBackground = (formData.get("carouselBackground") as string) || "transparent";
+  const carouselBackground = validBackgrounds.includes(rawBackground) ? rawBackground : "transparent";
+  const carouselShadow = formData.get("carouselShadow") === "on";
+  const carouselGlass = formData.get("carouselGlass") === "on";
+
+  const sharedFields = {
+    heroTitle1: field("heroTitle1"),
+    heroTitle1En: field("heroTitle1En"),
+    heroTitle2: field("heroTitle2"),
+    heroTitle2En: field("heroTitle2En"),
+    heroSubtitle: field("heroSubtitle"),
+    heroSubtitleEn: field("heroSubtitleEn"),
+    heroKicker: field("heroKicker"),
+    heroKickerEn: field("heroKickerEn"),
+    heroKickerShowTimecode: formData.get("heroKickerShowTimecode") === "on",
+    carouselPreset,
+    homeAlign,
+    carouselItemSize,
+    carouselGap,
+    carouselBackground,
+    carouselShadow,
+    carouselGlass,
+  };
 
   try {
     await prisma.siteSettings.upsert({
       where: { id: "default" },
-      update: {
-        heroTitle1: field("heroTitle1"),
-        heroTitle1En: field("heroTitle1En"),
-        heroTitle2: field("heroTitle2"),
-        heroTitle2En: field("heroTitle2En"),
-        heroSubtitle: field("heroSubtitle"),
-        heroSubtitleEn: field("heroSubtitleEn"),
-        heroKicker: field("heroKicker"),
-        heroKickerEn: field("heroKickerEn"),
-        heroKickerShowTimecode: formData.get("heroKickerShowTimecode") === "on",
-        carouselPreset,
-      },
-      create: {
-        id: "default",
-        heroTitle1: field("heroTitle1"),
-        heroTitle1En: field("heroTitle1En"),
-        heroTitle2: field("heroTitle2"),
-        heroTitle2En: field("heroTitle2En"),
-        heroSubtitle: field("heroSubtitle"),
-        heroSubtitleEn: field("heroSubtitleEn"),
-        heroKicker: field("heroKicker"),
-        heroKickerEn: field("heroKickerEn"),
-        heroKickerShowTimecode: formData.get("heroKickerShowTimecode") === "on",
-        carouselPreset,
-      },
+      update: sharedFields,
+      create: { id: "default", ...sharedFields },
     });
   } catch (err) {
     console.error("Error en updateHeroSettings:", err);

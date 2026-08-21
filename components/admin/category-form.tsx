@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { CategoryThemeControl } from "./category-theme-control";
 import { SubmitButton } from "./submit-button";
 
@@ -25,11 +28,29 @@ type CategoryFormProps = {
     strikethrough?: boolean;
     alignment?: string;
     strokeWidth?: number | null;
+    coverImageUrl?: string;
   };
   submitLabel?: string;
 };
 
 export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar categoría" }: CategoryFormProps) {
+  const [name, setName] = useState(defaults.name ?? "");
+  const [accentColor, setAccentColor] = useState(defaults.accentColor || "#b9873f");
+  const [fontFamily, setFontFamily] = useState(defaults.fontFamily || "display");
+  const [bold, setBold] = useState(defaults.bold ?? false);
+  const [strikethrough, setStrikethrough] = useState(defaults.strikethrough ?? false);
+  const [alignment, setAlignment] = useState(defaults.alignment || "left");
+  const [strokeWidth, setStrokeWidth] = useState(defaults.strokeWidth ?? 0);
+  const [metaTitle, setMetaTitle] = useState(defaults.metaTitle ?? "");
+  const [metaDescription, setMetaDescription] = useState(defaults.metaDescription ?? "");
+
+  const fontClass = fontFamily === "mono" ? "font-mono" : fontFamily === "body" ? "font-body" : "font-display";
+  const alignClass = alignment === "center" ? "text-center" : alignment === "right" ? "text-right" : "text-left";
+  const previewTitle = name || "Nombre de la categoría";
+  const seoTitle = metaTitle || `${previewTitle} — DJEZSHADOW`;
+  const seoDescription = metaDescription || "Descripción autogenerada a partir del nombre de la categoría.";
+  const siteUrl = "djezshadow.com";
+
   return (
     <form action={action} className="space-y-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -38,7 +59,8 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
           <input
             name="name"
             required
-            defaultValue={defaults.name}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
           />
         </div>
@@ -77,7 +99,8 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
             <input
               type="color"
               name="accentColor"
-              defaultValue={defaults.accentColor || "#b9873f"}
+              value={accentColor}
+              onChange={(e) => setAccentColor(e.target.value)}
               className="h-9 w-full rounded"
             />
           </div>
@@ -85,7 +108,8 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
             <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Tipografía</label>
             <select
               name="fontFamily"
-              defaultValue={defaults.fontFamily || "display"}
+              value={fontFamily}
+              onChange={(e) => setFontFamily(e.target.value)}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             >
               <option value="display">Display (Fraunces)</option>
@@ -97,10 +121,16 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
 
         <div className="flex flex-wrap gap-4 font-mono text-sm">
           <label className="flex items-center gap-2">
-            <input type="checkbox" name="bold" defaultChecked={defaults.bold} /> Negrita
+            <input type="checkbox" name="bold" checked={bold} onChange={(e) => setBold(e.target.checked)} /> Negrita
           </label>
           <label className="flex items-center gap-2">
-            <input type="checkbox" name="strikethrough" defaultChecked={defaults.strikethrough} /> Tachado
+            <input
+              type="checkbox"
+              name="strikethrough"
+              checked={strikethrough}
+              onChange={(e) => setStrikethrough(e.target.checked)}
+            />{" "}
+            Tachado
           </label>
         </div>
 
@@ -109,7 +139,8 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
             <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Alineación</label>
             <select
               name="alignment"
-              defaultValue={defaults.alignment || "left"}
+              value={alignment}
+              onChange={(e) => setAlignment(e.target.value)}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             >
               <option value="left">Izquierda</option>
@@ -125,9 +156,27 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
               type="number"
               step="0.1"
               name="strokeWidth"
-              defaultValue={defaults.strokeWidth ?? 0}
+              value={strokeWidth}
+              onChange={(e) => setStrokeWidth(Number(e.target.value))}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             />
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
+            Previsualización de estilo
+          </p>
+          <div className={`overflow-hidden rounded-xl bg-black/20 px-5 py-8 ${alignClass}`}>
+            <h3
+              className={`${fontClass} text-3xl ${bold ? "font-bold" : ""} ${strikethrough ? "line-through" : ""}`}
+              style={{
+                color: accentColor,
+                WebkitTextStroke: strokeWidth > 0 ? `${strokeWidth}px ${accentColor}` : undefined,
+              }}
+            >
+              {previewTitle}
+            </h3>
           </div>
         </div>
       </div>
@@ -141,7 +190,8 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
             </label>
             <input
               name="metaTitle"
-              defaultValue={defaults.metaTitle}
+              value={metaTitle}
+              onChange={(e) => setMetaTitle(e.target.value)}
               maxLength={70}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             />
@@ -167,7 +217,8 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
               name="metaDescription"
               rows={2}
               maxLength={180}
-              defaultValue={defaults.metaDescription}
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             />
           </div>
@@ -182,6 +233,37 @@ export function CategoryForm({ action, defaults = {}, submitLabel = "Guardar cat
               defaultValue={defaults.metaDescriptionEn}
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             />
+          </div>
+        </div>
+
+        {/* Preview de SEO manual (pendiente del PDF): así se ve el resultado
+            en Google y el link cuando lo compartís por WhatsApp, con lo que
+            escribiste arriba (o lo autogenerado si dejaste algo vacío). */}
+        <div>
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
+            Vista previa
+          </p>
+
+          <p className="mb-1 font-mono text-[10px] text-[var(--ink-muted)]">Como resultado de Google</p>
+          <div className="mb-3 rounded-xl border border-[var(--glass-border)] bg-white p-4 text-black">
+            <p className="truncate text-sm text-[#202124]">
+              {siteUrl} › {previewTitle.toLowerCase().replace(/\s+/g, "-")}
+            </p>
+            <p className="truncate text-lg text-[#1a0dab]">{seoTitle}</p>
+            <p className="line-clamp-2 text-sm text-[#4d5156]">{seoDescription}</p>
+          </div>
+
+          <p className="mb-1 font-mono text-[10px] text-[var(--ink-muted)]">Como link compartido en WhatsApp</p>
+          <div className="max-w-sm overflow-hidden rounded-lg border border-[#2a3942] bg-[#202c33] text-white">
+            {defaults.coverImageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={defaults.coverImageUrl} alt="" className="h-32 w-full object-cover" />
+            )}
+            <div className="space-y-0.5 border-l-4 border-[#25d366] bg-[#182229] p-2.5">
+              <p className="truncate text-sm font-medium">{seoTitle}</p>
+              <p className="line-clamp-2 text-xs text-[#8696a0]">{seoDescription}</p>
+              <p className="text-xs text-[#8696a0]">{siteUrl}</p>
+            </div>
           </div>
         </div>
       </div>

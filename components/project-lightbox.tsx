@@ -94,20 +94,21 @@ export function ProjectLightbox({
   const [direction, setDirection] = useState(0);
   const [zoomed, setZoomed] = useState(false);
 
+  // Antes acá se hacía setZoomed(false) — por eso cada vez que tocabas
+  // una flechita el visor "saltaba" fuera de pantalla completa. Ahora el
+  // estado de zoom NO se toca al cambiar de foto: si estabas en pantalla
+  // completa, seguís en pantalla completa viendo la siguiente/anterior.
   function goTo(next: number) {
     setDirection(next > index || (index === media.length - 1 && next === 0) ? 1 : -1);
     setIndex(next);
-    setZoomed(false);
   }
   function goNext() {
     setDirection(1);
     setIndex((i) => (i + 1) % media.length);
-    setZoomed(false);
   }
   function goPrev() {
     setDirection(-1);
     setIndex((i) => (i - 1 + media.length) % media.length);
-    setZoomed(false);
   }
 
   function selectGroup(id: string | "all") {
@@ -191,19 +192,27 @@ export function ProjectLightbox({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        layout
+        transition={{ layout: { duration: 0.35, ease: [0.32, 0.72, 0, 1] } }}
         className={`fixed inset-0 z-[200] flex items-center justify-center bg-black/90 ${zoomed ? "" : "p-2 sm:p-6"}`}
         onClick={onClose}
       >
         <motion.div
+          layout
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
-          transition={{ duration: 0.25 }}
+          transition={{
+            opacity: { duration: 0.25 },
+            scale: { duration: 0.25 },
+            layout: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+          }}
           onClick={(e) => e.stopPropagation()}
+          style={{ borderRadius: zoomed ? 0 : 16 }}
           className={
             zoomed
               ? "relative flex h-full w-full flex-col overflow-hidden bg-black"
-              : "glass relative flex h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl"
+              : "glass relative flex h-[95vh] w-full max-w-6xl flex-col overflow-hidden"
           }
         >
           {/* La cruz vive en su propia franja, separada del video/foto —

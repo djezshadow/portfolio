@@ -69,6 +69,7 @@ export async function updateAboutSettings(formData: FormData) {
         aboutContent: field("aboutContent"),
         aboutContentEn: field("aboutContentEn"),
         aboutCustomCss: field("aboutCustomCss"),
+        aboutCustomCssNeon: field("aboutCustomCssNeon"),
         aboutImageUrl,
       },
     });

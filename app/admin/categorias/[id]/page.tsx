@@ -60,6 +60,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
           strikethrough: category.style?.strikethrough,
           alignment: category.style?.alignment,
           strokeWidth: category.style?.strokeWidth,
+          coverImageUrl: category.coverImageUrl ?? undefined,
         }}
       />
     </div>

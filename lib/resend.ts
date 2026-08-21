@@ -2,6 +2,7 @@ export async function sendEmail(opts: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   replyTo?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -30,6 +31,10 @@ export async function sendEmail(opts: {
         reply_to: opts.replyTo,
         subject: opts.subject,
         text: opts.text,
+        // Opcional: si no se manda, Resend usa el text plano de arriba.
+        // Se manda SIEMPRE junto con `text` (nunca solo html) — así el
+        // mail funciona igual en clientes que no rendericen HTML.
+        ...(opts.html ? { html: opts.html } : {}),
       }),
     });
 

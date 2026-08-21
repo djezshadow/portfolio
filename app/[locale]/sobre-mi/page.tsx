@@ -29,11 +29,23 @@ export default async function AboutMePage({
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
-      {settings.aboutCustomCss && (
-        // CSS propio del admin (item #21) — pensado para cuando esto se
-        // venda como plantilla y cada cliente quiera su propio toque.
+      {(settings.aboutCustomCss || settings.aboutCustomCssNeon) && (
+        // CSS propio del admin (item #21), separado por tema (pendiente
+        // del PDF: "separar el CSS en dos cuadros NOIR/NEON") — cada
+        // bloque se envuelve en un selector de atributo que solo
+        // coincide cuando ese tema está activo en <html data-theme=...>,
+        // así conviven sin pisarse.
         // eslint-disable-next-line react/no-danger
-        <style dangerouslySetInnerHTML={{ __html: settings.aboutCustomCss }} />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: [
+              settings.aboutCustomCss && `html[data-theme="noir"] { ${settings.aboutCustomCss} }`,
+              settings.aboutCustomCssNeon && `html[data-theme="neon"] { ${settings.aboutCustomCssNeon} }`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          }}
+        />
       )}
 
       <Reveal>

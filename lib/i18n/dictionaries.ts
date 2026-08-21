@@ -36,6 +36,7 @@ const dictionaries = {
       label: "Próximamente",
       hint: "Todavía se está filmando esta historia.",
     },
+    instagram: { label: "Instagram", feed: "Feed", highlights: "Destacadas", followOn: "Seguime en" },
   },
   en: {
     nav: { contact: "Contact", downloadReel: "Download reel (PDF)", about: "About me" },
@@ -70,6 +71,7 @@ const dictionaries = {
       label: "Coming soon",
       hint: "This story is still being filmed.",
     },
+    instagram: { label: "Instagram", feed: "Feed", highlights: "Highlights", followOn: "Follow on" },
   },
 } as const;
 

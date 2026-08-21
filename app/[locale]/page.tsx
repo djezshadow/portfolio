@@ -1,4 +1,4 @@
-import { Carousel, type CarouselItem, type CarouselPreset } from "@/components/carousel";
+import { Carousel, type CarouselItem, type CarouselPreset, type CarouselStyleConfig } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
 import { CollaboratorCard } from "@/components/collaborator-card";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +9,7 @@ import { SiteLogo } from "@/components/site-logo";
 import { getProfile } from "@/lib/profile";
 import { CvDownloadLink } from "@/components/cv-download-link";
 import { getCollaboratorTypes } from "@/lib/collaborator-types";
+import { InstagramFeed } from "@/components/instagram-feed";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -63,8 +64,13 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let heroKicker: string = dict.hero.reel;
   let heroKickerShowTimecode = true;
   let carouselPreset: CarouselPreset = "cards";
+  let carouselStyle: CarouselStyleConfig = {};
+  let homeAlign: "left" | "center" | "right" = "left";
   let embeddedLogo: { noirUrl: string | null; neonUrl: string | null; size: number; sizeMobile: number } | null = null;
   let cvEnabled = false;
+  let instagramEnabled = false;
+  let instagramHandle: string | null = null;
+  let instagramTitle: string = "";
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
     cvEnabled = profile.cvEnabled;
@@ -77,6 +83,16 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     if (validPresets.includes(settings.carouselPreset as CarouselPreset)) {
       carouselPreset = settings.carouselPreset as CarouselPreset;
     }
+    carouselStyle = {
+      itemSize: (settings.carouselItemSize as "sm" | "md" | "lg") || "md",
+      gap: settings.carouselGap,
+      background: (settings.carouselBackground as "transparent" | "surface") || "transparent",
+      shadow: settings.carouselShadow,
+      glass: settings.carouselGlass,
+    };
+    if (["left", "center", "right"].includes(settings.homeAlign)) {
+      homeAlign = settings.homeAlign as "left" | "center" | "right";
+    }
     if (!settings.logoFloating) {
       embeddedLogo = {
         noirUrl: settings.logoNoirUrl,
@@ -85,8 +101,25 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         sizeMobile: settings.logoSizeMobile,
       };
     }
+    if (settings.instagramFeedEnabled) {
+      instagramEnabled = true;
+      instagramHandle = settings.instagramHandle;
+      instagramTitle = locOrNull(settings.instagramFeedTitle, settings.instagramFeedTitleEn, locale) || dict.instagram.label;
+    }
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
+  }
+
+  let instagramFeedPosts: { id: string; url: string; caption: string | null }[] = [];
+  let instagramHighlightPosts: { id: string; url: string; caption: string | null }[] = [];
+  if (instagramEnabled) {
+    try {
+      const posts = await prisma.instagramPost.findMany({ orderBy: { order: "asc" } });
+      instagramFeedPosts = posts.filter((p) => p.section === "feed");
+      instagramHighlightPosts = posts.filter((p) => p.section === "highlight");
+    } catch {
+      // sin DB disponible
+    }
   }
 
   let collaborators: {
@@ -170,7 +203,15 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       )}
 
       {/* HERO */}
-      <section className="flex min-h-[70vh] flex-col justify-center gap-6">
+      <section
+        className={`flex min-h-[70vh] flex-col justify-center gap-6 ${
+          homeAlign === "center"
+            ? "items-center text-center"
+            : homeAlign === "right"
+              ? "items-end text-right"
+              : "items-start text-left"
+        }`}
+      >
         <Reveal>
           <span className="font-mono text-xs text-accent">
             {heroKicker.toUpperCase()}
@@ -204,9 +245,18 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
         </Reveal>
 
-        <Carousel items={items} preset={carouselPreset} comingSoonLabel={locale === "en" ? "Coming soon" : "Próximamente"} />
+        <Carousel
+          items={items}
+          preset={carouselPreset}
+          style={carouselStyle}
+          comingSoonLabel={locale === "en" ? "Coming soon" : "Próximamente"}
+        />
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div
+          className={`mt-8 flex flex-wrap gap-3 ${
+            homeAlign === "center" ? "justify-center" : homeAlign === "right" ? "justify-end" : ""
+          }`}
+        >
           <a
             href="/api/reel-pdf"
             data-cursor="magnetic"
@@ -244,6 +294,15 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             </div>
           ))}
         </section>
+      )}
+      {instagramEnabled && (instagramFeedPosts.length > 0 || instagramHighlightPosts.length > 0) && (
+        <InstagramFeed
+          title={instagramTitle}
+          handle={instagramHandle}
+          feed={instagramFeedPosts}
+          highlights={instagramHighlightPosts}
+          labels={{ feed: dict.instagram.feed, highlights: dict.instagram.highlights, followOn: dict.instagram.followOn }}
+        />
       )}
     </div>
   );

@@ -11,7 +11,7 @@ export function InstagramPostsPanel({
   moveAction,
 }: {
   posts: Post[];
-  addAction: (formData: FormData) => Promise<void>;
+  addAction: (formData: FormData) => Promise<{ ok: boolean; error?: string }>;
   deleteAction: (postId: string, formData: FormData) => Promise<void>;
   moveAction: (postId: string, direction: "up" | "down") => Promise<void>;
 }) {
@@ -77,11 +77,8 @@ export function InstagramPostsPanel({
         <form
           action={async (formData: FormData) => {
             setError(null);
-            try {
-              await addAction(formData);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "No se pudo agregar el post.");
-            }
+            const result = await addAction(formData);
+            if (!result.ok) setError(result.error ?? "No se pudo agregar el post.");
           }}
           className="flex flex-wrap gap-2"
         >

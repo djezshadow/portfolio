@@ -259,4 +259,52 @@ body[data-lightbox-open="true"] [data-floating-nav] {
   .djez-content-offset {
     padding-top: 4.5rem;
   }
+
+  /* PDF #8.6: en celular horizontal, el ANCHO de pantalla es grande
+     (parecido al de una tablet), así que los breakpoints "sm:" de
+     Tailwind se activan igual que en desktop — pero la ALTURA sigue
+     siendo chica. Resultado: título gigante, hero altísimo, todo se ve
+     agrandado y desbordado. Acá lo compactamos específicamente para esa
+     combinación (horizontal + poca altura), sin tocar tablets reales
+     (que tienen más altura y no entran en este max-height:500px) ni el
+     resto de los breakpoints normales.
+     Selectores con corchetes escapados porque así los genera Tailwind
+     literalmente en el DOM: la clase es min-h-[70vh], no min-h-70vh. */
+
+  /* Hero de la home */
+  .min-h-\[70vh\] {
+    min-height: auto !important;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+  .min-h-\[70vh\] h1 {
+    font-size: 1.875rem !important; /* pisa el sm:text-7xl (72px → 30px) */
+    line-height: 1.15 !important;
+  }
+  .min-h-\[70vh\] p {
+    font-size: 0.8125rem !important;
+  }
+
+  /* Secciones del resto de la home (destacados, colaboradores, About,
+     Instagram) — los paddings verticales grandes (py-16/24) pensados
+     para desktop se comen media pantalla horizontal de un celu. */
+  section {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+
+  /* Títulos grandes tipo h2 (secciones) por la misma razón que el h1 */
+  h2 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Modales y visores (lightbox de fotos, viewer de video, popups) ya
+     usan 100dvh/100vh y se adaptan solos, pero el padding interno
+     pensado para desktop deja poco lugar a la imagen/video en 375px de
+     alto — lo recortamos acá. */
+  .glass.relative.flex.h-\[95vh\] {
+    height: 100vh !important;
+    padding: 0.75rem !important;
+  }
 }
+

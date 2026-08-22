@@ -265,7 +265,7 @@ export function Carousel({
                     "🔒"
                   ) : item.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    <img src={item.coverImageUrl} alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
                     item.code.replace("SC-", "")
                   )}
@@ -318,6 +318,8 @@ export function Carousel({
                     <img
                       src={item.coverImageUrl}
                       alt=""
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
                       className="h-full w-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
@@ -374,6 +376,8 @@ export function Carousel({
                     <img
                       src={item.coverImageUrl}
                       alt=""
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div
@@ -444,6 +448,8 @@ export function Carousel({
                     <img
                       src={item.coverImageUrl}
                       alt=""
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
                       className="absolute inset-0 h-full w-full object-cover opacity-70 transition-opacity group-hover/card:opacity-90"
                     />
                     <div
@@ -499,6 +505,8 @@ export function Carousel({
                     <img
                       src={item.coverImageUrl}
                       alt=""
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
@@ -562,7 +570,7 @@ export function Carousel({
                 <div className="relative aspect-square w-full overflow-hidden bg-black/10">
                   {item.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={item.coverImageUrl} alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <span className="font-display text-2xl text-black/30">{item.code.replace("SC-", "")}</span>
@@ -613,6 +621,8 @@ export function Carousel({
                     <img
                       src={item.coverImageUrl}
                       alt=""
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div

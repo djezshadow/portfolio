@@ -2,6 +2,8 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { put, del } from "@vercel/blob";
+import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 
@@ -12,12 +14,14 @@ async function assertAdmin() {
   if (!valid) throw new Error("No autorizado");
 }
 
-// Acepta tanto instagram.com/p/... como instagram.com/reel/..., con o sin
-// www, con o sin barra final o query string — y de paso valida que sea
-// realmente un link de Instagram (evita cargar cualquier URL como si
-// fuera un embed). Devuelve el link normalizado o null si es inválido
-// (en vez de tirar throw — ver por qué en addInstagramPost).
-function normalizeInstagramUrl(raw: string): { url: string } | { error: string } {
+// Devuelve el link normalizado o un error (en vez de tirar throw — ver
+// por qué en addInstagramPost). `mode: "embeddable"` exige que sea un
+// post o reel (único formato que el embed público de Instagram soporta,
+// se usa para "Feed"); `mode: "any"` solo exige que sea instagram.com,
+// para "Destacadas" — como esas NO se embeben (Instagram no lo permite
+// para Historias/Destacadas), solo hace falta un link válido al que
+// redirigir al tocar el círculo.
+function normalizeInstagramUrl(raw: string, mode: "embeddable" | "any"): { url: string } | { error: string } {
   const trimmed = raw.trim();
   let url: URL;
   try {
@@ -26,12 +30,16 @@ function normalizeInstagramUrl(raw: string): { url: string } | { error: string }
     return { error: "Ese link no es una URL válida." };
   }
   if (!/(^|\.)instagram\.com$/.test(url.hostname.replace(/^www\./, ""))) {
-    return { error: "Tiene que ser un link de instagram.com (un post o un reel)." };
+    return { error: "Tiene que ser un link de instagram.com." };
   }
-  if (!/^\/(p|reel)\//.test(url.pathname)) {
+  if (mode === "embeddable" && !/^\/(p|reel)\//.test(url.pathname)) {
     return { error: "El link tiene que apuntar a un post (/p/...) o un reel (/reel/...)." };
   }
-  return { url: `https://www.instagram.com${url.pathname}` };
+  // Para destacadas devolvemos la URL tal cual la pegaste (con su query
+  // string original, ej. ?igsi=...) — a diferencia del feed, acá no
+  // reconstruimos el path porque el link de destacadas puede depender de
+  // esos parámetros para resolver bien del lado de Instagram.
+  return { url: mode === "embeddable" ? `https://www.instagram.com${url.pathname}` : trimmed };
 }
 
 export async function updateInstagramSettings(formData: FormData) {
@@ -62,23 +70,44 @@ export async function addInstagramPost(formData: FormData): Promise<{ ok: boolea
   await assertAdmin();
 
   const rawUrl = String(formData.get("url") ?? "");
-  if (!rawUrl.trim()) return { ok: false, error: "Falta el link del post." };
-  const normalized = normalizeInstagramUrl(rawUrl);
+  if (!rawUrl.trim()) return { ok: false, error: "Falta el link." };
+  const section = formData.get("section") === "highlight" ? "highlight" : "feed";
+  const normalized = normalizeInstagramUrl(rawUrl, section === "highlight" ? "any" : "embeddable");
   if ("error" in normalized) return { ok: false, error: normalized.error };
   const url = normalized.url;
   const caption = (formData.get("caption") as string)?.trim() || null;
-  const section = formData.get("section") === "highlight" ? "highlight" : "feed";
+  const image = formData.get("image") as File | null;
 
-  // No usamos throw acá: en producción, Next.js siempre reemplaza el
-  // mensaje de cualquier error lanzado desde una Server Action por un
-  // texto genérico ("An error occurred...") antes de que llegue al
-  // cliente — es una medida de seguridad para no filtrar detalles
-  // internos por accidente, pero de paso nos tapaba el mensaje real acá.
-  // Devolviendo el error como dato normal (no como excepción), Next lo
-  // deja pasar tal cual lo escribimos.
+  if (section === "highlight" && (!image || image.size === 0)) {
+    return { ok: false, error: "Las destacadas necesitan una foto de portada (círculo) — Instagram no deja mostrar la real." };
+  }
+
+  let coverImageUrl: string | null = null;
   try {
+    if (image && image.size > 0) {
+      const buffer = Buffer.from(await image.arrayBuffer());
+      // Cuadrada y chica: es un CÍRCULO de ~64px en pantalla, no hace
+      // falta más resolución — así el archivo pesa poquísimo.
+      const webp = await sharp(buffer)
+        .resize({ width: 400, height: 400, fit: "cover" })
+        .webp({ quality: 85 })
+        .toBuffer();
+      const blob = await put(`instagram/highlight-${Date.now()}.webp`, webp, {
+        access: "public",
+        contentType: "image/webp",
+      });
+      coverImageUrl = blob.url;
+    }
+
+    // No usamos throw acá: en producción, Next.js siempre reemplaza el
+    // mensaje de cualquier error lanzado desde una Server Action por un
+    // texto genérico ("An error occurred...") antes de que llegue al
+    // cliente — es una medida de seguridad para no filtrar detalles
+    // internos por accidente, pero de paso nos tapaba el mensaje real acá.
+    // Devolviendo el error como dato normal (no como excepción), Next lo
+    // deja pasar tal cual lo escribimos.
     const count = await prisma.instagramPost.count({ where: { section } });
-    await prisma.instagramPost.create({ data: { url, caption, section, order: count } });
+    await prisma.instagramPost.create({ data: { url, caption, section, order: count, coverImageUrl } });
   } catch (err) {
     console.error("Error en addInstagramPost:", err);
     // P2021 = "la tabla no existe" — el caso más probable si acabás de
@@ -103,6 +132,14 @@ export async function addInstagramPost(formData: FormData): Promise<{ ok: boolea
 export async function deleteInstagramPost(postId: string, _formData: FormData) {
   await assertAdmin();
   try {
+    const post = await prisma.instagramPost.findUnique({ where: { id: postId } });
+    if (post?.coverImageUrl) {
+      try {
+        await del(post.coverImageUrl);
+      } catch {
+        // ignorar si ya no existe
+      }
+    }
     await prisma.instagramPost.delete({ where: { id: postId } });
   } catch (err) {
     console.error("Error en deleteInstagramPost:", err);

@@ -405,6 +405,11 @@ model InstagramPost {
   section   String   @default("feed") // feed | highlight
   order     Int      @default(0)
   createdAt DateTime @default(now())
+  /// Portada elegida a mano para el círculo de "Destacadas" (item: como
+  /// Instagram no deja embeber Destacadas de verdad, mostramos un
+  /// círculo con degradé + esta foto que redirige al link real). No se
+  /// usa en "feed" — ahí el post se embebe entero con su propia imagen.
+  coverImageUrl String?
 }
 
 /// Links manuales del navbar (item PDF #1.2) — para enlaces externos o

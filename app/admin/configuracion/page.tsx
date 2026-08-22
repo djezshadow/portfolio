@@ -107,6 +107,8 @@ export default async function ConfiguracionPage() {
           initialSize={settings.logoSize}
           initialSizeMobile={settings.logoSizeMobile}
         />
+
+        <SubmitButton className="col-span-full">Guardar</SubmitButton>
       </form>
 
       {/* --- Título / subtítulo de la home --- */}

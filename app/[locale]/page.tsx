@@ -41,6 +41,7 @@ async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselI
         title: loc(c.name, c.nameEn, locale),
         subtitle: `${c.projects.length} proyectos`,
         coverImageUrl: c.coverImageUrl,
+        coverTextDark: c.coverTextDark,
         href: c.isComingSoon ? undefined : `/${locale}/categoria/${c.slug}`,
         isComingSoon: c.isComingSoon,
         hint: locOrNull(c.comingSoonHint, c.comingSoonHintEn, locale),
@@ -89,6 +90,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       background: (settings.carouselBackground as "transparent" | "surface") || "transparent",
       shadow: settings.carouselShadow,
       glass: settings.carouselGlass,
+      align: ["left", "center", "right"].includes(settings.carouselAlign)
+        ? (settings.carouselAlign as "left" | "center" | "right")
+        : "left",
     };
     if (["left", "center", "right"].includes(settings.homeAlign)) {
       homeAlign = settings.homeAlign as "left" | "center" | "right";
@@ -111,7 +115,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   }
 
   let instagramFeedPosts: { id: string; url: string; caption: string | null }[] = [];
-  let instagramHighlightPosts: { id: string; url: string; caption: string | null }[] = [];
+  let instagramHighlightPosts: { id: string; url: string; caption: string | null; coverImageUrl: string | null }[] = [];
   if (instagramEnabled) {
     try {
       const posts = await prisma.instagramPost.findMany({ orderBy: { order: "asc" } });
@@ -257,13 +261,13 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             homeAlign === "center" ? "justify-center" : homeAlign === "right" ? "justify-end" : ""
           }`}
         >
-          <a
+          <CvDownloadLink
             href="/api/reel-pdf"
-            data-cursor="magnetic"
+            label={`${dict.nav.downloadReel} ↓`}
+            locale={locale}
+            fileLabel={{ es: "el reel", en: "the reel" }}
             className="glass inline-block rounded-full px-5 py-2 font-mono text-xs"
-          >
-            {dict.nav.downloadReel} ↓
-          </a>
+          />
           {cvEnabled && (
             <CvDownloadLink
               href={`/api/cv-pdf?locale=${locale}`}

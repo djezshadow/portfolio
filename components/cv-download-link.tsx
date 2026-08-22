@@ -8,13 +8,19 @@ export function CvDownloadLink({
   label,
   className,
   locale = "es",
+  fileLabel,
 }: {
   href: string;
   label: string;
   className?: string;
   locale?: "es" | "en";
+  /// Qué se está por descargar, para el título/texto del popup — default
+  /// "el CV" (comportamiento original, sin romper nada que ya lo usaba).
+  fileLabel?: { es: string; en: string };
 }) {
   const [open, setOpen] = useState(false);
+  const es = fileLabel?.es ?? "el CV";
+  const en = fileLabel?.en ?? "the CV";
 
   return (
     <>
@@ -39,7 +45,7 @@ export function CvDownloadLink({
               className="nav-surface max-w-xs rounded-2xl p-6 text-center"
             >
               <h3 className="mb-2 font-display text-lg">
-                {locale === "en" ? "Download CV?" : "¿Descargar el CV?"}
+                {locale === "en" ? `Download ${en}?` : `¿Descargar ${es}?`}
               </h3>
               <p className="mb-4 text-sm text-[var(--ink-muted)]">
                 {locale === "en"

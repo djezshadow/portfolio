@@ -13,7 +13,7 @@ export default async function InstagramAdminPage() {
     instagramFeedTitle: null as string | null,
     instagramFeedTitleEn: null as string | null,
   };
-  let posts: { id: string; url: string; caption: string | null; section: string }[] = [];
+  let posts: { id: string; url: string; caption: string | null; section: string; coverImageUrl: string | null }[] = [];
   try {
     settings = await getSiteSettings();
     posts = await prisma.instagramPost.findMany({ orderBy: { order: "asc" } });
@@ -75,12 +75,11 @@ export default async function InstagramAdminPage() {
 
       <h2 className="mb-1 font-display text-xl">Posts</h2>
       <p className="mb-4 text-sm text-[var(--ink-muted)]">
-        "Destacadas" acá NO son las historias destacadas de tu perfil de Instagram (esas no se
-        pueden embeber — Instagram no lo permite desde afuera de la app). Es una curación tuya:
-        elegís posts o reels puntuales para que aparezcan primero en esta sección — "Feed" es el
-        resto. Si cargás las dos, en el sitio aparece un selector para pasar de una a otra; si
-        solo cargás una, se muestra directo. En los dos casos, pegá el link de un post o reel
-        específico (no el link a un álbum de destacadas ni al perfil).
+        Instagram no deja embeber Historias Destacadas fuera de la app — por eso "Destacadas" acá
+        funciona distinto al "Feed": armamos un círculo con degradé (como en tu perfil de
+        Instagram) usando una foto que vos elegís, y al tocarlo el visitante va directo a la
+        destacada real en Instagram. "Feed" sí se embebe entero (necesita ser un link a un post o
+        reel específico, no al perfil).
       </p>
       <InstagramPostsPanel
         posts={posts}

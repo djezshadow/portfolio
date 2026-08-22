@@ -32,7 +32,6 @@ export function ProgressiveImage({
   imgClassName?: string;
   priority?: boolean;
 }) {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
   // null = todavía no sabemos el tamaño total (barra indeterminada);
   // número = % real ya calculado contra Content-Length.
   const [progress, setProgress] = useState<number | null>(null);
@@ -42,7 +41,6 @@ export function ProgressiveImage({
 
   useEffect(() => {
     let cancelled = false;
-    let createdUrl: string | null = null;
     currentSrc.current = src;
 
     setLoaded(false);
@@ -56,14 +54,24 @@ export function ProgressiveImage({
 
         const contentLength = Number(res.headers.get("Content-Length") ?? 0);
         const reader = res.body.getReader();
-        const chunks: Uint8Array[] = [];
         let received = 0;
 
+        // Solo leemos los bytes para medir el progreso real de descarga —
+        // los descartamos (no armamos un blob: URL con ellos). Antes se
+        // armaba un `URL.createObjectURL(blob)` y se usaba como src del
+        // <img>, pero un blob: URL solo existe en la pestaña que lo creó:
+        // por eso "abrir imagen en otra pestaña" (clic derecho del
+        // navegador) mostraba una página rota/"código raro" en vez de la
+        // foto — la pestaña nueva no tiene forma de resolver ese blob.
+        // Ahora, al terminar, el <img> usa directamente la URL real
+        // (`src`, la del endpoint comprimido/con marca de agua) — el
+        // fetch de acá ya la dejó en la caché del navegador, así que no
+        // se vuelve a descargar, y "abrir en pestaña nueva" funciona
+        // porque es una URL http normal, no un blob.
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           if (value) {
-            chunks.push(value);
             received += value.length;
             if (contentLength > 0 && !cancelled) {
               setProgress(Math.min(100, Math.round((received / contentLength) * 100)));
@@ -72,10 +80,6 @@ export function ProgressiveImage({
         }
 
         if (cancelled || currentSrc.current !== src) return;
-
-        const blob = new Blob(chunks as BlobPart[]);
-        createdUrl = URL.createObjectURL(blob);
-        setObjectUrl(createdUrl);
         setProgress(100);
         setLoaded(true);
       } catch {
@@ -87,16 +91,15 @@ export function ProgressiveImage({
 
     return () => {
       cancelled = true;
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
   }, [src]);
 
   return (
     <div className={className}>
-      {objectUrl && (
+      {loaded && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={objectUrl}
+          src={src}
           alt={alt}
           className={imgClassName}
           fetchPriority={priority ? "high" : "auto"}

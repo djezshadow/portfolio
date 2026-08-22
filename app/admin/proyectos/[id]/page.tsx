@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, moveMediaOrder } from "./actions";
+import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, updateMediaExif, moveMediaOrder } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { MediaGroupsPanel } from "@/components/admin/media-groups-panel";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { WatermarkOverrideForm } from "@/components/admin/watermark-override-form";
+import { ExifForm } from "@/components/admin/exif-form";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { toMonthInputValue } from "@/lib/date-range";
 
@@ -297,6 +298,19 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
                       action={updateMediaWatermarkOverride}
                       initialPosition={m.watermarkPositionOverride}
                       initialOpacity={m.watermarkOpacityOverride}
+                    />
+                  )}
+                  {m.type === "image" && (
+                    <ExifForm
+                      mediaId={m.id}
+                      action={updateMediaExif}
+                      initial={{
+                        exifCamera: m.exifCamera,
+                        exifAperture: m.exifAperture,
+                        exifShutterSpeed: m.exifShutterSpeed,
+                        exifIso: m.exifIso,
+                        exifFps: m.exifFps,
+                      }}
                     />
                   )}
                 </div>

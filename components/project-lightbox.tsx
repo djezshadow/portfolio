@@ -6,6 +6,7 @@ import Image from "next/image";
 import { VideoEmbed } from "./video-embed";
 import { getVideoThumbnail } from "@/lib/video-url";
 import { ProgressiveImage } from "./progressive-image";
+import { ExifHud } from "./exif-hud";
 
 // Ancho tope para la vista grande del lightbox. Antes se pedía la imagen
 // a resolución ORIGINAL (podía ser 6000px+ de una cámara) — eso hacía que
@@ -23,6 +24,13 @@ type MediaItem = {
   groupId?: string | null;
   bakedThumbUrl?: string | null;
   bakedFullUrl?: string | null;
+  /// EXIF cargado a mano (opcional) — si hay al menos un campo, se
+  /// muestra el HUD tipo visor de cine sobre la foto.
+  exifCamera?: string | null;
+  exifAperture?: string | null;
+  exifShutterSpeed?: string | null;
+  exifIso?: string | null;
+  exifFps?: string | null;
 };
 
 type MediaGroupInfo = { id: string; name: string; coverImageUrl?: string | null };
@@ -346,6 +354,13 @@ export function ProjectLightbox({
                           priority
                           className="absolute inset-0"
                           imgClassName="h-full w-full object-contain"
+                        />
+                        <ExifHud
+                          camera={current.exifCamera}
+                          aperture={current.exifAperture}
+                          shutterSpeed={current.exifShutterSpeed}
+                          iso={current.exifIso}
+                          fps={current.exifFps}
                         />
                       </div>
                     ) : null}

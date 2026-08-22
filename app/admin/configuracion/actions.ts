@@ -248,6 +248,21 @@ export async function updateContactSettings(formData: FormData) {
   revalidatePath("/admin/configuracion");
 }
 
+export async function updateSecretSpecs(formData: FormData) {
+  await assertAdmin();
+
+  const secretSpecsMessage = (formData.get("secretSpecsMessage") as string)?.trim() || null;
+  const secretSpecsMessageEn = (formData.get("secretSpecsMessageEn") as string)?.trim() || null;
+
+  await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    update: { secretSpecsMessage, secretSpecsMessageEn },
+    create: { id: "default", secretSpecsMessage, secretSpecsMessageEn },
+  });
+
+  revalidatePath("/admin/configuracion");
+}
+
 export async function updateFooterSocials(formData: FormData) {
   await assertAdmin();
 

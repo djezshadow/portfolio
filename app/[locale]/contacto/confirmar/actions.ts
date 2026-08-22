@@ -3,6 +3,7 @@
 import { sendEmail } from "@/lib/resend";
 import { getSiteSettings } from "@/lib/site-settings";
 import { verifyContactToken } from "@/lib/contact-token";
+import { newContactNotificationHtml } from "@/lib/email-templates";
 
 export type ConfirmState = { ok: boolean; error?: string };
 
@@ -27,6 +28,10 @@ export async function confirmContactMessage(token: string): Promise<ConfirmState
     to,
     subject: `Nuevo contacto de ${data.name} — DJEZSHADOW (confirmado)`,
     text: `De: ${data.name} <${data.email}>\n(mail confirmado por la persona que escribió)\n\n${data.message}`,
+    // El aviso te llega siempre en español (es tu propia bandeja, no la
+    // de quien escribió) — no depende del idioma en el que la otra
+    // persona vio el sitio.
+    html: newContactNotificationHtml({ name: data.name, email: data.email, message: data.message, locale: "es" }),
     replyTo: data.email,
   });
 

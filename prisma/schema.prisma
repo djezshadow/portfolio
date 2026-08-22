@@ -231,6 +231,16 @@ model Media {
   /// dividir un mismo proyecto por fecha, tipo de trabajo, etc).
   groupId       String?
   group         MediaGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  /// EXIF cargado A MANO (opcional, foto por foto) — pedido: "poder
+  /// añadir los exif de las fotos a mano, así elijo a qué ponerle y a
+  /// qué no, también con qué cámara fue sacada". Ninguno es obligatorio;
+  /// el HUD tipo visor de cine en el visor de fotos solo aparece si al
+  /// menos uno de estos campos tiene algo cargado.
+  exifCamera        String?
+  exifAperture       String? // ej. "f/1.8"
+  exifShutterSpeed   String? // ej. "1/125"
+  exifIso            String? // ej. "800"
+  exifFps            String? // ej. "24"
 }
 
 /// Subcategoría dentro de un proyecto (ej: "Making of", "Fotos finales",
@@ -391,6 +401,13 @@ model SiteSettings {
   instagramHandle      String?
   instagramFeedTitle   String?
   instagramFeedTitleEn String?
+
+  /// Mensaje opcional para el modal secreto (item: "modal manteniendo el
+  /// logo" — mantener presionado el logo abre una ficha estilo specs de
+  /// cámara). Si queda vacío, el modal igual arma algo con las cámaras
+  /// que aparecen en los EXIF cargados a mano en las fotos.
+  secretSpecsMessage   String? @db.Text
+  secretSpecsMessageEn String? @db.Text
 }
 
 /// Un post o reel de Instagram elegido a mano para mostrarse en el

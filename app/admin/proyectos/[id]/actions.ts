@@ -368,6 +368,26 @@ export async function updateMediaWatermarkOverride(mediaId: string, formData: Fo
   revalidatePath("/", "layout");
 }
 
+export async function updateMediaExif(mediaId: string, formData: FormData) {
+  await assertAdmin();
+
+  const field = (name: string) => (formData.get(name) as string)?.trim() || null;
+
+  const media = await prisma.media.update({
+    where: { id: mediaId },
+    data: {
+      exifCamera: field("exifCamera"),
+      exifAperture: field("exifAperture"),
+      exifShutterSpeed: field("exifShutterSpeed"),
+      exifIso: field("exifIso"),
+      exifFps: field("exifFps"),
+    },
+  });
+
+  revalidatePath(`/admin/proyectos/${media.projectId}`);
+  revalidatePath("/", "layout");
+}
+
 export async function moveMediaOrder(mediaId: string, direction: "up" | "down") {
   await assertAdmin();
 

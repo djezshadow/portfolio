@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
-import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials } from "./actions";
+import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials, updateSecretSpecs } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
@@ -49,6 +49,8 @@ export default async function ConfiguracionPage() {
     footerTiktokUrl: null as string | null,
     footerLinkedinUrl: null as string | null,
     footerYoutubeUrl: null as string | null,
+    secretSpecsMessage: null as string | null,
+    secretSpecsMessageEn: null as string | null,
   };
   try {
     settings = await getSiteSettings();
@@ -231,6 +233,35 @@ export default async function ConfiguracionPage() {
         <div className="sm:col-span-2">
           <SubmitButton>Guardar redes sociales</SubmitButton>
         </div>
+      </form>
+
+      {/* --- Modal secreto (mantener presionado el logo) --- */}
+      <h2 className="mb-1 mt-10 font-display text-xl">Modal secreto (logo)</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        Mantener presionado el logo abre una ficha secreta con las cámaras que aparecen en el
+        EXIF cargado en las fotos + este mensaje opcional. Si dejás todo vacío y no cargaste
+        ningún EXIF, igual se puede abrir — solo que no muestra nada específico.
+      </p>
+      <form action={updateSecretSpecs} className="glass space-y-4 rounded-2xl p-5">
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Mensaje (ES)</label>
+          <textarea
+            name="secretSpecsMessage"
+            rows={3}
+            defaultValue={settings.secretSpecsMessage ?? ""}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Mensaje (EN)</label>
+          <textarea
+            name="secretSpecsMessageEn"
+            rows={3}
+            defaultValue={settings.secretSpecsMessageEn ?? ""}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          />
+        </div>
+        <SubmitButton>Guardar mensaje secreto</SubmitButton>
       </form>
     </div>
   );

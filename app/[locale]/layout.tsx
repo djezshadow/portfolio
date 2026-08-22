@@ -2,6 +2,8 @@ import { locales, type Locale } from "@/lib/i18n/dictionaries";
 import { SetHtmlLang } from "@/components/set-html-lang";
 import { FloatingNav } from "@/components/floating-nav";
 import { Footer } from "@/components/footer";
+import { RandomExifCapsule } from "@/components/random-exif-capsule";
+import { KonamiEasterEgg } from "@/components/konami-easter-egg";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -22,6 +24,8 @@ export default async function LocaleLayout({
       <div className="flex-1">{children}</div>
       <Footer locale={locale} />
       <FloatingNav locale={locale} />
+      <RandomExifCapsule />
+      <KonamiEasterEgg locale={locale} />
     </div>
   );
 }

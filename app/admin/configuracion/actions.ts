@@ -255,14 +255,23 @@ export async function updateSecretSpecs(formData: FormData) {
   const secretSpecsMessageEn = (formData.get("secretSpecsMessageEn") as string)?.trim() || null;
   const konamiMessage = (formData.get("konamiMessage") as string)?.trim() || null;
   const konamiMessageEn = (formData.get("konamiMessageEn") as string)?.trim() || null;
+  const randomCapsuleEnabled = formData.get("randomCapsuleEnabled") === "on";
 
   await prisma.siteSettings.upsert({
     where: { id: "default" },
-    update: { secretSpecsMessage, secretSpecsMessageEn, konamiMessage, konamiMessageEn },
-    create: { id: "default", secretSpecsMessage, secretSpecsMessageEn, konamiMessage, konamiMessageEn },
+    update: { secretSpecsMessage, secretSpecsMessageEn, konamiMessage, konamiMessageEn, randomCapsuleEnabled },
+    create: {
+      id: "default",
+      secretSpecsMessage,
+      secretSpecsMessageEn,
+      konamiMessage,
+      konamiMessageEn,
+      randomCapsuleEnabled,
+    },
   });
 
   revalidatePath("/admin/configuracion");
+  revalidatePath("/", "layout");
 }
 
 const KONAMI_SOUND_TYPES: Record<string, string> = {

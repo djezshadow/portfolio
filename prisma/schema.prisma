@@ -241,6 +241,12 @@ model Media {
   exifShutterSpeed   String? // ej. "1/125"
   exifIso            String? // ej. "800"
   exifFps            String? // ej. "24"
+  /// Descripción de accesibilidad (alt text) cargada a mano por foto —
+  /// pedido: "poder añadirles la descripción de accesibilidad a cada
+  /// foto". Si queda vacía, se usa un alt genérico con el título del
+  /// proyecto (nunca queda alt="" en las fotos de proyectos).
+  altText   String?
+  altTextEn String?
 }
 
 /// Subcategoría dentro de un proyecto (ej: "Making of", "Fotos finales",
@@ -418,6 +424,11 @@ model SiteSettings {
   /// u OGG). Se sube tal cual, sin reprocesar — a diferencia de las
   /// imágenes, no hace falta convertir formato de audio.
   konamiSoundUrl  String?
+
+  /// Apaga la cápsula flotante de EXIF aleatoria (pedido: "permitas
+  /// desactivarlo"). No afecta al resto de los easter eggs (modal del
+  /// logo, código Konami) — cada uno se puede seguir usando.
+  randomCapsuleEnabled Boolean @default(true)
 }
 
 /// Registra qué IPs ya vieron el logro del código Konami, para que salga

@@ -183,7 +183,10 @@ export function CategoryView({
             description: locOrNull(openProject.description, openProject.descriptionEn, locale),
             collaboratorName: openProject.collaborator?.name,
             dateLabel: formatDateRange(openProject.dateStart, openProject.dateEnd, openProject.isOngoing, locale),
-            media: openProject.media,
+            media: openProject.media.map((m) => ({
+              ...m,
+              alt: locOrNull(m.altText, m.altTextEn, locale) || undefined,
+            })),
             groups: openProject.mediaGroups.map((g) => ({
               id: g.id,
               name: loc(g.name, g.nameEn, locale),

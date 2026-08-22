@@ -293,11 +293,21 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
               <option value="right">Derecha</option>
             </select>
             <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
-              Se nota más cuando hay pocos ítems y sobra espacio — con la fila llena de tarjetas
-              (scroll horizontal) el efecto es mínimo, porque no queda aire libre para mover.
+              Se nota más cuando hay pocos ítems y sobra espacio. No aplica a Editorial ni Split
+              (son grillas que se estiran a propósito para armar el mosaico — alinearlas las
+              encogería y rompería ese efecto).
             </p>
           </div>
         </div>
+
+        <p className="mt-3 font-mono text-[10px] text-[var(--ink-muted)]">
+          Resumen por preset — qué te afecta cada control de arriba:
+          <br />• <strong>Cards / Marquee</strong>: los 5 controles.
+          <br />• <strong>Stack / Filmstrip / Polaroid</strong>: tamaño, separación y alineación
+          (sin fondo/sombra/glass — ya tienen su propia identidad visual).
+          <br />• <strong>Editorial / Split</strong>: tamaño y separación únicamente (son mosaicos
+          que se estiran siempre a lo ancho).
+        </p>
         <div className="mt-2 flex flex-wrap gap-4">
           <label className="flex items-center gap-2 font-mono text-xs">
             <input

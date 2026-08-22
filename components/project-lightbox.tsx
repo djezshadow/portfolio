@@ -31,6 +31,10 @@ type MediaItem = {
   exifShutterSpeed?: string | null;
   exifIso?: string | null;
   exifFps?: string | null;
+  /// Alt ya resuelto en el idioma correspondiente (lo arma el llamador,
+  /// que es quien sabe el locale) — pedido: "descripción de
+  /// accesibilidad a cada foto".
+  alt?: string;
 };
 
 type MediaGroupInfo = { id: string; name: string; coverImageUrl?: string | null };
@@ -350,7 +354,7 @@ export function ProjectLightbox({
                         <ProgressiveImage
                           key={current.id}
                           src={current.bakedFullUrl || `/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
-                          alt={project.title}
+                          alt={current.alt || project.title}
                           priority
                           className="absolute inset-0"
                           imgClassName="h-full w-full object-contain"
@@ -401,6 +405,7 @@ export function ProjectLightbox({
                       <button
                         onClick={() => goTo(i)}
                         data-cursor="magnetic"
+                        aria-label={m.type === "image" ? `${project.title} — ${i + 1}` : `${project.title} — video ${i + 1}`}
                         className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md"
                         style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}
                       >

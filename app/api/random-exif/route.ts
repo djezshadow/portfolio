@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,11 @@ export const dynamic = "force-dynamic";
  * no aparece, no rompe nada).
  */
 export async function GET() {
+  const settings = await getSiteSettings();
+  if (!settings.randomCapsuleEnabled) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   const now = new Date();
   const candidates = await prisma.media.findMany({
     where: {

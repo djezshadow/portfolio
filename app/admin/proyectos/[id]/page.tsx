@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, updateMediaExif, moveMediaOrder } from "./actions";
+import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, updateMediaExif, updateMediaAlt, reorderMedia, moveMediaOrder } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
@@ -9,6 +9,8 @@ import { MediaGroupsPanel } from "@/components/admin/media-groups-panel";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { WatermarkOverrideForm } from "@/components/admin/watermark-override-form";
 import { ExifForm } from "@/components/admin/exif-form";
+import { AltTextForm } from "@/components/admin/alt-text-form";
+import { DragReorderGrid } from "@/components/admin/drag-reorder-grid";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { toMonthInputValue } from "@/lib/date-range";
 
@@ -239,10 +241,16 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
 
         {project.media.length > 0 && (
           <div className="glass space-y-3 rounded-2xl p-4">
-            <p className="font-mono text-xs text-[var(--ink-muted)]">Media actual</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {project.media.map((m, mi) => (
-                <div key={m.id} className="space-y-1.5">
+            <p className="font-mono text-xs text-[var(--ink-muted)]">
+              Media actual — arrastrá una foto para reordenarla (en celular o con teclado, usá las
+              flechitas de cada una).
+            </p>
+            <DragReorderGrid
+              items={project.media}
+              onReorder={reorderMedia}
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+              renderItem={(m, mi) => (
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] text-[var(--ink-muted)]">#{mi + 1}</span>
                     <ReorderButtons
@@ -284,12 +292,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
                     </select>
                   )}
                   <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-muted)]">
-                    <input
-                      type="radio"
-                      name="thumbnailMediaId"
-                      value={m.id}
-                      defaultChecked={m.isThumbnail}
-                    />
+                    <input type="radio" name="thumbnailMediaId" value={m.id} defaultChecked={m.isThumbnail} />
                     Portada
                   </label>
                   {m.type === "image" && (
@@ -313,9 +316,16 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
                       }}
                     />
                   )}
+                  {m.type === "image" && (
+                    <AltTextForm
+                      mediaId={m.id}
+                      action={updateMediaAlt}
+                      initial={{ altText: m.altText, altTextEn: m.altTextEn }}
+                    />
+                  )}
                 </div>
-              ))}
-            </div>
+              )}
+            />
             <p className="font-mono text-[10px] text-[var(--ink-muted)]">
               Marcá el check sobre una foto/video para borrarla al guardar.
             </p>

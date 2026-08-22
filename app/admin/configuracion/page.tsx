@@ -54,6 +54,7 @@ export default async function ConfiguracionPage() {
     konamiMessage: null as string | null,
     konamiMessageEn: null as string | null,
     konamiSoundUrl: null as string | null,
+    randomCapsuleEnabled: true,
   };
   try {
     settings = await getSiteSettings();
@@ -246,6 +247,11 @@ export default async function ConfiguracionPage() {
         ningún EXIF, igual se puede abrir — solo que no muestra nada específico.
       </p>
       <form action={updateSecretSpecs} className="glass space-y-4 rounded-2xl p-5">
+        <label className="flex items-center gap-2 border-b border-[var(--glass-border)] pb-4 font-mono text-xs">
+          <input type="checkbox" name="randomCapsuleEnabled" defaultChecked={settings.randomCapsuleEnabled} /> Mostrar
+          la cápsula flotante con datos EXIF al azar (si la apagás, el resto de los easter eggs —
+          modal del logo y código Konami— siguen funcionando igual)
+        </label>
         <div>
           <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Mensaje (ES)</label>
           <textarea

@@ -388,6 +388,40 @@ export async function updateMediaExif(mediaId: string, formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function updateMediaAlt(mediaId: string, formData: FormData) {
+  await assertAdmin();
+
+  const field = (name: string) => (formData.get(name) as string)?.trim() || null;
+
+  const media = await prisma.media.update({
+    where: { id: mediaId },
+    data: { altText: field("altText"), altTextEn: field("altTextEn") },
+  });
+
+  revalidatePath(`/admin/proyectos/${media.projectId}`);
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Reordena TODAS las fotos de un proyecto/subcategoría de una — pedido:
+ * "poder mover de lugar las fotos... con drag and drop". A diferencia de
+ * moveMediaOrder (que solo intercambia con el vecino), esta recibe la
+ * lista completa de IDs ya en el orden final que arma el arrastre en el
+ * navegador, y actualiza el campo `order` de todas de un saque.
+ */
+export async function reorderMedia(orderedIds: string[]) {
+  await assertAdmin();
+  if (orderedIds.length === 0) return;
+
+  const first = await prisma.media.findUnique({ where: { id: orderedIds[0] }, select: { projectId: true } });
+  if (!first) return;
+
+  await prisma.$transaction(orderedIds.map((id, index) => prisma.media.update({ where: { id }, data: { order: index } })));
+
+  revalidatePath(`/admin/proyectos/${first.projectId}`);
+  revalidatePath("/", "layout");
+}
+
 export async function moveMediaOrder(mediaId: string, direction: "up" | "down") {
   await assertAdmin();
 

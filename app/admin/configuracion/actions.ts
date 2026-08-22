@@ -253,13 +253,70 @@ export async function updateSecretSpecs(formData: FormData) {
 
   const secretSpecsMessage = (formData.get("secretSpecsMessage") as string)?.trim() || null;
   const secretSpecsMessageEn = (formData.get("secretSpecsMessageEn") as string)?.trim() || null;
+  const konamiMessage = (formData.get("konamiMessage") as string)?.trim() || null;
+  const konamiMessageEn = (formData.get("konamiMessageEn") as string)?.trim() || null;
 
   await prisma.siteSettings.upsert({
     where: { id: "default" },
-    update: { secretSpecsMessage, secretSpecsMessageEn },
-    create: { id: "default", secretSpecsMessage, secretSpecsMessageEn },
+    update: { secretSpecsMessage, secretSpecsMessageEn, konamiMessage, konamiMessageEn },
+    create: { id: "default", secretSpecsMessage, secretSpecsMessageEn, konamiMessage, konamiMessageEn },
   });
 
+  revalidatePath("/admin/configuracion");
+}
+
+const KONAMI_SOUND_TYPES: Record<string, string> = {
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/aac": "aac",
+  "audio/x-aac": "aac",
+  "audio/ogg": "ogg",
+};
+
+export async function updateKonamiSound(formData: FormData) {
+  await assertAdmin();
+
+  const sound = formData.get("konamiSound") as File | null;
+  const removeSound = formData.get("removeKonamiSound") === "on";
+
+  const current = await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    update: {},
+    create: { id: "default" },
+  });
+
+  let konamiSoundUrl = current.konamiSoundUrl;
+
+  if (removeSound && konamiSoundUrl) {
+    try {
+      await del(konamiSoundUrl);
+    } catch {
+      // ignorar
+    }
+    konamiSoundUrl = null;
+  }
+
+  if (sound && sound.size > 0) {
+    const ext = KONAMI_SOUND_TYPES[sound.type];
+    if (!ext) {
+      throw new Error("Formato no soportado — subí un archivo MP3, AAC u OGG.");
+    }
+    if (current.konamiSoundUrl) {
+      try {
+        await del(current.konamiSoundUrl);
+      } catch {
+        // ignorar
+      }
+    }
+    const buffer = Buffer.from(await sound.arrayBuffer());
+    const blob = await put(`settings/konami-sound-${Date.now()}.${ext}`, buffer, {
+      access: "public",
+      contentType: sound.type,
+    });
+    konamiSoundUrl = blob.url;
+  }
+
+  await prisma.siteSettings.update({ where: { id: "default" }, data: { konamiSoundUrl } });
   revalidatePath("/admin/configuracion");
 }
 

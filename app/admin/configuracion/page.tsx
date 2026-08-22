@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
-import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials, updateSecretSpecs } from "./actions";
+import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials, updateSecretSpecs, updateKonamiSound } from "./actions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
@@ -51,6 +51,9 @@ export default async function ConfiguracionPage() {
     footerYoutubeUrl: null as string | null,
     secretSpecsMessage: null as string | null,
     secretSpecsMessageEn: null as string | null,
+    konamiMessage: null as string | null,
+    konamiMessageEn: null as string | null,
+    konamiSoundUrl: null as string | null,
   };
   try {
     settings = await getSiteSettings();
@@ -261,7 +264,54 @@ export default async function ConfiguracionPage() {
             className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
           />
         </div>
-        <SubmitButton>Guardar mensaje secreto</SubmitButton>
+
+        <div className="border-t border-[var(--glass-border)] pt-4">
+          <p className="mb-1 font-mono text-xs text-[var(--ink-muted)]">
+            🏆 Logro del código Konami (↑↑↓↓←→←→BA) — aparece una sola vez por IP. Vacío = usa el
+            default ("Descubriste mi secreto" / "You found my secret").
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Texto del logro (ES)</label>
+          <input
+            name="konamiMessage"
+            defaultValue={settings.konamiMessage ?? ""}
+            placeholder="Descubriste mi secreto"
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Texto del logro (EN)</label>
+          <input
+            name="konamiMessageEn"
+            defaultValue={settings.konamiMessageEn ?? ""}
+            placeholder="You found my secret"
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          />
+        </div>
+
+        <SubmitButton>Guardar mensajes secretos</SubmitButton>
+      </form>
+
+      <form action={updateKonamiSound} className="glass mt-4 space-y-3 rounded-2xl p-5">
+        <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+          🔊 Sonido del logro (MP3, AAC u OGG — el navegador elige el que mejor le convenga)
+        </label>
+        {settings.konamiSoundUrl && (
+          <div className="flex flex-wrap items-center gap-3">
+            <audio controls src={settings.konamiSoundUrl} className="h-9 max-w-full" />
+            <label className="flex items-center gap-2 font-mono text-[11px] text-[var(--ink-muted)]">
+              <input type="checkbox" name="removeKonamiSound" /> Quitar sonido
+            </label>
+          </div>
+        )}
+        <input
+          type="file"
+          name="konamiSound"
+          accept="audio/mpeg,audio/mp3,audio/aac,audio/ogg"
+          className="font-mono text-sm"
+        />
+        <SubmitButton>Guardar sonido</SubmitButton>
       </form>
     </div>
   );

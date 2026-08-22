@@ -408,6 +408,27 @@ model SiteSettings {
   /// que aparecen en los EXIF cargados a mano en las fotos.
   secretSpecsMessage   String? @db.Text
   secretSpecsMessageEn String? @db.Text
+
+  /// Texto editable del logro estilo Steam que se muestra al hacer el
+  /// código Konami. Vacío = usa el default ("Descubriste mi secreto" /
+  /// "You found my secret").
+  konamiMessage   String?
+  konamiMessageEn String?
+  /// Sonido opcional al mostrar el logro (pedido: elegir entre AAC, MP3
+  /// u OGG). Se sube tal cual, sin reprocesar — a diferencia de las
+  /// imágenes, no hace falta convertir formato de audio.
+  konamiSoundUrl  String?
+}
+
+/// Registra qué IPs ya vieron el logro del código Konami, para que salga
+/// una sola vez por IP (pedido explícito) en vez de una vez por
+/// navegador. Guarda un HASH de la IP, no la IP en texto plano — no hace
+/// falta más que eso para esta feature, y es mejor no acumular IPs
+/// reales innecesariamente.
+model KonamiUnlock {
+  id        String   @id @default(cuid())
+  ipHash    String   @unique
+  createdAt DateTime @default(now())
 }
 
 /// Un post o reel de Instagram elegido a mano para mostrarse en el

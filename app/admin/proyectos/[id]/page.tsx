@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, updateMediaExif, updateMediaAlt, reorderMedia, moveMediaOrder } from "./actions";
@@ -7,11 +6,7 @@ import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { MediaGroupsPanel } from "@/components/admin/media-groups-panel";
 import { SubmitButton } from "@/components/admin/submit-button";
-import { WatermarkOverrideForm } from "@/components/admin/watermark-override-form";
-import { ExifForm } from "@/components/admin/exif-form";
-import { AltTextForm } from "@/components/admin/alt-text-form";
-import { DragReorderGrid } from "@/components/admin/drag-reorder-grid";
-import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { MediaGrid } from "@/components/admin/media-grid";
 import { toMonthInputValue } from "@/lib/date-range";
 
 function toDatetimeLocal(date: Date) {
@@ -245,86 +240,14 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
               Media actual — arrastrá una foto para reordenarla (en celular o con teclado, usá las
               flechitas de cada una).
             </p>
-            <DragReorderGrid
-              items={project.media}
-              onReorder={reorderMedia}
-              className="grid grid-cols-2 gap-3 sm:grid-cols-3"
-              renderItem={(m, mi) => (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9px] text-[var(--ink-muted)]">#{mi + 1}</span>
-                    <ReorderButtons
-                      onMove={moveMediaOrder.bind(null, m.id)}
-                      disableUp={mi === 0}
-                      disableDown={mi === project.media.length - 1}
-                    />
-                  </div>
-                  <label className="relative block cursor-pointer">
-                    {m.type === "image" ? (
-                      <Image
-                        src={m.url}
-                        alt=""
-                        width={150}
-                        height={150}
-                        className="aspect-square w-full rounded-xl object-cover"
-                      />
-                    ) : (
-                      <div className="flex aspect-square items-center justify-center rounded-xl bg-black/30 font-mono text-[10px]">
-                        {m.videoProvider?.toUpperCase()}
-                      </div>
-                    )}
-                    <span className="absolute inset-0 flex items-end justify-end rounded-xl bg-black/0 p-1 transition-colors hover:bg-black/40">
-                      <input type="checkbox" name="deleteMedia" value={m.id} className="accent-red-500" />
-                    </span>
-                  </label>
-                  {project.mediaGroups.length > 0 && (
-                    <select
-                      name={`mediaGroup:${m.id}`}
-                      defaultValue={m.groupId ?? ""}
-                      className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-1.5 py-1 font-mono text-[10px]"
-                    >
-                      <option value="">Sin subcategoría</option>
-                      {project.mediaGroups.map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-muted)]">
-                    <input type="radio" name="thumbnailMediaId" value={m.id} defaultChecked={m.isThumbnail} />
-                    Portada
-                  </label>
-                  {m.type === "image" && (
-                    <WatermarkOverrideForm
-                      mediaId={m.id}
-                      action={updateMediaWatermarkOverride}
-                      initialPosition={m.watermarkPositionOverride}
-                      initialOpacity={m.watermarkOpacityOverride}
-                    />
-                  )}
-                  {m.type === "image" && (
-                    <ExifForm
-                      mediaId={m.id}
-                      action={updateMediaExif}
-                      initial={{
-                        exifCamera: m.exifCamera,
-                        exifAperture: m.exifAperture,
-                        exifShutterSpeed: m.exifShutterSpeed,
-                        exifIso: m.exifIso,
-                        exifFps: m.exifFps,
-                      }}
-                    />
-                  )}
-                  {m.type === "image" && (
-                    <AltTextForm
-                      mediaId={m.id}
-                      action={updateMediaAlt}
-                      initial={{ altText: m.altText, altTextEn: m.altTextEn }}
-                    />
-                  )}
-                </div>
-              )}
+            <MediaGrid
+              media={project.media}
+              mediaGroups={project.mediaGroups}
+              moveMediaOrder={moveMediaOrder}
+              reorderMedia={reorderMedia}
+              updateMediaWatermarkOverride={updateMediaWatermarkOverride}
+              updateMediaExif={updateMediaExif}
+              updateMediaAlt={updateMediaAlt}
             />
             <p className="font-mono text-[10px] text-[var(--ink-muted)]">
               Marcá el check sobre una foto/video para borrarla al guardar.

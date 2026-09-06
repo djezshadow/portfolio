@@ -11,6 +11,7 @@ import { CvDownloadLink } from "@/components/cv-download-link";
 import { getCollaboratorTypes } from "@/lib/collaborator-types";
 import { InstagramFeed } from "@/components/instagram-feed";
 import { UpdatesFeed } from "@/components/updates-feed";
+import { getPublicUpdatesFeed } from "@/lib/updates-feed";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -135,16 +136,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     }
   }
 
-  let updateEntries: { id: string; title: string; description: string | null; date: Date }[] = [];
+  let updateItems: { key: string; title: string; description: string | null; date: Date; href: string; external: boolean }[] = [];
   if (updatesFeedEnabled) {
     try {
-      const raw = await prisma.updateLogEntry.findMany({ orderBy: { order: "asc" } });
-      updateEntries = raw.map((e) => ({
-        id: e.id,
-        title: loc(e.title, e.titleEn, locale),
-        description: locOrNull(e.description, e.descriptionEn, locale),
-        date: e.date,
-      }));
+      updateItems = await getPublicUpdatesFeed(locale, 12);
     } catch {
       // sin DB disponible
     }
@@ -332,8 +327,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           labels={{ feed: dict.instagram.feed, highlights: dict.instagram.highlights, followOn: dict.instagram.followOn }}
         />
       )}
-      {updatesFeedEnabled && updateEntries.length > 0 && (
-        <UpdatesFeed title={updatesFeedTitle} entries={updateEntries} locale={locale} />
+      {updatesFeedEnabled && updateItems.length > 0 && (
+        <UpdatesFeed title={updatesFeedTitle} items={updateItems} locale={locale} />
       )}
     </div>
   );

@@ -471,11 +471,9 @@ model InstagramPost {
   coverImageUrl String?
 }
 
-/// Entrada del changelog/"Novedades" del home (pedido: "una sección que
-/// vaya mostrando lo nuevo que se va actualizando en la página, un
-/// resumen"). Curado a mano — no se genera solo a partir de cambios
-/// reales del sitio, así podés elegir qué contar y corregirlo cuando
-/// quieras.
+/// Entrada del changelog/"Novedades" del home — pensada para agregar
+/// algo puntual que NO surge solo de un proyecto/categoría/post real
+/// (la parte automática vive en UpdateFeedOverride + lib/updates-feed.ts).
 model UpdateLogEntry {
   id            String   @id @default(cuid())
   title         String
@@ -486,6 +484,28 @@ model UpdateLogEntry {
   date          DateTime @default(now())
   order         Int      @default(0)
   createdAt     DateTime @default(now())
+}
+
+/// Pedido: "Novedades" automático — se arma solo con lo último que
+/// subís (proyectos, categorías, posts de Instagram), "pero que pueda
+/// modificarlo si algo no me gusta". Este modelo NO guarda las
+/// novedades en sí (esas se leen en vivo de Project/Category/
+/// InstagramPost) — solo guarda las CORRECCIONES puntuales: ocultar un
+/// ítem, o pisarle el título/descripción con uno propio.
+model UpdateFeedOverride {
+  id                    String   @id @default(cuid())
+  /// "project" | "category" | "instagram"
+  sourceType            String
+  /// El id real del Project/Category/InstagramPost correspondiente.
+  sourceId              String
+  hidden                Boolean  @default(false)
+  titleOverride         String?
+  titleOverrideEn       String?
+  descriptionOverride   String?  @db.Text
+  descriptionOverrideEn String?  @db.Text
+  updatedAt             DateTime @updatedAt
+
+  @@unique([sourceType, sourceId])
 }
 
 /// Links manuales del navbar (item PDF #1.2) — para enlaces externos o

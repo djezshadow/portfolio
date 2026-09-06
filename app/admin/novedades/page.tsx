@@ -1,7 +1,9 @@
 import { getSiteSettings } from "@/lib/site-settings";
 import { prisma } from "@/lib/prisma";
+import { getAutoCandidates } from "@/lib/updates-feed";
 import {
   updateUpdatesFeedSettings,
+  saveAutoFeedOverride,
   createUpdateEntry,
   updateUpdateEntry,
   deleteUpdateEntry,
@@ -10,6 +12,7 @@ import {
 } from "./actions";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { UpdatesPanel } from "@/components/admin/updates-panel";
+import { AutoUpdatesPanel } from "@/components/admin/auto-updates-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +30,39 @@ export default async function NovedadesAdminPage() {
     descriptionEn: string | null;
     date: string;
   }[] = [];
+  let autoCandidates: {
+    sourceType: "project" | "category" | "instagram";
+    sourceId: string;
+    title: string;
+    description: string | null;
+    date: string;
+    href: string;
+    hidden: boolean;
+    titleOverride: string | null;
+    descriptionOverride: string | null;
+  }[] = [];
 
   try {
     settings = await getSiteSettings();
     const raw = await prisma.updateLogEntry.findMany({ orderBy: { order: "asc" } });
     entries = raw.map((e) => ({ ...e, date: e.date.toISOString() }));
+
+    const [candidates, overrides] = await Promise.all([getAutoCandidates(), prisma.updateFeedOverride.findMany()]);
+    const overrideMap = new Map(overrides.map((o) => [`${o.sourceType}:${o.sourceId}`, o]));
+    autoCandidates = candidates.map((c) => {
+      const override = overrideMap.get(`${c.sourceType}:${c.sourceId}`);
+      return {
+        sourceType: c.sourceType,
+        sourceId: c.sourceId,
+        title: c.title,
+        description: c.description,
+        date: c.date.toISOString(),
+        href: c.href,
+        hidden: override?.hidden ?? false,
+        titleOverride: override?.titleOverride ?? null,
+        descriptionOverride: override?.descriptionOverride ?? null,
+      };
+    });
   } catch (err) {
     console.error("No se pudo leer Novedades (¿corriste prisma db push?):", err);
   }
@@ -40,9 +71,10 @@ export default async function NovedadesAdminPage() {
     <div className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="mb-2 font-display text-3xl">Novedades</h1>
       <p className="mb-8 text-sm text-[var(--ink-muted)]">
-        Un resumen curado a mano de lo que vas actualizando en el sitio — se muestra en el home,
-        si lo activás. No se genera solo: vos elegís qué contar, con qué fecha, y lo podés
-        corregir o borrar cuando quieras.
+        Se arma sola con lo último que subís (proyectos publicados, categorías nuevas, posts de
+        Instagram) — se muestra en el home, si lo activás. Si algo no te cierra, lo podés ocultar
+        o corregir más abajo. También podés agregar alguna novedad puntual a mano, para lo que no
+        surge de un proyecto/categoría/post real.
       </p>
 
       <form action={updateUpdatesFeedSettings} className="glass mb-8 space-y-4 rounded-2xl p-5">
@@ -73,6 +105,10 @@ export default async function NovedadesAdminPage() {
         <SubmitButton>Guardar</SubmitButton>
       </form>
 
+      <h2 className="mb-3 font-display text-xl">Detectado automáticamente</h2>
+      <AutoUpdatesPanel candidates={autoCandidates} saveOverrideAction={saveAutoFeedOverride} />
+
+      <h2 className="mb-3 mt-10 font-display text-xl">Agregado a mano</h2>
       <UpdatesPanel
         entries={entries}
         addAction={createUpdateEntry}

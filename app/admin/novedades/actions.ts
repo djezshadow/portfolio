@@ -12,6 +12,41 @@ async function assertAdmin() {
   if (!valid) throw new Error("No autorizado");
 }
 
+/**
+ * Guarda la corrección de UN ítem automático puntual (pedido: "que
+ * pueda modificarlo si algo no me gusta") — ocultarlo del todo, o
+ * pisarle el título/descripción. Si se manda todo vacío y sin ocultar,
+ * se borra el override (vuelve a mostrarse tal cual lo automático).
+ */
+export async function saveAutoFeedOverride(
+  sourceType: "project" | "category" | "instagram",
+  sourceId: string,
+  formData: FormData
+) {
+  await assertAdmin();
+
+  const hidden = formData.get("hidden") === "on";
+  const titleOverride = (formData.get("titleOverride") as string)?.trim() || null;
+  const titleOverrideEn = (formData.get("titleOverrideEn") as string)?.trim() || null;
+  const descriptionOverride = (formData.get("descriptionOverride") as string)?.trim() || null;
+  const descriptionOverrideEn = (formData.get("descriptionOverrideEn") as string)?.trim() || null;
+
+  const isEmpty = !hidden && !titleOverride && !titleOverrideEn && !descriptionOverride && !descriptionOverrideEn;
+
+  if (isEmpty) {
+    await prisma.updateFeedOverride.deleteMany({ where: { sourceType, sourceId } });
+  } else {
+    await prisma.updateFeedOverride.upsert({
+      where: { sourceType_sourceId: { sourceType, sourceId } },
+      update: { hidden, titleOverride, titleOverrideEn, descriptionOverride, descriptionOverrideEn },
+      create: { sourceType, sourceId, hidden, titleOverride, titleOverrideEn, descriptionOverride, descriptionOverrideEn },
+    });
+  }
+
+  revalidatePath("/admin/novedades");
+  revalidatePath("/", "layout");
+}
+
 export async function updateUpdatesFeedSettings(formData: FormData) {
   await assertAdmin();
 

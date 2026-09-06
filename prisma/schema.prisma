@@ -429,6 +429,12 @@ model SiteSettings {
   /// desactivarlo"). No afecta al resto de los easter eggs (modal del
   /// logo, código Konami) — cada uno se puede seguir usando.
   randomCapsuleEnabled Boolean @default(true)
+
+  /// Sección "Novedades" del home (pedido: mostrar un resumen de lo que
+  /// se va actualizando en la página; poder habilitarla/deshabilitarla).
+  updatesFeedEnabled  Boolean @default(false)
+  updatesFeedTitle    String?
+  updatesFeedTitleEn  String?
 }
 
 /// Registra qué IPs ya vieron el logro del código Konami, para que salga
@@ -450,6 +456,10 @@ model KonamiUnlock {
 model InstagramPost {
   id        String   @id @default(cuid())
   url       String // link al post o reel (instagram.com/p/... o /reel/...)
+  /// Título SOLO para vos, para orientarte en el admin — nunca se
+  /// muestra en el sitio público (pedido: "añadirle título para
+  /// orientarme en admin").
+  title     String?
   caption   String?
   section   String   @default("feed") // feed | highlight
   order     Int      @default(0)
@@ -459,6 +469,23 @@ model InstagramPost {
   /// círculo con degradé + esta foto que redirige al link real). No se
   /// usa en "feed" — ahí el post se embebe entero con su propia imagen.
   coverImageUrl String?
+}
+
+/// Entrada del changelog/"Novedades" del home (pedido: "una sección que
+/// vaya mostrando lo nuevo que se va actualizando en la página, un
+/// resumen"). Curado a mano — no se genera solo a partir de cambios
+/// reales del sitio, así podés elegir qué contar y corregirlo cuando
+/// quieras.
+model UpdateLogEntry {
+  id            String   @id @default(cuid())
+  title         String
+  titleEn       String?
+  description   String?  @db.Text
+  descriptionEn String?  @db.Text
+  /// Fecha a mostrar (vos la elegís, no tiene que ser "hoy" necesariamente).
+  date          DateTime @default(now())
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
 }
 
 /// Links manuales del navbar (item PDF #1.2) — para enlaces externos o

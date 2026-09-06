@@ -75,6 +75,7 @@ export async function addInstagramPost(formData: FormData): Promise<{ ok: boolea
   const normalized = normalizeInstagramUrl(rawUrl, section === "highlight" ? "any" : "embeddable");
   if ("error" in normalized) return { ok: false, error: normalized.error };
   const url = normalized.url;
+  const title = (formData.get("title") as string)?.trim() || null;
   const caption = (formData.get("caption") as string)?.trim() || null;
   const image = formData.get("image") as File | null;
 
@@ -107,7 +108,7 @@ export async function addInstagramPost(formData: FormData): Promise<{ ok: boolea
     // Devolviendo el error como dato normal (no como excepción), Next lo
     // deja pasar tal cual lo escribimos.
     const count = await prisma.instagramPost.count({ where: { section } });
-    await prisma.instagramPost.create({ data: { url, caption, section, order: count, coverImageUrl } });
+    await prisma.instagramPost.create({ data: { url, title, caption, section, order: count, coverImageUrl } });
   } catch (err) {
     console.error("Error en addInstagramPost:", err);
     // P2021 = "la tabla no existe" — el caso más probable si acabás de
@@ -127,6 +128,71 @@ export async function addInstagramPost(formData: FormData): Promise<{ ok: boolea
   revalidatePath("/admin/instagram");
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+export async function updateInstagramPost(postId: string, formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+
+  const current = await prisma.instagramPost.findUnique({ where: { id: postId } });
+  if (!current) return { ok: false, error: "No se encontró el post." };
+
+  const rawUrl = String(formData.get("url") ?? "");
+  if (!rawUrl.trim()) return { ok: false, error: "Falta el link." };
+  const normalized = normalizeInstagramUrl(rawUrl, current.section === "highlight" ? "any" : "embeddable");
+  if ("error" in normalized) return { ok: false, error: normalized.error };
+  const url = normalized.url;
+  const title = (formData.get("title") as string)?.trim() || null;
+  const caption = (formData.get("caption") as string)?.trim() || null;
+  const image = formData.get("image") as File | null;
+
+  let coverImageUrl = current.coverImageUrl;
+
+  try {
+    if (image && image.size > 0) {
+      const buffer = Buffer.from(await image.arrayBuffer());
+      const webp = await sharp(buffer).resize({ width: 400, height: 400, fit: "cover" }).webp({ quality: 85 }).toBuffer();
+      const blob = await put(`instagram/highlight-${Date.now()}.webp`, webp, { access: "public", contentType: "image/webp" });
+      if (current.coverImageUrl) {
+        try {
+          await del(current.coverImageUrl);
+        } catch {
+          // ignorar
+        }
+      }
+      coverImageUrl = blob.url;
+    }
+
+    if (current.section === "highlight" && !coverImageUrl) {
+      return { ok: false, error: "Las destacadas necesitan una foto de portada (círculo)." };
+    }
+
+    await prisma.instagramPost.update({ where: { id: postId }, data: { url, title, caption, coverImageUrl } });
+  } catch (err) {
+    console.error("Error en updateInstagramPost:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "No se pudo guardar el cambio." };
+  }
+
+  revalidatePath("/admin/instagram");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Reordena TODOS los posts de UNA sección (Feed o Destacadas) de una —
+ * pedido: "poder arrastrar para acomodar la posición". Igual que
+ * reorderMedia en proyectos: recibe la lista completa de IDs ya en el
+ * orden final que arma el arrastre en el navegador.
+ */
+export async function reorderInstagramPosts(orderedIds: string[]) {
+  await assertAdmin();
+  if (orderedIds.length === 0) return;
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) => prisma.instagramPost.update({ where: { id }, data: { order: index } }))
+  );
+
+  revalidatePath("/admin/instagram");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteInstagramPost(postId: string, _formData: FormData) {

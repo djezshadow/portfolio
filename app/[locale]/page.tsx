@@ -10,6 +10,7 @@ import { getProfile } from "@/lib/profile";
 import { CvDownloadLink } from "@/components/cv-download-link";
 import { getCollaboratorTypes } from "@/lib/collaborator-types";
 import { InstagramFeed } from "@/components/instagram-feed";
+import { UpdatesFeed } from "@/components/updates-feed";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -72,6 +73,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let instagramEnabled = false;
   let instagramHandle: string | null = null;
   let instagramTitle: string = "";
+  let updatesFeedEnabled = false;
+  let updatesFeedTitle: string = "";
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
     cvEnabled = profile.cvEnabled;
@@ -110,6 +113,12 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       instagramHandle = settings.instagramHandle;
       instagramTitle = locOrNull(settings.instagramFeedTitle, settings.instagramFeedTitleEn, locale) || dict.instagram.label;
     }
+    if (settings.updatesFeedEnabled) {
+      updatesFeedEnabled = true;
+      updatesFeedTitle =
+        locOrNull(settings.updatesFeedTitle, settings.updatesFeedTitleEn, locale) ||
+        (locale === "en" ? "What's new" : "Novedades");
+    }
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
   }
@@ -121,6 +130,21 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       const posts = await prisma.instagramPost.findMany({ orderBy: { order: "asc" } });
       instagramFeedPosts = posts.filter((p) => p.section === "feed");
       instagramHighlightPosts = posts.filter((p) => p.section === "highlight");
+    } catch {
+      // sin DB disponible
+    }
+  }
+
+  let updateEntries: { id: string; title: string; description: string | null; date: Date }[] = [];
+  if (updatesFeedEnabled) {
+    try {
+      const raw = await prisma.updateLogEntry.findMany({ orderBy: { order: "asc" } });
+      updateEntries = raw.map((e) => ({
+        id: e.id,
+        title: loc(e.title, e.titleEn, locale),
+        description: locOrNull(e.description, e.descriptionEn, locale),
+        date: e.date,
+      }));
     } catch {
       // sin DB disponible
     }
@@ -307,6 +331,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           highlights={instagramHighlightPosts}
           labels={{ feed: dict.instagram.feed, highlights: dict.instagram.highlights, followOn: dict.instagram.followOn }}
         />
+      )}
+      {updatesFeedEnabled && updateEntries.length > 0 && (
+        <UpdatesFeed title={updatesFeedTitle} entries={updateEntries} locale={locale} />
       )}
     </div>
   );

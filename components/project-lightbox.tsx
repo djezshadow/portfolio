@@ -204,27 +204,45 @@ export function ProjectLightbox({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        layout
-        transition={{ layout: { duration: 0.35, ease: [0.32, 0.72, 0, 1] } }}
-        className={`fixed inset-0 z-[200] flex items-center justify-center bg-black/90 ${zoomed ? "" : "p-2 sm:p-6"}`}
+        transition={{ opacity: { duration: 0.2 } }}
+        className={`fixed inset-0 z-[200] flex items-center justify-center bg-black/90 transition-[padding] duration-300 ${zoomed ? "" : "p-2 sm:p-6"}`}
         onClick={onClose}
       >
         <motion.div
-          layout
           initial={{ opacity: 0, scale: 0.94 }}
-          animate={{ opacity: 1, scale: 1 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            width: "100%",
+            height: zoomed ? "100%" : "95vh",
+            maxWidth: zoomed ? "100%" : "72rem",
+            borderRadius: zoomed ? 0 : 16,
+          }}
           exit={{ opacity: 0, scale: 0.94 }}
+          // OJO con esto: acá NO usamos la prop `layout` de Framer Motion.
+          // `layout` anima el tamaño con el sistema FLIP, que — cuando la
+          // caja "chica" (centrada) y la caja "pantalla completa" tienen
+          // relación de aspecto distinta — compensa con una escala NO
+          // uniforme (distinta en X e Y) para que la transición se vea
+          // pareja un instante. Ese es justo el motivo del bug reportado
+          // ("se ensancha la imagen"): esa escala se aplica a TODO lo de
+          // adentro, estirando la foto. Animando `width`/`height` como
+          // valores de CSS reales (no con `layout`), el navegador
+          // simplemente reacomoda el contenido con `object-contain` en
+          // cada cuadro — la imagen nunca se deforma, pase lo que pase.
           transition={{
             opacity: { duration: 0.2 },
             scale: { type: "spring", stiffness: 300, damping: 26 },
-            layout: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+            width: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+            height: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+            maxWidth: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+            borderRadius: { duration: 0.3 },
           }}
           onClick={(e) => e.stopPropagation()}
-          style={{ borderRadius: zoomed ? 0 : 16 }}
           className={
             zoomed
-              ? "relative flex h-full w-full flex-col overflow-hidden bg-black"
-              : "glass relative flex h-[95vh] w-full max-w-6xl flex-col overflow-hidden"
+              ? "relative flex flex-col overflow-hidden bg-black"
+              : "glass relative flex flex-col overflow-hidden"
           }
         >
           {/* La cruz vive en su propia franja, separada del video/foto —

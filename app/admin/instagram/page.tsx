@@ -1,6 +1,6 @@
 import { getSiteSettings } from "@/lib/site-settings";
 import { prisma } from "@/lib/prisma";
-import { updateInstagramSettings, addInstagramPost, deleteInstagramPost, moveInstagramPost } from "./actions";
+import { updateInstagramSettings, addInstagramPost, updateInstagramPost, deleteInstagramPost, moveInstagramPost, reorderInstagramPosts } from "./actions";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { InstagramPostsPanel } from "@/components/admin/instagram-posts-panel";
 
@@ -13,7 +13,7 @@ export default async function InstagramAdminPage() {
     instagramFeedTitle: null as string | null,
     instagramFeedTitleEn: null as string | null,
   };
-  let posts: { id: string; url: string; caption: string | null; section: string; coverImageUrl: string | null }[] = [];
+  let posts: { id: string; url: string; title: string | null; caption: string | null; section: string; coverImageUrl: string | null }[] = [];
   try {
     settings = await getSiteSettings();
     posts = await prisma.instagramPost.findMany({ orderBy: { order: "asc" } });
@@ -84,8 +84,10 @@ export default async function InstagramAdminPage() {
       <InstagramPostsPanel
         posts={posts}
         addAction={addInstagramPost}
+        editAction={updateInstagramPost}
         deleteAction={deleteInstagramPost}
         moveAction={moveInstagramPost}
+        reorderAction={reorderInstagramPosts}
       />
     </div>
   );

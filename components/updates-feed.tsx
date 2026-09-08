@@ -44,7 +44,17 @@ export function UpdatesFeed({
   const movedRef = useRef(false);
 
   const speedPxPerSec = SPEED_PX_PER_SEC[speed] ?? SPEED_PX_PER_SEC.normal;
-  const loopItems = [...items, ...items];
+  // Bug real encontrado: con pocos ítems (algo típico recién activada
+  // la sección), duplicar la lista UNA sola vez no alcanza a ser más
+  // ancho que la pantalla — y si no hay nada para desplazar, el
+  // navegador no mueve el scroll aunque el código se lo pida (por eso
+  // "no se mueve"). Acá repetimos el set base las veces que hagan falta
+  // para garantizar ancho de sobra, y recién ahí lo duplicamos para el
+  // loop sin salto — funciona igual con 1 ítem que con 30.
+  const MIN_BASE_ITEMS = 10;
+  const repeatCount = Math.max(1, Math.ceil(MIN_BASE_ITEMS / Math.max(1, items.length)));
+  const base = Array.from({ length: repeatCount }, () => items).flat();
+  const loopItems = [...base, ...base];
 
   useEffect(() => {
     const track = trackRef.current;

@@ -83,7 +83,20 @@ export function AutoUpdatesPanel({
               </div>
 
               {isEditing && (
-                <form action={save} className="space-y-2 rounded-lg border border-[var(--glass-border)] p-3">
+                <form
+                  action={async (formData: FormData) => {
+                    // OJO: antes el botón "Guardar" tenía un onClick que
+                    // cerraba este panel INMEDIATAMENTE al hacer clic —
+                    // eso sacaba el <form> del DOM en la misma carrera en
+                    // la que el navegador todavía estaba juntando sus
+                    // datos para enviarlos, y a veces el guardado se
+                    // perdía en el camino ("no me deja guardar"). Ahora
+                    // cerramos DESPUÉS de que save() termine, nunca antes.
+                    await save(formData);
+                    setEditingKey(null);
+                  }}
+                  className="space-y-2 rounded-lg border border-[var(--glass-border)] p-3"
+                >
                   <label className="flex items-center gap-2 font-mono text-xs">
                     <input type="checkbox" name="hidden" defaultChecked={c.hidden} /> Ocultar de Novedades
                   </label>
@@ -121,7 +134,6 @@ export function AutoUpdatesPanel({
                   <button
                     type="submit"
                     data-cursor="magnetic"
-                    onClick={() => setEditingKey(null)}
                     className="rounded-full bg-[var(--accent)] px-4 py-1.5 font-mono text-[11px] text-[var(--bg)]"
                   >
                     Guardar

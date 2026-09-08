@@ -241,18 +241,20 @@ export default async function ConfiguracionPage() {
         </div>
       </form>
 
-      {/* --- Modal secreto (mantener presionado el logo) --- */}
+      {/* --- Orden del home (arrastre) --- */}
       <h2 className="mb-1 mt-10 font-display text-xl">Orden del home</h2>
-      <p className="mb-4 text-sm text-[var(--ink-muted)]">
-        En qué orden aparecen las secciones del home (Novedades es la única fija, siempre arriba
-        de todo).
-      </p>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">En qué orden aparecen las secciones del home.</p>
       <HomeSectionOrderPanel
-        order={
-          settings.homeSectionOrder
-            ? settings.homeSectionOrder.split(",").filter((k: string) => ["hero", "categorias", "colaboradores", "instagram"].includes(k))
-            : ["hero", "categorias", "colaboradores", "instagram"]
-        }
+        order={(() => {
+          const allKeys = ["novedades", "hero", "categorias", "colaboradores", "instagram"];
+          const saved = settings.homeSectionOrder
+            ? settings.homeSectionOrder.split(",").filter((k: string) => allKeys.includes(k))
+            : [];
+          // Si guardaste un orden antes de que existiera alguna sección
+          // nueva (ej. "novedades"), la agregamos al final para que no
+          // desaparezca silenciosamente del panel de arrastre.
+          return [...saved, ...allKeys.filter((k) => !saved.includes(k))];
+        })()}
         saveAction={updateHomeSectionOrder}
       />
 

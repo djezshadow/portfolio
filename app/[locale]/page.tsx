@@ -77,6 +77,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let instagramTitle: string = "";
   let updatesFeedEnabled = false;
   let updatesFeedTitle: string = "";
+  let updatesFeedSpeed: string = "normal";
   let homeSectionOrder: string | null = null;
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
@@ -121,6 +122,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       updatesFeedTitle =
         locOrNull(settings.updatesFeedTitle, settings.updatesFeedTitleEn, locale) ||
         (locale === "en" ? "What's new" : "Novedades");
+      updatesFeedSpeed = settings.updatesFeedSpeed;
     }
     homeSectionOrder = settings.homeSectionOrder;
   } catch {
@@ -306,16 +308,21 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       />
     ) : null;
 
-  // Pedido: "un ajuste en admin para modificar el orden de las cosas en
-  // home". Novedades queda siempre arriba de todo (así lo pediste
-  // explícitamente) — estas 4 son las que se pueden reordenar.
+  const novedadesSection =
+    updatesFeedEnabled && updateItems.length > 0 ? (
+      <UpdatesFeed key="novedades" title={updatesFeedTitle} items={updateItems} locale={locale} speed={updatesFeedSpeed} />
+    ) : null;
+
+  // Pedido: "dejame acomodar el lugar de novedades también" — ahora
+  // Novedades es una sección más del orden, ya no queda fija.
   const sectionsByKey: Record<string, ReactNode> = {
+    novedades: novedadesSection,
     hero: heroSection,
     categorias: categoriasSection,
     colaboradores: colaboradoresSection,
     instagram: instagramSection,
   };
-  const defaultOrder = ["hero", "categorias", "colaboradores", "instagram"];
+  const defaultOrder = ["novedades", "hero", "categorias", "colaboradores", "instagram"];
   const savedOrder = homeSectionOrder ? homeSectionOrder.split(",").filter((k) => defaultOrder.includes(k)) : [];
   // Por si en el futuro se agrega una sección nueva y el orden guardado
   // es de antes de que existiera, la agregamos al final para que nunca
@@ -324,12 +331,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <div className="mx-auto max-w-6xl px-6">
-      {/* Pedido: "carrusel animado arriba de todo" — antes que el logo,
-          antes que el hero, lo primero que se ve al entrar. */}
-      {updatesFeedEnabled && updateItems.length > 0 && (
-        <UpdatesFeed title={updatesFeedTitle} items={updateItems} locale={locale} />
-      )}
-
       {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
         <Reveal>
           {/* Logo "deslizable" (modo no-fijo): esquina superior izquierda

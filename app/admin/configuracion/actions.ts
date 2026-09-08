@@ -248,7 +248,7 @@ export async function updateContactSettings(formData: FormData) {
   revalidatePath("/admin/configuracion");
 }
 
-const VALID_HOME_SECTIONS = ["hero", "categorias", "colaboradores", "instagram"];
+const VALID_HOME_SECTIONS = ["novedades", "hero", "categorias", "colaboradores", "instagram"];
 
 /**
  * Pedido: "ajuste en admin para modificar el orden de las cosas en

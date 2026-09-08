@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 const LABELS: Record<string, string> = {
+  novedades: "Novedades (carrusel)",
   hero: "Hero (título principal)",
   categorias: "Categorías (carrusel)",
   colaboradores: "Con quién trabajé",
@@ -10,9 +11,8 @@ const LABELS: Record<string, string> = {
 };
 
 /**
- * Pedido: reordenar las secciones del home arrastrando. Novedades queda
- * fija arriba de todo (a pedido explícito), así que no aparece acá — se
- * reordenan las otras 4.
+ * Pedido: reordenar las secciones del home arrastrando — incluye
+ * Novedades, que ya no queda fija arriba (a pedido explícito).
  */
 export function HomeSectionOrderPanel({
   order,

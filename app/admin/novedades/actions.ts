@@ -53,11 +53,14 @@ export async function updateUpdatesFeedSettings(formData: FormData) {
   const updatesFeedEnabled = formData.get("updatesFeedEnabled") === "on";
   const updatesFeedTitle = (formData.get("updatesFeedTitle") as string)?.trim() || null;
   const updatesFeedTitleEn = (formData.get("updatesFeedTitleEn") as string)?.trim() || null;
+  const validSpeeds = ["detenido", "lento", "normal", "rapido"];
+  const rawSpeed = (formData.get("updatesFeedSpeed") as string) || "normal";
+  const updatesFeedSpeed = validSpeeds.includes(rawSpeed) ? rawSpeed : "normal";
 
   await prisma.siteSettings.upsert({
     where: { id: "default" },
-    update: { updatesFeedEnabled, updatesFeedTitle, updatesFeedTitleEn },
-    create: { id: "default", updatesFeedEnabled, updatesFeedTitle, updatesFeedTitleEn },
+    update: { updatesFeedEnabled, updatesFeedTitle, updatesFeedTitleEn, updatesFeedSpeed },
+    create: { id: "default", updatesFeedEnabled, updatesFeedTitle, updatesFeedTitleEn, updatesFeedSpeed },
   });
 
   revalidatePath("/admin/novedades");

@@ -442,6 +442,12 @@ model SiteSettings {
   /// usa el orden por defecto (ese mismo orden). Novedades queda siempre
   /// fija arriba de todo, no forma parte de este orden.
   homeSectionOrder    String?
+
+  /// Velocidad del carrusel de Novedades (pedido: "cambiar la velocidad
+  /// de tiempo con la que se mueve y hasta dejarlo quieto"):
+  /// "detenido" | "lento" | "normal" | "rapido". Siempre se puede
+  /// arrastrar a mano sin importar este valor.
+  updatesFeedSpeed    String  @default("normal")
 }
 
 /// Registra qué IPs ya vieron el logro del código Konami, para que salga

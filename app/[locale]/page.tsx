@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Carousel, type CarouselItem, type CarouselPreset, type CarouselStyleConfig } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
 import { CollaboratorCard } from "@/components/collaborator-card";
@@ -11,7 +12,7 @@ import { CvDownloadLink } from "@/components/cv-download-link";
 import { getCollaboratorTypes } from "@/lib/collaborator-types";
 import { InstagramFeed } from "@/components/instagram-feed";
 import { UpdatesFeed } from "@/components/updates-feed";
-import { getPublicUpdatesFeed } from "@/lib/updates-feed";
+import { getPublicUpdatesFeed, type ResolvedUpdateItem } from "@/lib/updates-feed";
 
 // Sin esto, Vercel puede servir una versión en caché vieja de la home
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
@@ -76,6 +77,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let instagramTitle: string = "";
   let updatesFeedEnabled = false;
   let updatesFeedTitle: string = "";
+  let homeSectionOrder: string | null = null;
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
     cvEnabled = profile.cvEnabled;
@@ -120,6 +122,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         locOrNull(settings.updatesFeedTitle, settings.updatesFeedTitleEn, locale) ||
         (locale === "en" ? "What's new" : "Novedades");
     }
+    homeSectionOrder = settings.homeSectionOrder;
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
   }
@@ -136,7 +139,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     }
   }
 
-  let updateItems: { key: string; title: string; description: string | null; date: Date; href: string; external: boolean }[] = [];
+  let updateItems: ResolvedUpdateItem[] = [];
   if (updatesFeedEnabled) {
     try {
       updateItems = await getPublicUpdatesFeed(locale, 12);
@@ -195,8 +198,138 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     }))
     .filter((s) => s.list.length > 0);
 
+  const heroSection = (
+    <section
+      key="hero"
+      className={`flex min-h-[70vh] flex-col justify-center gap-6 ${
+        homeAlign === "center"
+          ? "items-center text-center"
+          : homeAlign === "right"
+            ? "items-end text-right"
+            : "items-start text-left"
+      }`}
+    >
+      <Reveal>
+        <span className="font-mono text-xs text-accent">
+          {heroKicker.toUpperCase()}
+          {heroKickerShowTimecode && " — 00:00:00:00"}
+        </span>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <h1 className="font-display text-5xl leading-[1.05] sm:text-7xl">
+          {heroTitle1}
+          <br />
+          {heroTitle2}
+        </h1>
+      </Reveal>
+      <Reveal delay={0.2}>
+        <p className="max-w-md font-body text-[var(--ink-muted)]">{heroSubtitle}</p>
+      </Reveal>
+    </section>
+  );
+
+  const categoriasSection = (
+    <section key="categorias" className="pb-24">
+      <Reveal>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
+            {dict.featured.label}
+          </h2>
+          {!live && (
+            <span className="font-mono text-[10px] text-[var(--ink-muted)]">{dict.featured.sampleNotice}</span>
+          )}
+        </div>
+      </Reveal>
+
+      <Carousel
+        items={items}
+        preset={carouselPreset}
+        style={carouselStyle}
+        comingSoonLabel={locale === "en" ? "Coming soon" : "Próximamente"}
+      />
+
+      <div
+        className={`mt-8 flex flex-wrap gap-3 ${
+          homeAlign === "center" ? "justify-center" : homeAlign === "right" ? "justify-end" : ""
+        }`}
+      >
+        <CvDownloadLink
+          href="/api/reel-pdf"
+          label={`${dict.nav.downloadReel} ↓`}
+          locale={locale}
+          fileLabel={{ es: "el reel", en: "the reel" }}
+          className="glass inline-block rounded-full px-5 py-2 font-mono text-xs"
+        />
+        {cvEnabled && (
+          <CvDownloadLink
+            href={`/api/cv-pdf?locale=${locale}`}
+            label={`${locale === "en" ? "Download CV" : "Descargar CV"} ↓`}
+            locale={locale}
+            className="inline-block rounded-full bg-[var(--accent)] px-5 py-2 font-mono text-xs text-[var(--bg)]"
+          />
+        )}
+      </div>
+    </section>
+  );
+
+  const colaboradoresSection =
+    collaborators.length > 0 ? (
+      <section key="colaboradores" className="pb-24">
+        <h2 className="mb-12 text-center font-display text-2xl sm:text-3xl">
+          {locale === "en" ? "Who I've worked with" : "Con quién trabajé"}
+        </h2>
+
+        {collaboratorSections.map((s, i) => (
+          <div key={s.key} className={i < collaboratorSections.length - 1 ? "mb-14" : ""}>
+            <p className="mb-6 text-center font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
+              {s.title}
+            </p>
+            <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
+              {s.list.map((c) => (
+                <CollaboratorCard key={c.id} collaborator={c} locale={locale} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+    ) : null;
+
+  const instagramSection =
+    instagramEnabled && (instagramFeedPosts.length > 0 || instagramHighlightPosts.length > 0) ? (
+      <InstagramFeed
+        key="instagram"
+        title={instagramTitle}
+        handle={instagramHandle}
+        feed={instagramFeedPosts}
+        highlights={instagramHighlightPosts}
+        labels={{ feed: dict.instagram.feed, highlights: dict.instagram.highlights, followOn: dict.instagram.followOn }}
+      />
+    ) : null;
+
+  // Pedido: "un ajuste en admin para modificar el orden de las cosas en
+  // home". Novedades queda siempre arriba de todo (así lo pediste
+  // explícitamente) — estas 4 son las que se pueden reordenar.
+  const sectionsByKey: Record<string, ReactNode> = {
+    hero: heroSection,
+    categorias: categoriasSection,
+    colaboradores: colaboradoresSection,
+    instagram: instagramSection,
+  };
+  const defaultOrder = ["hero", "categorias", "colaboradores", "instagram"];
+  const savedOrder = homeSectionOrder ? homeSectionOrder.split(",").filter((k) => defaultOrder.includes(k)) : [];
+  // Por si en el futuro se agrega una sección nueva y el orden guardado
+  // es de antes de que existiera, la agregamos al final para que nunca
+  // desaparezca silenciosamente.
+  const finalOrder = [...savedOrder, ...defaultOrder.filter((k) => !savedOrder.includes(k))];
+
   return (
     <div className="mx-auto max-w-6xl px-6">
+      {/* Pedido: "carrusel animado arriba de todo" — antes que el logo,
+          antes que el hero, lo primero que se ve al entrar. */}
+      {updatesFeedEnabled && updateItems.length > 0 && (
+        <UpdatesFeed title={updatesFeedTitle} items={updateItems} locale={locale} />
+      )}
+
       {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
         <Reveal>
           {/* Logo "deslizable" (modo no-fijo): esquina superior izquierda
@@ -225,111 +358,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </Reveal>
       )}
 
-      {/* HERO */}
-      <section
-        className={`flex min-h-[70vh] flex-col justify-center gap-6 ${
-          homeAlign === "center"
-            ? "items-center text-center"
-            : homeAlign === "right"
-              ? "items-end text-right"
-              : "items-start text-left"
-        }`}
-      >
-        <Reveal>
-          <span className="font-mono text-xs text-accent">
-            {heroKicker.toUpperCase()}
-            {heroKickerShowTimecode && " — 00:00:00:00"}
-          </span>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <h1 className="font-display text-5xl leading-[1.05] sm:text-7xl">
-            {heroTitle1}
-            <br />
-            {heroTitle2}
-          </h1>
-        </Reveal>
-        <Reveal delay={0.2}>
-          <p className="max-w-md font-body text-[var(--ink-muted)]">{heroSubtitle}</p>
-        </Reveal>
-      </section>
-
-      {/* CATEGORÍAS — carpetas estéticas, carrusel configurable (3-10 ítems) */}
-      <section className="pb-24">
-        <Reveal>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
-              {dict.featured.label}
-            </h2>
-            {!live && (
-              <span className="font-mono text-[10px] text-[var(--ink-muted)]">
-                {dict.featured.sampleNotice}
-              </span>
-            )}
-          </div>
-        </Reveal>
-
-        <Carousel
-          items={items}
-          preset={carouselPreset}
-          style={carouselStyle}
-          comingSoonLabel={locale === "en" ? "Coming soon" : "Próximamente"}
-        />
-
-        <div
-          className={`mt-8 flex flex-wrap gap-3 ${
-            homeAlign === "center" ? "justify-center" : homeAlign === "right" ? "justify-end" : ""
-          }`}
-        >
-          <CvDownloadLink
-            href="/api/reel-pdf"
-            label={`${dict.nav.downloadReel} ↓`}
-            locale={locale}
-            fileLabel={{ es: "el reel", en: "the reel" }}
-            className="glass inline-block rounded-full px-5 py-2 font-mono text-xs"
-          />
-          {cvEnabled && (
-            <CvDownloadLink
-              href={`/api/cv-pdf?locale=${locale}`}
-              label={`${locale === "en" ? "Download CV" : "Descargar CV"} ↓`}
-              locale={locale}
-              className="inline-block rounded-full bg-[var(--accent)] px-5 py-2 font-mono text-xs text-[var(--bg)]"
-            />
-          )}
-        </div>
-      </section>
-
-      {collaborators.length > 0 && (
-        <section className="pb-24">
-          <h2 className="mb-12 text-center font-display text-2xl sm:text-3xl">
-            {locale === "en" ? "Who I've worked with" : "Con quién trabajé"}
-          </h2>
-
-          {collaboratorSections.map((s, i) => (
-            <div key={s.key} className={i < collaboratorSections.length - 1 ? "mb-14" : ""}>
-              <p className="mb-6 text-center font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
-                {s.title}
-              </p>
-              <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
-                {s.list.map((c) => (
-                  <CollaboratorCard key={c.id} collaborator={c} locale={locale} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-      {instagramEnabled && (instagramFeedPosts.length > 0 || instagramHighlightPosts.length > 0) && (
-        <InstagramFeed
-          title={instagramTitle}
-          handle={instagramHandle}
-          feed={instagramFeedPosts}
-          highlights={instagramHighlightPosts}
-          labels={{ feed: dict.instagram.feed, highlights: dict.instagram.highlights, followOn: dict.instagram.followOn }}
-        />
-      )}
-      {updatesFeedEnabled && updateItems.length > 0 && (
-        <UpdatesFeed title={updatesFeedTitle} items={updateItems} locale={locale} />
-      )}
+      {/* Las 4 secciones de abajo (hero, categorías, colaboradores,
+          Instagram) se renderizan en el orden que se configuró en
+          Configuración → Orden del home — ver finalOrder más arriba. */}
+      {finalOrder.map((key) => sectionsByKey[key])}
     </div>
   );
 }

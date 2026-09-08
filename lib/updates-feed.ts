@@ -14,6 +14,12 @@ export type AutoCandidate = {
   /// Instagram (que siempre abre afuera).
   href: string;
   external: boolean;
+  imageUrl: string | null;
+  /// Pedido: dale una función real a "Destacar en el home" — los
+  /// proyectos marcados featured aparecen PRIMERO en Novedades, antes
+  /// que cualquier otra cosa, sin importar la fecha. Solo aplica a
+  /// proyectos (categorías/Instagram nunca son "featured").
+  featured: boolean;
 };
 
 const LIMIT_PER_SOURCE = 8;
@@ -32,7 +38,13 @@ export async function getAutoCandidates(): Promise<AutoCandidate[]> {
       where: { publishedAt: { not: null, lte: now } },
       orderBy: { publishedAt: "desc" },
       take: LIMIT_PER_SOURCE,
-      include: { categories: { include: { category: true }, take: 1 } },
+      include: {
+        categories: { include: { category: true }, take: 1 },
+        // Portada si está marcada, si no la primera imagen — mismo
+        // criterio que se usa en el resto del sitio para elegir la
+        // miniatura de un proyecto.
+        media: { where: { type: "image" }, orderBy: [{ isThumbnail: "desc" }, { order: "asc" }], take: 1 },
+      },
     }),
     prisma.category.findMany({
       orderBy: { createdAt: "desc" },
@@ -56,6 +68,8 @@ export async function getAutoCandidates(): Promise<AutoCandidate[]> {
       date: p.publishedAt ?? p.createdAt,
       href: firstCat ? `/categoria/${firstCat.slug}?proyecto=${p.id}` : "/",
       external: false,
+      imageUrl: p.media[0]?.url ?? null,
+      featured: p.featured,
     };
   });
 
@@ -69,6 +83,8 @@ export async function getAutoCandidates(): Promise<AutoCandidate[]> {
     date: c.createdAt,
     href: `/categoria/${c.slug}`,
     external: false,
+    imageUrl: c.coverImageUrl,
+    featured: false,
   }));
 
   // OJO: `title` de InstagramPost es una etiqueta PRIVADA para
@@ -86,6 +102,10 @@ export async function getAutoCandidates(): Promise<AutoCandidate[]> {
     date: post.createdAt,
     href: post.url,
     external: true,
+    // Solo las destacadas tienen portada propia (coverImageUrl) — los
+    // posts de feed se embeben enteros, no tienen una imagen local acá.
+    imageUrl: post.coverImageUrl,
+    featured: false,
   }));
 
   return [...projectItems, ...categoryItems, ...instagramItems].sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -98,13 +118,16 @@ export type ResolvedUpdateItem = {
   date: Date;
   href: string;
   external: boolean;
+  imageUrl: string | null;
+  featured: boolean;
 };
 
 /**
  * Versión PÚBLICA: candidatos automáticos con overrides aplicados
  * (ocultos afuera, textos corregidos donde corresponda) + las entradas
- * manuales que se sigan cargando a mano — todo mezclado y ordenado por
- * fecha. `locale` resuelve qué idioma mostrar.
+ * manuales que se sigan cargando a mano — todo mezclado. Los proyectos
+ * "Destacados" van primero, y dentro de cada grupo se ordena por fecha.
+ * `locale` resuelve qué idioma mostrar.
  */
 export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<ResolvedUpdateItem[]> {
   const isEn = locale === "en";
@@ -136,6 +159,8 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
         date: c.date,
         href: c.href,
         external: c.external,
+        imageUrl: c.imageUrl,
+        featured: c.featured,
       };
     })
     .filter((x): x is ResolvedUpdateItem => x !== null);
@@ -147,7 +172,14 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
     date: e.date,
     href: "",
     external: false,
+    imageUrl: null,
+    featured: false,
   }));
 
-  return [...autoResolved, ...manualResolved].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, limit);
+  return [...autoResolved, ...manualResolved]
+    .sort((a, b) => {
+      if (a.featured !== b.featured) return a.featured ? -1 : 1;
+      return b.date.getTime() - a.date.getTime();
+    })
+    .slice(0, limit);
 }

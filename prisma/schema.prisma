@@ -435,6 +435,13 @@ model SiteSettings {
   updatesFeedEnabled  Boolean @default(false)
   updatesFeedTitle    String?
   updatesFeedTitleEn  String?
+
+  /// Orden de las secciones del home (pedido: "modificar el orden de las
+  /// cosas en home con función de arrastre") — string separado por comas
+  /// con las claves: hero, categorias, colaboradores, instagram. Null =
+  /// usa el orden por defecto (ese mismo orden). Novedades queda siempre
+  /// fija arriba de todo, no forma parte de este orden.
+  homeSectionOrder    String?
 }
 
 /// Registra qué IPs ya vieron el logro del código Konami, para que salga

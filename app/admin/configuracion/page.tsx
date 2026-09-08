@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/site-settings";
-import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials, updateSecretSpecs, updateKonamiSound } from "./actions";
+import { updateWatermarkSettings, updateHeroSettings, updateLogoSettings, updateContactSettings, updateFooterSocials, updateSecretSpecs, updateKonamiSound, updateHomeSectionOrder } from "./actions";
+import { HomeSectionOrderPanel } from "@/components/admin/home-section-order-panel";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
@@ -55,6 +56,7 @@ export default async function ConfiguracionPage() {
     konamiMessageEn: null as string | null,
     konamiSoundUrl: null as string | null,
     randomCapsuleEnabled: true,
+    homeSectionOrder: null as string | null,
   };
   try {
     settings = await getSiteSettings();
@@ -240,6 +242,20 @@ export default async function ConfiguracionPage() {
       </form>
 
       {/* --- Modal secreto (mantener presionado el logo) --- */}
+      <h2 className="mb-1 mt-10 font-display text-xl">Orden del home</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        En qué orden aparecen las secciones del home (Novedades es la única fija, siempre arriba
+        de todo).
+      </p>
+      <HomeSectionOrderPanel
+        order={
+          settings.homeSectionOrder
+            ? settings.homeSectionOrder.split(",").filter((k: string) => ["hero", "categorias", "colaboradores", "instagram"].includes(k))
+            : ["hero", "categorias", "colaboradores", "instagram"]
+        }
+        saveAction={updateHomeSectionOrder}
+      />
+
       <h2 className="mb-1 mt-10 font-display text-xl">Modal secreto (logo)</h2>
       <p className="mb-4 text-sm text-[var(--ink-muted)]">
         Mantener presionado el logo abre una ficha secreta con las cámaras que aparecen en el

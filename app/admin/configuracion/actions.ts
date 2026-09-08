@@ -248,6 +248,28 @@ export async function updateContactSettings(formData: FormData) {
   revalidatePath("/admin/configuracion");
 }
 
+const VALID_HOME_SECTIONS = ["hero", "categorias", "colaboradores", "instagram"];
+
+/**
+ * Pedido: "ajuste en admin para modificar el orden de las cosas en
+ * home (con función de arrastre)". Recibe la lista completa ya
+ * reordenada por el drag-and-drop del navegador.
+ */
+export async function updateHomeSectionOrder(orderedKeys: string[]) {
+  await assertAdmin();
+  const valid = orderedKeys.filter((k) => VALID_HOME_SECTIONS.includes(k));
+  if (valid.length === 0) return;
+
+  await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    update: { homeSectionOrder: valid.join(",") },
+    create: { id: "default", homeSectionOrder: valid.join(",") },
+  });
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/", "layout");
+}
+
 export async function updateSecretSpecs(formData: FormData) {
   await assertAdmin();
 

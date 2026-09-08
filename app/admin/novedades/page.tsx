@@ -40,6 +40,7 @@ export default async function NovedadesAdminPage() {
     hidden: boolean;
     titleOverride: string | null;
     descriptionOverride: string | null;
+    featured: boolean;
   }[] = [];
 
   try {
@@ -61,6 +62,7 @@ export default async function NovedadesAdminPage() {
         hidden: override?.hidden ?? false,
         titleOverride: override?.titleOverride ?? null,
         descriptionOverride: override?.descriptionOverride ?? null,
+        featured: c.featured,
       };
     });
   } catch (err) {

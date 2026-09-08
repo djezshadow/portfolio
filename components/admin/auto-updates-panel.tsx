@@ -12,6 +12,7 @@ type Candidate = {
   hidden: boolean;
   titleOverride: string | null;
   descriptionOverride: string | null;
+  featured: boolean;
 };
 
 const TYPE_LABEL: Record<Candidate["sourceType"], string> = {
@@ -57,6 +58,11 @@ export function AutoUpdatesPanel({
                 <span className="shrink-0 rounded-full bg-[var(--glass-border)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest">
                   {TYPE_LABEL[c.sourceType]}
                 </span>
+                {c.featured && (
+                  <span className="shrink-0 rounded-full bg-[var(--accent)] px-2 py-0.5 font-mono text-[9px] text-[var(--bg)]">
+                    ★ Destacado
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className={`truncate font-display text-sm ${c.hidden ? "text-[var(--ink-muted)] line-through" : ""}`}>
                     {c.titleOverride || c.title}

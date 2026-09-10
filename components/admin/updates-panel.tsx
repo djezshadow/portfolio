@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { compressImageForUpload } from "@/lib/compress-image";
 
 type Entry = {
   id: string;
@@ -9,6 +10,7 @@ type Entry = {
   description: string | null;
   descriptionEn: string | null;
   date: string; // ISO — llega serializado desde el Server Component
+  imageUrl: string | null;
 };
 
 function toDateInputValue(iso: string) {
@@ -121,6 +123,10 @@ export function UpdatesPanel({
                   <p className="font-display text-sm">{entry.title}</p>
                   {entry.description && <p className="text-xs text-[var(--ink-muted)]">{entry.description}</p>}
                 </div>
+                {entry.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={entry.imageUrl} alt="" className="h-10 w-16 shrink-0 rounded-lg object-cover" />
+                )}
                 <button
                   type="button"
                   data-cursor="magnetic"
@@ -144,6 +150,11 @@ export function UpdatesPanel({
                 <form
                   action={async (formData: FormData) => {
                     setError(null);
+                    const file = formData.get("image") as File | null;
+                    if (file && file.size > 0) {
+                      const compressed = await compressImageForUpload(file, { maxWidth: 800, maxHeight: 450 });
+                      formData.set("image", compressed);
+                    }
                     const result = await editAction(entry.id, formData);
                     if (!result.ok) setError(result.error ?? "No se pudo guardar.");
                     else setEditingId(null);
@@ -181,6 +192,17 @@ export function UpdatesPanel({
                       className="rounded-lg border border-[var(--glass-border)] bg-transparent px-2 py-1.5 text-sm"
                     />
                   </div>
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-[var(--ink-muted)]">
+                      Foto {entry.imageUrl ? "(reemplaza la actual)" : "(opcional)"}
+                    </label>
+                    <input type="file" name="image" accept="image/*" className="font-mono text-xs" />
+                    {entry.imageUrl && (
+                      <label className="mt-1 flex items-center gap-2 font-mono text-[10px] text-[var(--ink-muted)]">
+                        <input type="checkbox" name="removeImage" /> Quitar la foto
+                      </label>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="font-mono text-[11px] text-[var(--ink-muted)]">
                       Fecha:
@@ -212,6 +234,11 @@ export function UpdatesPanel({
       <form
         action={async (formData: FormData) => {
           setError(null);
+          const file = formData.get("image") as File | null;
+          if (file && file.size > 0) {
+            const compressed = await compressImageForUpload(file, { maxWidth: 800, maxHeight: 450 });
+            formData.set("image", compressed);
+          }
           const result = await addAction(formData);
           if (!result.ok) setError(result.error ?? "No se pudo agregar.");
         }}
@@ -244,6 +271,10 @@ export function UpdatesPanel({
             placeholder="Descripción (EN) — opcional"
             className="rounded-lg border border-[var(--glass-border)] bg-transparent px-2 py-1.5 text-sm"
           />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[10px] text-[var(--ink-muted)]">Foto (opcional)</label>
+          <input type="file" name="image" accept="image/*" className="font-mono text-xs" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="font-mono text-[11px] text-[var(--ink-muted)]">

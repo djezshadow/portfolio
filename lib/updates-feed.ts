@@ -159,7 +159,7 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
         date: c.date,
         href: c.href,
         external: c.external,
-        imageUrl: c.imageUrl,
+        imageUrl: override?.imageUrlOverride || c.imageUrl,
         featured: c.featured,
       };
     })
@@ -172,7 +172,7 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
     date: e.date,
     href: "",
     external: false,
-    imageUrl: null,
+    imageUrl: e.imageUrl,
     featured: false,
   }));
 

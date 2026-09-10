@@ -78,6 +78,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let updatesFeedEnabled = false;
   let updatesFeedTitle: string = "";
   let updatesFeedSpeed: string = "normal";
+  let updatesFeedVisible: number = 3;
   let homeSectionOrder: string | null = null;
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
@@ -123,6 +124,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         locOrNull(settings.updatesFeedTitle, settings.updatesFeedTitleEn, locale) ||
         (locale === "en" ? "What's new" : "Novedades");
       updatesFeedSpeed = settings.updatesFeedSpeed;
+      updatesFeedVisible = settings.updatesFeedVisible;
     }
     homeSectionOrder = settings.homeSectionOrder;
   } catch {
@@ -310,7 +312,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   const novedadesSection =
     updatesFeedEnabled && updateItems.length > 0 ? (
-      <UpdatesFeed key="novedades" title={updatesFeedTitle} items={updateItems} locale={locale} speed={updatesFeedSpeed} />
+      <UpdatesFeed
+        key="novedades"
+        title={updatesFeedTitle}
+        items={updateItems}
+        locale={locale}
+        speed={updatesFeedSpeed}
+        visibleCount={updatesFeedVisible}
+      />
     ) : null;
 
   // Pedido: "dejame acomodar el lugar de novedades también" — ahora

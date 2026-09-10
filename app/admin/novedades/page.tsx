@@ -22,6 +22,7 @@ export default async function NovedadesAdminPage() {
     updatesFeedTitle: null as string | null,
     updatesFeedTitleEn: null as string | null,
     updatesFeedSpeed: "normal",
+    updatesFeedVisible: 3,
   };
   let entries: {
     id: string;
@@ -30,6 +31,7 @@ export default async function NovedadesAdminPage() {
     description: string | null;
     descriptionEn: string | null;
     date: string;
+    imageUrl: string | null;
   }[] = [];
   let autoCandidates: {
     sourceType: "project" | "category" | "instagram";
@@ -42,6 +44,8 @@ export default async function NovedadesAdminPage() {
     titleOverride: string | null;
     descriptionOverride: string | null;
     featured: boolean;
+    imageUrl: string | null;
+    imageUrlOverride: string | null;
   }[] = [];
 
   try {
@@ -64,6 +68,8 @@ export default async function NovedadesAdminPage() {
         titleOverride: override?.titleOverride ?? null,
         descriptionOverride: override?.descriptionOverride ?? null,
         featured: c.featured,
+        imageUrl: c.imageUrl,
+        imageUrlOverride: override?.imageUrlOverride ?? null,
       };
     });
   } catch (err) {
@@ -121,6 +127,26 @@ export default async function NovedadesAdminPage() {
           </select>
           <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
             Sin importar esto, siempre se puede arrastrar a mano (mouse o dedo).
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
+            Cuántas tarjetas se ven a la vez
+          </label>
+          <select
+            name="updatesFeedVisible"
+            defaultValue={settings.updatesFeedVisible}
+            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
+          >
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+            <option value={5}>5</option>
+          </select>
+          <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
+            En celular se ajusta un poco más chico automáticamente, para que siempre se note que
+            hay más deslizando.
           </p>
         </div>
         <SubmitButton>Guardar</SubmitButton>

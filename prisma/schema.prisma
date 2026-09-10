@@ -448,6 +448,9 @@ model SiteSettings {
   /// "detenido" | "lento" | "normal" | "rapido". Siempre se puede
   /// arrastrar a mano sin importar este valor.
   updatesFeedSpeed    String  @default("normal")
+  /// Cuántas tarjetas se ven a la vez en el carrusel (pedido: "que
+  /// muestre de a tres casillas y eso lo pueda cambiar en admin").
+  updatesFeedVisible  Int     @default(3)
 }
 
 /// Registra qué IPs ya vieron el logro del código Konami, para que salga
@@ -497,6 +500,9 @@ model UpdateLogEntry {
   date          DateTime @default(now())
   order         Int      @default(0)
   createdAt     DateTime @default(now())
+  /// Foto personalizada opcional (pedido: "dejame añadir una foto
+  /// personalizada porque no todo le carga foto").
+  imageUrl      String?
 }
 
 /// Pedido: "Novedades" automático — se arma solo con lo último que
@@ -516,6 +522,10 @@ model UpdateFeedOverride {
   titleOverrideEn       String?
   descriptionOverride   String?  @db.Text
   descriptionOverrideEn String?  @db.Text
+  /// Foto personalizada opcional — pisa la que se detectó sola (o la
+  /// agrega si el ítem automático no tenía ninguna, como los posts de
+  /// feed de Instagram, que se embeben sin foto propia acá).
+  imageUrlOverride      String?
   updatedAt             DateTime @updatedAt
 
   @@unique([sourceType, sourceId])

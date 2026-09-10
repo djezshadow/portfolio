@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { compressImageForUpload } from "@/lib/compress-image";
 
 type Candidate = {
   sourceType: "project" | "category" | "instagram";
@@ -13,6 +14,8 @@ type Candidate = {
   titleOverride: string | null;
   descriptionOverride: string | null;
   featured: boolean;
+  imageUrl: string | null;
+  imageUrlOverride: string | null;
 };
 
 const TYPE_LABEL: Record<Candidate["sourceType"], string> = {
@@ -25,7 +28,8 @@ const TYPE_LABEL: Record<Candidate["sourceType"], string> = {
  * Pedido: Novedades automático "pero que pueda modificarlo si algo no
  * me gusta" — lista lo que el sitio detectó solo (proyectos,
  * categorías, posts de Instagram recientes) con la opción de ocultar
- * cada uno o pisarle el título/descripción.
+ * cada uno, pisarle el título/descripción, o ponerle una foto propia
+ * (pedido: "no todo le carga foto").
  */
 export function AutoUpdatesPanel({
   candidates,
@@ -36,25 +40,32 @@ export function AutoUpdatesPanel({
     sourceType: "project" | "category" | "instagram",
     sourceId: string,
     formData: FormData
-  ) => Promise<void>;
+  ) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-2">
+      {error && <p className="font-mono text-xs text-red-400">{error}</p>}
       <p className="font-mono text-[10px] text-[var(--ink-muted)]">
         Esto se arma solo con lo último que subiste — no hace falta cargar nada acá. Si algo no te
-        cierra, ocultalo o corregile el texto.
+        cierra, ocultalo o corregile el texto o la foto.
       </p>
       <ul className="space-y-2">
         {candidates.map((c) => {
           const key = `${c.sourceType}:${c.sourceId}`;
           const isEditing = editingKey === key;
           const save = saveOverrideAction.bind(null, c.sourceType, c.sourceId);
+          const currentImage = c.imageUrlOverride || c.imageUrl;
 
           return (
             <li key={key} className="glass space-y-2 rounded-2xl p-4">
               <div className="flex flex-wrap items-center gap-2">
+                {currentImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={currentImage} alt="" className="h-10 w-16 shrink-0 rounded-lg object-cover" />
+                )}
                 <span className="shrink-0 rounded-full bg-[var(--glass-border)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest">
                   {TYPE_LABEL[c.sourceType]}
                 </span>
@@ -85,6 +96,12 @@ export function AutoUpdatesPanel({
               {isEditing && (
                 <form
                   action={async (formData: FormData) => {
+                    setError(null);
+                    const file = formData.get("image") as File | null;
+                    if (file && file.size > 0) {
+                      const compressed = await compressImageForUpload(file, { maxWidth: 800, maxHeight: 450 });
+                      formData.set("image", compressed);
+                    }
                     // OJO: antes el botón "Guardar" tenía un onClick que
                     // cerraba este panel INMEDIATAMENTE al hacer clic —
                     // eso sacaba el <form> del DOM en la misma carrera en
@@ -92,8 +109,9 @@ export function AutoUpdatesPanel({
                     // datos para enviarlos, y a veces el guardado se
                     // perdía en el camino ("no me deja guardar"). Ahora
                     // cerramos DESPUÉS de que save() termine, nunca antes.
-                    await save(formData);
-                    setEditingKey(null);
+                    const result = await save(formData);
+                    if (!result.ok) setError(result.error ?? "No se pudo guardar.");
+                    else setEditingKey(null);
                   }}
                   className="space-y-2 rounded-lg border border-[var(--glass-border)] p-3"
                 >
@@ -128,8 +146,19 @@ export function AutoUpdatesPanel({
                       className="rounded-lg border border-[var(--glass-border)] bg-transparent px-2 py-1.5 text-sm"
                     />
                   </div>
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-[var(--ink-muted)]">
+                      Foto personalizada {c.imageUrl ? "(pisa la detectada sola)" : "(este ítem no trae foto propia)"}
+                    </label>
+                    <input type="file" name="image" accept="image/*" className="font-mono text-xs" />
+                    {c.imageUrlOverride && (
+                      <label className="mt-1 flex items-center gap-2 font-mono text-[10px] text-[var(--ink-muted)]">
+                        <input type="checkbox" name="removeImage" /> Quitar la foto personalizada
+                      </label>
+                    )}
+                  </div>
                   <p className="font-mono text-[9px] text-[var(--ink-muted)]">
-                    Dejá todo vacío y sin ocultar para volver a lo automático.
+                    Dejá todo vacío, sin ocultar y sin foto para volver a lo automático.
                   </p>
                   <button
                     type="submit"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import type { ResolvedUpdateItem } from "@/lib/updates-feed";
 
@@ -13,44 +13,47 @@ const SPEED_PX_PER_SEC: Record<string, number> = {
   rapido: 58,
 };
 
+const GAP_PX = 16;
+
 /**
  * Pedido: "carrusel animado arriba de todo... que vaya pasando
- * lentamente las novedades con sus fotos principales", y después:
- * "poder deslizarlo yo también, cambiar la velocidad, y hasta dejarlo
- * quieto". Contenedor con scroll horizontal REAL (no solo una animación
- * CSS fija) — así el touch funciona nativo, y el mouse se puede
- * arrastrar a mano (clic y arrastre). El auto-scroll es un
- * requestAnimationFrame que mueve scrollLeft de a poco y hace loop sin
- * salto (la lista está duplicada, y al pasar el ancho de una copia
- * completa se resetea el scroll silenciosamente). Se pausa solo al
- * pasar el mouse o mientras se está arrastrando.
+ * lentamente las novedades con sus fotos principales", después "poder
+ * deslizarlo yo también, cambiar la velocidad, y hasta dejarlo quieto",
+ * y por último "que muestre de a tres casillas y eso lo pueda cambiar
+ * en admin".
+ *
+ * OJO con esto: antes se pausaba también al pasar el mouse por encima
+ * — que es justo donde tenés la vista puesta al mirarlo, así que se
+ * sentía "quieto mientras miro" aunque en realidad estaba andando bien
+ * apenas sacabas el mouse. Ahora SOLO se pausa mientras lo estás
+ * arrastrando activamente, nunca por el simple hecho de tenerle el
+ * mouse encima.
  */
 export function UpdatesFeed({
   title,
   items,
   locale,
   speed = "normal",
+  visibleCount = 3,
 }: {
   title: string;
   items: UpdateFeedItem[];
   locale: string;
   speed?: string;
+  visibleCount?: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
   const draggingRef = useRef(false);
   const dragStartXRef = useRef(0);
   const dragStartScrollRef = useRef(0);
   const movedRef = useRef(false);
 
   const speedPxPerSec = SPEED_PX_PER_SEC[speed] ?? SPEED_PX_PER_SEC.normal;
-  // Bug real encontrado: con pocos ítems (algo típico recién activada
-  // la sección), duplicar la lista UNA sola vez no alcanza a ser más
-  // ancho que la pantalla — y si no hay nada para desplazar, el
-  // navegador no mueve el scroll aunque el código se lo pida (por eso
-  // "no se mueve"). Acá repetimos el set base las veces que hagan falta
-  // para garantizar ancho de sobra, y recién ahí lo duplicamos para el
-  // loop sin salto — funciona igual con 1 ítem que con 30.
+  // Con pocos ítems, duplicar la lista una sola vez puede no alcanzar a
+  // ser más ancho que la pantalla — y sin nada para desplazar, el
+  // navegador no mueve el scroll aunque el código se lo pida. Repetimos
+  // el set base las veces que hagan falta para garantizar ancho de
+  // sobra, y recién ahí lo duplicamos para el loop sin salto.
   const MIN_BASE_ITEMS = 10;
   const repeatCount = Math.max(1, Math.ceil(MIN_BASE_ITEMS / Math.max(1, items.length)));
   const base = Array.from({ length: repeatCount }, () => items).flat();
@@ -66,7 +69,7 @@ export function UpdatesFeed({
     function step(now: number) {
       const dt = (now - last) / 1000;
       last = now;
-      if (!paused && track && !draggingRef.current) {
+      if (track && !draggingRef.current) {
         track.scrollLeft += speedPxPerSec * dt;
         // Loop sin salto: la lista está duplicada, así que al pasar el
         // ancho de la MITAD (una copia completa) restamos ese ancho —
@@ -80,7 +83,7 @@ export function UpdatesFeed({
     }
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [paused, speedPxPerSec]);
+  }, [speedPxPerSec]);
 
   function onPointerDown(e: React.PointerEvent) {
     const track = trackRef.current;
@@ -117,23 +120,34 @@ export function UpdatesFeed({
     month: "short",
   });
 
+  // Pedido: "que muestre de a tres casillas y eso lo pueda cambiar en
+  // admin" — el ancho de cada tarjeta se calcula para que ENTREN
+  // exactamente `visibleCount` a la vez en el ancho disponible. En
+  // celular achicamos un poco el conteo (mínimo 1.4, para que siempre
+  // se note que hay más deslizando) sin necesidad de JS extra — un
+  // segundo valor vía CSS clamp según el viewport.
+  const desktopWidth = `calc((100% - ${GAP_PX * (visibleCount - 1)}px) / ${visibleCount})`;
+  const mobileVisible = Math.max(1.4, Math.min(visibleCount, 2));
+  const mobileWidth = `calc((100% - ${GAP_PX * (Math.ceil(mobileVisible) - 1)}px) / ${mobileVisible})`;
+
   return (
     <section className="djez-updates-carousel border-b border-[var(--glass-border)] pb-6 pt-4">
+      <style>{`
+        .djez-updates-card { width: ${mobileWidth}; }
+        @media (min-width: 640px) {
+          .djez-updates-card { width: ${desktopWidth}; }
+        }
+      `}</style>
       <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">{title}</p>
       <div
         ref={trackRef}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => {
-          setPaused(false);
-          endDrag();
-        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onClickCapture={onClickCapture}
-        className="flex gap-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ cursor: "grab", scrollBehavior: "auto" }}
+        className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ cursor: "grab", scrollBehavior: "auto", gap: GAP_PX }}
       >
         {loopItems.map((item, i) => {
           const content = (
@@ -165,7 +179,7 @@ export function UpdatesFeed({
           );
 
           const className =
-            "group relative block h-32 w-52 shrink-0 overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.03] select-none";
+            "djez-updates-card group relative block h-32 shrink-0 overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.03] select-none";
 
           if (!item.href) {
             return (

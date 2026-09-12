@@ -13,6 +13,15 @@ const SPEED_PX_PER_SEC: Record<string, number> = {
   rapido: 58,
 };
 
+// Pausado a pedido explícito: el auto-scroll (RAF + scrollLeft) no se
+// estaba moviendo de forma confiable en producción a pesar de varios
+// intentos de arreglarlo (ancho del track, pausa por hover, etc.) y no
+// hay forma de probarlo en un navegador real desde acá. El arrastre
+// manual (mouse/touch) sigue andando siempre — es una función aparte.
+// Para reactivar el auto-scroll cuando se pueda debuggear en vivo:
+// cambiar esto a `false`.
+const AUTO_SCROLL_PAUSED = true;
+
 const GAP_PX = 16;
 
 /**
@@ -60,6 +69,8 @@ export function UpdatesFeed({
   const loopItems = [...base, ...base];
 
   useEffect(() => {
+    if (AUTO_SCROLL_PAUSED) return;
+
     const track = trackRef.current;
     if (!track || speedPxPerSec === 0) return;
 

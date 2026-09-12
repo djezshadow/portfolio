@@ -23,6 +23,7 @@ export function AdminNav() {
         <Link href="/admin/navbar" data-cursor="magnetic">Navbar</Link>
         <Link href="/admin/instagram" data-cursor="magnetic">Instagram</Link>
         <Link href="/admin/novedades" data-cursor="magnetic">Novedades</Link>
+        <Link href="/admin/error-404" data-cursor="magnetic">Página 404</Link>
         <Link href="/admin/proyectos/nuevo" data-cursor="magnetic" className="text-accent">
           + Nuevo
         </Link>

@@ -451,6 +451,15 @@ model SiteSettings {
   /// Cuántas tarjetas se ven a la vez en el carrusel (pedido: "que
   /// muestre de a tres casillas y eso lo pueda cambiar en admin").
   updatesFeedVisible  Int     @default(3)
+
+  /// Página 404 editable (pedido: "poder editar mi página error 404,
+  /// para cambiar diseño, textos y hasta poner una imagen"). Todo
+  /// opcional — vacío = usa el texto bilingüe por defecto.
+  notFoundTitle       String?
+  notFoundTitleEn     String?
+  notFoundMessage     String?  @db.Text
+  notFoundMessageEn   String?  @db.Text
+  notFoundImageUrl    String?
 }
 
 /// Registra qué IPs ya vieron el logro del código Konami, para que salga

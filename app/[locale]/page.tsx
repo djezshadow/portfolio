@@ -18,6 +18,15 @@ import { getPublicUpdatesFeed, type ResolvedUpdateItem } from "@/lib/updates-fee
 // después de guardar cambios en Configuración (hero, carrusel, portadas de
 // categoría) — es la causa de "cambio el estilo del carrusel y no pasa
 // nada". El resto de las páginas que dependen de SiteSettings ya la tenían.
+//
+// Había intentado hacer esto togglable con una variable de entorno
+// (OPTIMIZE_ISR) para ISR — Next.js NO lo permite: `revalidate`/
+// `dynamic` son "route segment config" y los analiza de forma estática
+// (sin ejecutar el archivo), así que solo aceptan un valor literal
+// escrito directo, nunca un ternario ni nada calculado en tiempo de
+// build o de request. Por eso quedó reventado el build. Vuelve a la
+// versión de siempre — la otra optimización (lib/site-settings.ts) no
+// tiene este problema porque es una función común, no config de ruta.
 export const dynamic = "force-dynamic";
 
 const fallback: CarouselItem[] = [

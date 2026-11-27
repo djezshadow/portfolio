@@ -16,6 +16,8 @@ model PrivatePhoto {
   albumId   String
   album     PrivateAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
   bytes     Bytes
+  watermarkX Float?
+  watermarkY Float?
   alt       String       @default("")
   createdAt DateTime     @default(now())
 

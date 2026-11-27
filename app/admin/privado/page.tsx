@@ -3,16 +3,26 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/private-albums";
 import { prisma } from "@/lib/prisma";
 import { AlbumForm } from "./forms";
+import { AlbumWatermarkEditor } from "./watermark-editor";
+import { getSiteSettings } from "@/lib/site-settings";
 import { changeAlbumPassword, createAlbum, deleteAlbum, deleteAlbumPhoto, uploadAlbumPhoto } from "./actions";
 
 const input = "glass rounded-lg px-3 py-2";
 
 export default async function AdminPrivateAlbums() {
   if (!(await isAdmin())) redirect("/admin/login");
-  const albums = await prisma.privateAlbum.findMany({
+  const [albums, settings] = await Promise.all([prisma.privateAlbum.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, name: true, photos: { select: { id: true, alt: true }, orderBy: { createdAt: "asc" } } },
-  });
+    select: { id: true, name: true, photos: {
+      select: { id: true, alt: true, watermarkX: true, watermarkY: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    } },
+  }), getSiteSettings()]);
+  const position = settings.watermarkPosition;
+  const defaultPoint = {
+    x: position.endsWith("left") ? 0 : position.endsWith("right") ? 1 : 0.5,
+    y: position.startsWith("top") ? 0 : position.startsWith("bottom") ? 1 : 0.5,
+  };
   return <main className="mx-auto max-w-5xl space-y-8 px-5 py-10">
     <h1 className="font-display text-3xl">Álbumes privados</h1>
     <AlbumForm action={createAlbum} label="Crear álbum">
@@ -29,6 +39,7 @@ export default async function AdminPrivateAlbums() {
         <input name="photo" type="file" accept="image/*" aria-label="Fotos" required multiple />
         <input className={input} name="alt" aria-label="Descripción para las fotos" placeholder="Descripción opcional" maxLength={160} />
       </AlbumForm>
+      <AlbumWatermarkEditor photos={album.photos} defaultPoint={defaultPoint} />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {album.photos.map((photo) => <div key={photo.id} className="space-y-2">
           <img src={`/api/album-photo/${photo.id}?thumb=1`} loading="lazy" alt={photo.alt} className="aspect-video w-full rounded-lg object-cover" />

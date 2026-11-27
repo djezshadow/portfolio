@@ -61,6 +61,8 @@ export async function applyWatermark(
     customLogoUrl?: string | null;
     /** % del ancho de la foto que ocupa el watermark (default 9, viene de SiteSettings). */
     scale?: number;
+    coordinates?: { x: number; y: number };
+    webpQuality?: number;
   }
 ): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
@@ -69,7 +71,8 @@ export async function applyWatermark(
   const width = metadata.width ?? 1200;
 
   const scalePct = opts.scale ?? 9;
-  const size = Math.round(width * (scalePct / 100));
+  const height = metadata.height ?? width;
+  const size = Math.max(1, Math.min(width, height, Math.round(width * (scalePct / 100))));
   const opacity = Math.min(Math.max(opts.opacity, 0), 100) / 100;
 
   let watermarkInput: Buffer;
@@ -83,6 +86,7 @@ export async function applyWatermark(
       // Logo personalizado: lo bajamos, lo redimensionamos al tamaño calculado
       // (manteniendo proporción) y le aplicamos la opacidad pedida.
       const res = await fetch(opts.customLogoUrl);
+      if (!res.ok) throw new Error("No se pudo cargar el logo de marca de agua");
       const logoBuffer = Buffer.from(await res.arrayBuffer());
       watermarkInput = await sharp(logoBuffer)
         .resize({ width: size, height: size, fit: "inside" })
@@ -107,12 +111,21 @@ export async function applyWatermark(
     watermarkInput = Buffer.from(apertureSVG(size, opacity));
   }
 
-  return image
-    .composite([
+  let placement: { gravity: Gravity } | { left: number; top: number } = {
+    gravity: gravityMap[opts.position] as Gravity,
+  };
+  if (opts.coordinates) {
+    const { width: markWidth = size, height: markHeight = size } = await sharp(watermarkInput).metadata();
+    placement = {
+      left: Math.round(Math.max(0, Math.min(width - markWidth, opts.coordinates.x * width - markWidth / 2))),
+      top: Math.round(Math.max(0, Math.min(height - markHeight, opts.coordinates.y * height - markHeight / 2))),
+    };
+  }
+  const composited = image.composite([
       {
         input: watermarkInput,
-        gravity: gravityMap[opts.position] as Gravity,
+        ...placement,
       },
-    ])
-    .toBuffer();
+  ]);
+  return (opts.webpQuality ? composited.webp({ quality: opts.webpQuality }) : composited).toBuffer();
 }

@@ -58,6 +58,15 @@ export async function deleteAlbumPhoto(id: string) {
   revalidatePath("/admin/privado");
 }
 
+export async function setAlbumPhotoWatermark(id: string, x: number | null, y: number | null) {
+  await requireAdmin();
+  if (!(x === null && y === null) && ![x, y].every((value) =>
+    typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
+  )) throw new Error("Posición inválida.");
+  await prisma.privatePhoto.update({ where: { id }, data: { watermarkX: x, watermarkY: y } });
+  revalidatePath("/admin/privado");
+}
+
 export async function deleteAlbum(id: string) {
   await requireAdmin();
   await prisma.privateAlbum.delete({ where: { id } });

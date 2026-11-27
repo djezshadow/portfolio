@@ -6,6 +6,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { WatermarkSettingsForm } from "@/components/admin/watermark-settings-form";
 import { HeroSettingsForm } from "@/components/admin/hero-settings-form";
 import { OptimizePhotosButton } from "@/components/admin/optimize-photos-button";
+import { BlobCleanup } from "@/components/admin/blob-cleanup";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { LogoDisplayControls } from "@/components/admin/logo-display-controls";
 
@@ -188,8 +189,9 @@ export default async function ConfiguracionPage() {
         />
       </form>
 
-      <div className="mt-10">
+      <div className="mt-10 space-y-4">
         <OptimizePhotosButton />
+        <BlobCleanup />
       </div>
 
       {/* --- Contacto --- */}

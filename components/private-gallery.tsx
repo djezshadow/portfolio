@@ -29,7 +29,7 @@ export function PrivateGallery({ photos, en }: { photos: { id: string; alt: stri
       <div className="flex justify-end">
         <button type="button" autoFocus onClick={() => dialog.current?.close()} className="rounded px-3 py-2">{en ? "Close" : "Cerrar"}</button>
       </div>
-      {open && <img src={`/api/album-photo/${active.id}`} alt={active.alt || label(index)} className="mx-auto max-h-[72dvh] w-full object-contain" />}
+      {open && <PrivatePhoto key={active.id} id={active.id} alt={active.alt || label(index)} en={en} />}
       <div className="mt-2 flex items-center justify-between">
         <button type="button" disabled={photos.length < 2} onClick={() => move(-1)} className="rounded px-3 py-2 disabled:opacity-40">{en ? "Previous" : "Anterior"}</button>
         <span aria-live="polite">{index + 1} / {photos.length}</span>
@@ -37,4 +37,17 @@ export function PrivateGallery({ photos, en }: { photos: { id: string; alt: stri
       </div>
     </dialog>
   </>;
+}
+
+function PrivatePhoto({ id, alt, en }: { id: string; alt: string; en: boolean }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const src = `/api/album-photo/${id}`;
+  return <div className="relative grid min-h-32 place-items-center" aria-busy={status === "loading"}>
+    {status === "loading" && <img src={`${src}?placeholder=1`} alt=""
+      className="absolute inset-0 h-full w-full object-contain" />}
+    <img src={src} draggable={false} alt={alt}
+      onLoad={() => setStatus("loaded")} onError={() => setStatus("error")}
+      className={`relative mx-auto max-h-[72dvh] w-full object-contain ${status === "loaded" ? "" : "invisible"}`} />
+    {status === "error" && <p role="status" className="absolute">{en ? "Photo unavailable." : "No se pudo cargar la foto."}</p>}
+  </div>;
 }

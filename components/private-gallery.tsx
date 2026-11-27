@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function PrivateGallery({ photos, en }: { photos: { id: string; alt: string }[]; en: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -41,13 +41,45 @@ export function PrivateGallery({ photos, en }: { photos: { id: string; alt: stri
 
 function PrivatePhoto({ id, alt, en }: { id: string; alt: string; en: boolean }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const canvas = useRef<HTMLCanvasElement>(null);
   const src = `/api/album-photo/${id}`;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function draw() {
+      try {
+        const response = await fetch(src, {
+          method: "POST",
+          headers: { "x-album-view": "1" },
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Photo unavailable");
+        const bitmap = await createImageBitmap(await response.blob());
+        try {
+          if (controller.signal.aborted) return;
+          const element = canvas.current;
+          const context = element?.getContext("2d");
+          if (!element || !context) throw new Error("Canvas unavailable");
+          element.width = bitmap.width;
+          element.height = bitmap.height;
+          context.drawImage(bitmap, 0, 0);
+          setStatus("loaded");
+        } finally {
+          bitmap.close();
+        }
+      } catch {
+        if (!controller.signal.aborted) setStatus("error");
+      }
+    }
+    void draw();
+    return () => controller.abort();
+  }, [src]);
+
   return <div className="relative grid min-h-32 place-items-center" aria-busy={status === "loading"}>
-    {status === "loading" && <img src={`${src}?placeholder=1`} alt=""
-      className="absolute inset-0 h-full w-full object-contain" />}
-    <img src={src} draggable={false} alt={alt}
-      onLoad={() => setStatus("loaded")} onError={() => setStatus("error")}
-      className={`relative mx-auto max-h-[72dvh] w-full object-contain ${status === "loaded" ? "" : "invisible"}`} />
+    <canvas ref={canvas} aria-hidden="true"
+      className={`mx-auto max-h-[72dvh] w-full object-contain ${status === "loaded" ? "" : "invisible"}`} />
+    {status !== "error" && <img src={src} draggable={false} alt={alt}
+      className={`absolute inset-0 h-full w-full object-contain ${status === "loaded" ? "opacity-0" : ""}`} />}
     {status === "error" && <p role="status" className="absolute">{en ? "Photo unavailable." : "No se pudo cargar la foto."}</p>}
   </div>;
 }

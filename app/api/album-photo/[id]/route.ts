@@ -15,7 +15,21 @@ function previewCoordinates(query: URLSearchParams) {
   return x === null || y === null ? undefined : coordinates(Number(x), Number(y));
 }
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export function GET(request: Request, context: RouteContext) {
+  return servePhoto(request, context, false);
+}
+
+export function POST(request: Request, context: RouteContext) {
+  const site = request.headers.get("sec-fetch-site");
+  if (request.headers.get("x-album-view") !== "1" || (site && site !== "same-origin")) {
+    return new Response(null, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+  }
+  return servePhoto(request, context, true);
+}
+
+async function servePhoto(request: Request, { params }: RouteContext, full: boolean) {
   const { id } = await params;
   const headers = {
     "Cache-Control": "private, no-store",
@@ -29,8 +43,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return new Response(null, { status: 404, headers });
   }
   const query = new URL(request.url).searchParams;
-  const preview = query.has("preview");
+  const preview = !full && query.has("preview");
   if (preview && !(await isAdmin())) return new Response(null, { status: 404, headers });
+  const thumbnail = !full && query.has("thumb") && request.headers.get("sec-fetch-dest") === "image";
 
   const image = await prisma.privatePhoto.findFirst({
     where: { id, album: { accessVersion: photo.album.accessVersion } },
@@ -40,7 +55,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const source = Buffer.from(image.bytes);
-    const low = query.has("placeholder") && !preview;
+    const low = !full && !preview && !thumbnail;
     if (low) {
       const tiny = await sharp(source).resize({ width: 64, height: 64, fit: "inside", withoutEnlargement: true })
         .blur(1.5).webp({ quality: 18 }).toBuffer();
@@ -48,7 +63,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const settings = await getSiteSettings();
-    const thumbnail = query.has("thumb");
     const options = {
       opacity: Math.max(settings.watermarkOpacity, 25),
       scale: Math.max(settings.watermarkScale, 6),

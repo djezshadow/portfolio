@@ -94,7 +94,7 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
           <option value="right">Derecha</option>
         </select>
         <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
-          Afecta el kicker/título/subtítulo del hero y los botones de abajo (Descargar reel/CV).
+          Ajusta los textos de Inicio y la alineación de los botones de dossier y CV.
         </p>
       </div>
 
@@ -352,8 +352,8 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
       </div>
 
       <label className="block space-y-2 text-sm">
-        <span>Reel de Inicio (YouTube o Vimeo)</span>
-        <input name="showreelUrl" defaultValue={initial.showreelUrl ?? ""} placeholder="https://…"
+        <span>Enlace de YouTube del reel de Inicio</span>
+        <input name="showreelUrl" defaultValue={initial.showreelUrl ?? ""} placeholder="https://youtu.be/…"
           className="block w-full rounded-xl border border-[var(--glass-border)] px-3 py-2" />
       </label>
       <SubmitButton>Guardar título y subtítulo</SubmitButton>

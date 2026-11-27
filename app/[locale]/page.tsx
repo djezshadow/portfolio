@@ -1,6 +1,6 @@
 import { SelectedWork, type WorkCard } from "@/components/selected-work";
 import { publicProjectWhere, toWorkCard, workCardSelect } from "@/lib/public-projects";
-import { parseVideoUrl } from "@/lib/video-url";
+import { parseVideoUrl, type ParsedVideo } from "@/lib/video-url";
 import type { ReactNode } from "react";
 import { Carousel, type CarouselItem, type CarouselPreset, type CarouselStyleConfig } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
@@ -83,15 +83,12 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let updatesFeedEnabled = false;
   let updatesFeedTitle: string = "";
   let updatesFeedVisible: number = 3;
-  let reel: string | null = null;
+  let reel: ParsedVideo | null = null;
   let homeSectionOrder: string | null = null;
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
     cvEnabled = profile.cvEnabled;
-    const video = parseVideoUrl(settings.showreelUrl ?? "");
-    if (video) reel = video.provider === "youtube"
-      ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.videoId)}?autoplay=1&rel=0`
-      : `https://player.vimeo.com/video/${encodeURIComponent(video.videoId)}?autoplay=1`;
+    reel = parseVideoUrl(settings.showreelUrl ?? "");
     heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
     heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
     heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;

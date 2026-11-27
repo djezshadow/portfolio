@@ -8,22 +8,24 @@ export type ParsedVideo = { provider: "youtube" | "vimeo"; videoId: string };
 export function parseVideoUrl(raw: string): ParsedVideo | null {
   const url = raw.trim();
   if (!url) return null;
+  const youtubeId = /^[a-zA-Z0-9_-]{11}$/;
+  if (youtubeId.test(url)) return { provider: "youtube", videoId: url };
 
   try {
     const u = new URL(url);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return null;
     const host = u.hostname.replace(/^www\./, "");
 
     if (host === "youtu.be") {
-      const id = u.pathname.slice(1);
-      if (id) return { provider: "youtube", videoId: id };
+      const id = u.pathname.split("/")[1];
+      if (youtubeId.test(id)) return { provider: "youtube", videoId: id };
     }
 
-    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+    if (["youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com"].includes(host)) {
       const v = u.searchParams.get("v");
-      if (v) return { provider: "youtube", videoId: v };
-      // /embed/ID o /shorts/ID
-      const match = u.pathname.match(/\/(embed|shorts)\/([^/?]+)/);
-      if (match) return { provider: "youtube", videoId: match[2] };
+      if (v && youtubeId.test(v)) return { provider: "youtube", videoId: v };
+      const match = u.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)\/?$/);
+      if (match && youtubeId.test(match[1])) return { provider: "youtube", videoId: match[1] };
     }
 
     if (host === "vimeo.com" || host === "player.vimeo.com") {
@@ -31,10 +33,7 @@ export function parseVideoUrl(raw: string): ParsedVideo | null {
       if (match) return { provider: "vimeo", videoId: match[1] };
     }
   } catch {
-    // no era una URL válida — probamos si ya es un ID pelado de 11 caracteres (típico de YouTube)
-    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
-      return { provider: "youtube", videoId: url };
-    }
+    return null;
   }
 
   return null;

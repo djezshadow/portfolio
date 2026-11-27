@@ -34,9 +34,9 @@ export function BlobCleanup() {
   }
 
   return <section className="glass space-y-3 rounded-2xl p-5">
-    <h3 className="font-mono text-sm text-accent">Originales antiguos en Vercel Blob</h3>
+    <h3 className="font-mono text-sm text-accent">Archivos sin usar en Vercel Blob</h3>
     <p className="text-sm text-[var(--ink-muted)]">
-      Busca originales antiguos en la raíz del almacenamiento con un WebP de nombre base igual y sin referencias en la base del portfolio.
+      Busca originales antiguos con un WebP equivalente y cargas de proyectos sin usar de más de siete días. Solo lista archivos sin referencias en la base del portfolio.
       Revisá los archivos antes de elegir cuáles borrar.
     </p>
     <button type="button" disabled={busy} onClick={() => run()} className="glass rounded-full px-5 py-2 text-sm disabled:opacity-50">

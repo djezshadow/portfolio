@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { projectCoverSelect, projectPoster, publicProjectWhere } from "@/lib/public-projects";
 
 export type AutoSourceType = "project" | "category" | "instagram";
 
@@ -15,10 +16,7 @@ export type AutoCandidate = {
   href: string;
   external: boolean;
   imageUrl: string | null;
-  /// Pedido: dale una función real a "Destacar en el home" — los
-  /// proyectos marcados featured aparecen PRIMERO en Novedades, antes
-  /// que cualquier otra cosa, sin importar la fecha. Solo aplica a
-  /// proyectos (categorías/Instagram nunca son "featured").
+  /// Marca visual para proyectos incluidos en la selección de Inicio.
   featured: boolean;
 };
 
@@ -31,22 +29,21 @@ const LIMIT_PER_SOURCE = 8;
  * público (ver getPublicUpdatesFeed más abajo).
  */
 export async function getAutoCandidates(): Promise<AutoCandidate[]> {
-  const now = new Date();
-
   const [projects, categories, instagramPosts] = await Promise.all([
     prisma.project.findMany({
-      where: { publishedAt: { not: null, lte: now } },
+      where: publicProjectWhere(),
       orderBy: { publishedAt: "desc" },
       take: LIMIT_PER_SOURCE,
       include: {
-        categories: { include: { category: true }, take: 1 },
+        categories: { where: { category: { isComingSoon: false } }, include: { category: true }, take: 1 },
         // Portada si está marcada, si no la primera imagen — mismo
         // criterio que se usa en el resto del sitio para elegir la
         // miniatura de un proyecto.
-        media: { where: { type: "image" }, orderBy: [{ isThumbnail: "desc" }, { order: "asc" }], take: 1 },
+        media: { select: projectCoverSelect, orderBy: [{ isThumbnail: "desc" }, { order: "asc" }], take: 1 },
       },
     }),
     prisma.category.findMany({
+      where: { isComingSoon: false },
       orderBy: { createdAt: "desc" },
       take: LIMIT_PER_SOURCE,
     }),
@@ -66,9 +63,9 @@ export async function getAutoCandidates(): Promise<AutoCandidate[]> {
       description: firstCat ? `Nuevo proyecto en ${firstCat.name}` : "Nuevo proyecto",
       descriptionEn: firstCat ? `New project in ${firstCat.nameEn || firstCat.name}` : "New project",
       date: p.publishedAt ?? p.createdAt,
-      href: firstCat ? `/categoria/${firstCat.slug}?proyecto=${p.id}` : "/",
+      href: `/proyecto/${p.id}`,
       external: false,
-      imageUrl: p.media[0]?.url ?? null,
+      imageUrl: projectPoster(p.media),
       featured: p.featured,
     };
   });
@@ -112,6 +109,7 @@ export async function getAutoCandidates(): Promise<AutoCandidate[]> {
 }
 
 export type ResolvedUpdateItem = {
+  showDetail: boolean;
   key: string; // `${sourceType}:${sourceId}` o `manual:${id}`
   title: string;
   description: string | null;
@@ -125,8 +123,8 @@ export type ResolvedUpdateItem = {
 /**
  * Versión PÚBLICA: candidatos automáticos con overrides aplicados
  * (ocultos afuera, textos corregidos donde corresponda) + las entradas
- * manuales que se sigan cargando a mano — todo mezclado. Los proyectos
- * "Destacados" van primero, y dentro de cada grupo se ordena por fecha.
+ * manuales en el orden definido en el panel, seguidas por las automáticas
+ * en orden cronológico inverso.
  * `locale` resuelve qué idioma mostrar.
  */
 export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<ResolvedUpdateItem[]> {
@@ -135,7 +133,7 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
   const [candidates, overrides, manual] = await Promise.all([
     getAutoCandidates(),
     prisma.updateFeedOverride.findMany(),
-    prisma.updateLogEntry.findMany({ orderBy: { date: "desc" } }),
+    prisma.updateLogEntry.findMany({ where: { date: { lte: new Date() } }, orderBy: [{ order: "asc" }, { id: "asc" }] }),
   ]);
 
   const overrideMap = new Map(overrides.map((o) => [`${o.sourceType}:${o.sourceId}`, o]));
@@ -156,6 +154,7 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
         key: `${c.sourceType}:${c.sourceId}`,
         title,
         description: description ?? null,
+        showDetail: Boolean(override?.descriptionOverride || override?.descriptionOverrideEn),
         date: c.date,
         href: c.href,
         external: c.external,
@@ -167,19 +166,15 @@ export async function getPublicUpdatesFeed(locale: string, limit = 12): Promise<
 
   const manualResolved: ResolvedUpdateItem[] = manual.map((e) => ({
     key: `manual:${e.id}`,
+    showDetail: true,
     title: isEn && e.titleEn ? e.titleEn : e.title,
-    description: (isEn ? e.descriptionEn : e.description) ?? null,
+    description: (isEn ? e.descriptionEn || e.description : e.description) ?? null,
     date: e.date,
-    href: "",
-    external: false,
+    href: e.linkUrl ?? "",
+    external: !!e.linkUrl && /^https?:/i.test(e.linkUrl),
     imageUrl: e.imageUrl,
     featured: false,
   }));
 
-  return [...autoResolved, ...manualResolved]
-    .sort((a, b) => {
-      if (a.featured !== b.featured) return a.featured ? -1 : 1;
-      return b.date.getTime() - a.date.getTime();
-    })
-    .slice(0, limit);
+  return [...manualResolved, ...autoResolved.sort((a, b) => b.date.getTime() - a.date.getTime())].slice(0, limit);
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { discardProjectUpload } from "@/app/admin/proyectos/upload-actions";
 import clsx from "clsx";
 import { parseVideoUrl } from "@/lib/video-url";
 import { compressImageForUpload } from "@/lib/compress-image";
@@ -20,6 +21,8 @@ export function MediaDropzone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const previewUrls = useRef(new Set<string>());
+  const discarding = useRef(new Set<string>());
+  const [discardError, setDiscardError] = useState("");
   const [items, setItems] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
@@ -27,6 +30,7 @@ export function MediaDropzone() {
 
   const uploadingCount = items.filter((it) => it.status === "uploading").length;
   const failedCount = items.filter((it) => it.status === "error").length;
+  const invalidVideos = videoUrls.some((url) => url.trim() && !parseVideoUrl(url));
 
   useEffect(() => {
     const urls = previewUrls.current;
@@ -39,18 +43,20 @@ export function MediaDropzone() {
     const form = wrapperRef.current?.closest("form");
     if (!form) return;
     const guard = (e: SubmitEvent) => {
-      if (uploadingCount > 0) {
+      if (uploadingCount > 0 || discarding.current.size) {
         e.preventDefault();
-        alert(`Esperá a que terminen de subir las ${uploadingCount} foto(s) pendientes.`);
-      }
-      if (failedCount > 0) {
+        alert("Esperá a que terminen las operaciones pendientes con las fotos.");
+      } else if (failedCount > 0) {
         e.preventDefault();
         alert("Reintentá o quitá las fotos que fallaron antes de guardar.");
+      } else if (invalidVideos) {
+        e.preventDefault();
+        alert("Revisá los enlaces de video marcados como no reconocidos.");
       }
     };
     form.addEventListener("submit", guard);
     return () => form.removeEventListener("submit", guard);
-  }, [uploadingCount, failedCount]);
+  }, [uploadingCount, failedCount, invalidVideos]);
 
   async function uploadOne(item: UploadItem) {
     try {
@@ -99,11 +105,8 @@ export function MediaDropzone() {
     newItems.forEach((item) => previewUrls.current.add(item.previewUrl));
     setItems((prev) => [...prev, ...newItems]);
 
-    for (const item of newItems) {
-      // Se sube directo desde el navegador al storage — no pasa por el
-      // límite de tamaño del server action, así que fotos de cámara
-      // reales (varios MB, varias juntas) no rompen nada.
-      await uploadOne(item);
+    for (let i = 0; i < newItems.length; i += 2) {
+      await Promise.all(newItems.slice(i, i + 2).map(uploadOne));
     }
   }
 
@@ -113,9 +116,21 @@ export function MediaDropzone() {
     if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
   }
 
-  function removeItem(id: string) {
+  async function removeItem(id: string) {
     const item = items.find((entry) => entry.id === id);
-    if (!item || item.status === "uploading") return;
+    if (!item || item.status === "uploading" || discarding.current.has(id)) return;
+    setDiscardError("");
+    if (item.blobUrl) {
+      discarding.current.add(id);
+      try {
+        await discardProjectUpload(item.blobUrl);
+      } catch {
+        setDiscardError("No se pudo quitar la foto del almacenamiento. Volvé a intentar.");
+        return;
+      } finally {
+        discarding.current.delete(id);
+      }
+    }
     URL.revokeObjectURL(item.previewUrl);
     previewUrls.current.delete(item.previewUrl);
     setItems((prev) => prev.filter((it) => it.id !== id));
@@ -123,6 +138,7 @@ export function MediaDropzone() {
 
   return (
     <div className="glass space-y-4 rounded-2xl p-4" ref={wrapperRef}>
+      {discardError && <p role="alert" className="text-sm text-red-500">{discardError}</p>}
       <p className="font-mono text-xs text-[var(--ink-muted)]">Media (fotos y videos)</p>
 
       <div
@@ -248,6 +264,7 @@ export function MediaDropzone() {
             <div key={i} className="flex items-center gap-2">
               <input
                 name="videoUrls"
+                aria-invalid={!!url.trim() && !parsed}
                 value={url}
                 onChange={(e) => {
                   const next = [...videoUrls];
@@ -301,8 +318,7 @@ export function MediaDropzone() {
           <a href="/admin/configuracion" className="underline">
             Configuración
           </a>{" "}
-          — se aplican al vuelo, así que si los cambiás después, se actualiza acá también sin tener
-          que volver a subir nada.
+          . Si cambiás la marca global más adelante, usá «Actualizar marcas de agua» para renovar las versiones preparadas.
         </span>
       </div>
     </div>

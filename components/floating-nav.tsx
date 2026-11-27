@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/components/locale-link";
 import { prisma } from "@/lib/prisma";
 import { loc, locOrNull } from "@/lib/i18n/content";
 import { getDictionary, type Locale } from "@/lib/i18n/dictionaries";
@@ -65,7 +65,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
         isComingSoon: true,
         comingSoonHint: true,
         comingSoonHintEn: true,
-        categories: { take: 1, select: { category: { select: { slug: true } } } },
+        categories: { where: { category: { isComingSoon: false } }, take: 1, select: { category: { select: { slug: true } } } },
       },
     });
     navProjects = rows.map((p) => ({
@@ -137,7 +137,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
       .filter((p) => p.categorySlug)
       .map((p) => ({
         key: `project:${p.id}`,
-        href: `/${locale}/categoria/${p.categorySlug}?proyecto=${p.id}`,
+        href: `/${locale}/proyecto/${p.id}`,
         label: loc(p.title, p.titleEn, locale),
         isComingSoon: p.isComingSoon,
         hint: locOrNull(p.comingSoonHint, p.comingSoonHintEn, locale),
@@ -203,27 +203,27 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
       {/* Links centrales: solo en desktop — en celular viven en el sidebar. */}
       <nav className="fixed inset-x-0 top-14 z-[100] mx-auto hidden w-fit max-w-[calc(100%-24px)] items-center gap-1 rounded-full px-2 py-2 font-mono text-sm sm:flex nav-surface">
         <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <NavLinksDesktop links={links} />
+          <NavLinksDesktop links={links} locale={locale} />
         </div>
       </nav>
 
       {/* EN/ES + tema: arriba a la derecha en desktop. En celular se
           reemplaza por el botón de hamburguesa que abre el sidebar. */}
       <div className="fixed right-4 top-14 z-[100] hidden items-center gap-2 sm:flex">
-        <Link
-          href={`/${otherLocale}`}
+        <LocaleLink
+          locale={otherLocale}
           data-cursor="magnetic"
           className="nav-surface rounded-full px-3 py-2 font-mono text-sm text-[var(--ink-muted)] transition-colors hover:text-accent"
         >
           {otherLocale.toUpperCase()}
-        </Link>
+        </LocaleLink>
         <ThemeToggle />
       </div>
 
       <div className="fixed right-4 top-14 z-[100] sm:hidden">
         <MobileNav
           links={links}
-          otherLocaleHref={`/${otherLocale}`}
+          otherLocale={otherLocale}
           otherLocaleLabel={otherLocale.toUpperCase()}
         />
       </div>

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { locales } from "@/lib/i18n/dictionaries";
+import { publicProjectWhere } from "@/lib/public-projects";
 
 const BASE_URL = process.env.SITE_URL || "https://djezshadow.vercel.app";
 
@@ -47,6 +48,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch (err) {
     console.error("No se pudieron traer categorías para el sitemap:", err);
+  }
+
+  try {
+    const projects = await prisma.project.findMany({
+      where: publicProjectWhere(), select: { id: true, publishedAt: true },
+    });
+    for (const locale of locales) {
+      for (const project of projects) entries.push({
+        url: `${BASE_URL}/${locale}/proyecto/${project.id}`,
+        lastModified: project.publishedAt ?? undefined,
+      });
+    }
+  } catch (error) {
+    console.error("No se pudieron traer proyectos para el sitemap", error);
   }
 
   return entries;

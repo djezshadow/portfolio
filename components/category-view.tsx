@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 import { PortfolioDialog } from "./portfolio-dialog";
 import type { Prisma } from "@prisma/client";
@@ -152,6 +153,11 @@ export function CategoryView({
                       <p className="mt-3 font-mono text-[11px] text-[var(--ink-muted)]">
                         {dict.category.with} {project.collaborator.name}
                       </p>
+                    )}
+                    {!project.isComingSoon && project.publishedAt && new Date(project.publishedAt) <= new Date() && (
+                      <Link href={`/${locale}/proyecto/${project.id}`} className="relative z-30 mt-3 inline-flex min-h-10 items-center text-sm text-accent hover:underline">
+                        {locale === "en" ? "Project page" : "Ver ficha del trabajo"}
+                      </Link>
                     )}
                   </div>
                   <button type="button" aria-label={title} aria-haspopup="dialog" data-cursor="magnetic"

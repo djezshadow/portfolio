@@ -190,6 +190,9 @@ model Project {
   logoSource     LogoSource        @default(none)
   logoUrl        String?
   featured       Boolean           @default(false)
+  featuredRank   Int?
+  behindScenes   String?           @db.Text
+  behindScenesEn String?           @db.Text
   order          Int               @default(0)
   /// Coming Soon a nivel proyecto (mismo mecanismo que Category, ver
   /// más abajo): el proyecto se ve pero bloqueado, gris/candado, con un
@@ -303,6 +306,7 @@ model MediaGroup {
 
 /// Fila única de configuración global del sitio.
 model SiteSettings {
+  showreelUrl String?
   id             String  @id @default("default")
   updatedAt      DateTime @default(now()) @updatedAt
   /// Logo PNG/WebP subido por el admin. Si está seteado, reemplaza al
@@ -549,6 +553,7 @@ model UpdateLogEntry {
   /// Foto personalizada opcional (pedido: "dejame añadir una foto
   /// personalizada porque no todo le carga foto").
   imageUrl      String?
+  linkUrl       String?
 }
 
 /// Pedido: "Novedades" automático — se arma solo con lo último que

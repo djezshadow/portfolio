@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { ProjectEditorialFields } from "@/components/admin/project-editorial-fields";
+import { CopyProjectLink } from "@/components/admin/copy-project-link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, updateMediaExif, updateMediaAlt, reorderMedia, moveMediaOrder } from "./actions";
+import { duplicateProject, updateProject, deleteProject, createMediaGroup, renameMediaGroup, deleteMediaGroup, updateMediaGroupCover, moveMediaGroupToProject, moveMediaGroupOrder, updateMediaWatermarkOverride, updateMediaExif, updateMediaAlt, reorderMedia, moveMediaOrder } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { PublishControls } from "@/components/admin/publish-controls";
 import { DeleteButton } from "@/components/admin/delete-button";
@@ -52,6 +55,17 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
         />
       </div>
 
+      <div className="mb-6 flex flex-wrap gap-3">
+        <form action={duplicateProject.bind(null, project.id)}><SubmitButton>Duplicar ficha como borrador</SubmitButton></form>
+        {publishState === "now" && !project.isComingSoon &&
+          categories.some((category) => !category.isComingSoon && project.categories.some((entry) => entry.categoryId === category.id)) && <>
+            <Link href={`/es/proyecto/${project.id}`} className="glass inline-flex items-center rounded-full px-4 py-2">Abrir ficha pública</Link>
+            <CopyProjectLink path={`/es/proyecto/${project.id}`} />
+          </>}
+        {categories.find((category) => category.id === currentCategoryId)?.slug && <Link
+          href={`/es/categoria/${categories.find((category) => category.id === currentCategoryId)?.slug}?proyecto=${project.id}`}
+          className="glass inline-flex items-center rounded-full px-4 py-2">Vista previa del proyecto</Link>}
+      </div>
       <div className="mb-6">
         <MediaGroupsPanel
           projectId={project.id}
@@ -67,6 +81,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
       </div>
 
       <form action={action} className="space-y-6">
+        <input type="hidden" name="originalCategoryId" value={currentCategoryId} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">Título (Español)</label>
@@ -261,6 +276,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
         </div>
 
 
+        <ProjectEditorialFields initial={project} />
         <PublishControls
           defaultState={publishState}
           defaultScheduledFor={project.publishedAt ? toDatetimeLocal(project.publishedAt) : undefined}

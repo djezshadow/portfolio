@@ -1,98 +1,58 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PortfolioDialog } from "./portfolio-dialog";
 import Link from "next/link";
 import { useHorizontalRail } from "@/lib/use-horizontal-rail";
 import type { ResolvedUpdateItem } from "@/lib/updates-feed";
 
 export type UpdateFeedItem = ResolvedUpdateItem;
 
-const SPEED_PX_PER_SEC: Record<string, number> = {
-  detenido: 0,
-  lento: 16,
-  normal: 32,
-  rapido: 58,
-};
-
-// Pausado a pedido explícito: el auto-scroll (RAF + scrollLeft) no se
-// estaba moviendo de forma confiable en producción a pesar de varios
-// intentos de arreglarlo (ancho del track, pausa por hover, etc.) y no
-// hay forma de probarlo en un navegador real desde acá. El arrastre
-// manual (mouse/touch) sigue andando siempre — es una función aparte.
-// Para reactivar el auto-scroll cuando se pueda debuggear en vivo:
-// cambiar esto a `false`.
-const AUTO_SCROLL_PAUSED = true;
-
 const GAP_PX = 16;
 
-/**
- * Pedido: "carrusel animado arriba de todo... que vaya pasando
- * lentamente las novedades con sus fotos principales", después "poder
- * deslizarlo yo también, cambiar la velocidad, y hasta dejarlo quieto",
- * y por último "que muestre de a tres casillas y eso lo pueda cambiar
- * en admin".
- *
- * OJO con esto: antes se pausaba también al pasar el mouse por encima
- * — que es justo donde tenés la vista puesta al mirarlo, así que se
- * sentía "quieto mientras miro" aunque en realidad estaba andando bien
- * apenas sacabas el mouse. Ahora SOLO se pausa mientras lo estás
- * arrastrando activamente, nunca por el simple hecho de tenerle el
- * mouse encima.
- */
 export function UpdatesFeed({
   title,
   items,
   locale,
-  speed = "normal",
   visibleCount = 3,
 }: {
   title: string;
   items: UpdateFeedItem[];
   locale: string;
-  speed?: string;
   visibleCount?: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const rail = useHorizontalRail({ mouse: true });
 
-  const speedPxPerSec = SPEED_PX_PER_SEC[speed] ?? SPEED_PX_PER_SEC.normal;
-  // Con pocos ítems, duplicar la lista una sola vez puede no alcanzar a
-  // ser más ancho que la pantalla — y sin nada para desplazar, el
-  // navegador no mueve el scroll aunque el código se lo pida. Repetimos
-  // el set base las veces que hagan falta para garantizar ancho de
-  // sobra, y recién ahí lo duplicamos para el loop sin salto.
-  const MIN_BASE_ITEMS = 10;
-  const repeatCount = Math.max(1, Math.ceil(MIN_BASE_ITEMS / Math.max(1, items.length)));
-  const base = Array.from({ length: repeatCount }, () => items).flat();
-  const loopItems = [...base, ...base];
+  const [detail, setDetail] = useState<UpdateFeedItem | null>(null);
+  const [edges, setEdges] = useState({ prev: false, next: false });
+  const en = locale === "en";
 
   useEffect(() => {
-    if (AUTO_SCROLL_PAUSED) return;
-
     const track = trackRef.current;
-    if (!track || speedPxPerSec === 0) return;
+    if (!track) return;
+    const update = () => setEdges({ prev: track.scrollLeft > 2, next: track.scrollLeft + track.clientWidth < track.scrollWidth - 2 });
+    const observer = new ResizeObserver(update);
+    observer.observe(track);
+    track.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => {
+      observer.disconnect();
+      track.removeEventListener("scroll", update);
+    };
+  }, [items.length, visibleCount]);
 
-    let raf: number;
-    let last = performance.now();
+  function step(direction: number) {
+    const track = trackRef.current;
+    const first = track?.firstElementChild;
+    if (track && first) track.scrollBy({ left: (first.getBoundingClientRect().width + GAP_PX) * direction,
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+  }
 
-    function step(now: number) {
-      const dt = (now - last) / 1000;
-      last = now;
-      if (track && !track.dataset.dragging) {
-        track.scrollLeft += speedPxPerSec * dt;
-        // Loop sin salto: la lista está duplicada, así que al pasar el
-        // ancho de la MITAD (una copia completa) restamos ese ancho —
-        // como la copia siguiente es visualmente idéntica, no se nota.
-        const halfWidth = track.scrollWidth / 2;
-        if (track.scrollLeft >= halfWidth) {
-          track.scrollLeft -= halfWidth;
-        }
-      }
-      raf = requestAnimationFrame(step);
-    }
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [speedPxPerSec]);
+  function hrefFor(item: UpdateFeedItem) {
+    if (item.external || /^\/(es|en)(?:\/|[?#]|$)/.test(item.href)) return item.href;
+    return `/${locale}${item.href}`;
+  }
 
   if (items.length === 0) return null;
 
@@ -130,7 +90,7 @@ export function UpdatesFeed({
         className="horizontal-rail updates-track flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ "--rail-card-width": mobileWidth, "--rail-gap": `${GAP_PX}px`, cursor: "grab", gap: GAP_PX } as React.CSSProperties}
       >
-        {loopItems.map((item, i) => {
+        {items.map((item) => {
           const content = (
             <>
               {item.imageUrl ? (
@@ -161,12 +121,16 @@ export function UpdatesFeed({
             </>
           );
 
-          const className =
-            "carousel-cover-card djez-updates-card group relative block h-32 shrink-0 overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.03]";
+          const clickable = Boolean(item.href || item.description && item.showDetail);
+          const className = `carousel-cover-card djez-updates-card relative block h-32 shrink-0 overflow-hidden rounded-xl ${clickable ? "cursor-pointer motion-safe:transition-transform motion-safe:hover:scale-[1.03]" : ""}`;
 
+          if (item.description && item.showDetail) {
+            return <button key={item.key} type="button" aria-haspopup="dialog"
+              onClick={() => setDetail(item)} className={`${className} text-left`}>{content}</button>;
+          }
           if (!item.href) {
             return (
-              <div key={`${item.key}-${i}`} className={className}>
+              <div key={item.key} className={className}>
                 {content}
               </div>
             );
@@ -174,7 +138,7 @@ export function UpdatesFeed({
           if (item.external) {
             return (
               <a
-                key={`${item.key}-${i}`}
+                key={item.key}
                 href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -188,8 +152,8 @@ export function UpdatesFeed({
           }
           return (
             <Link
-              key={`${item.key}-${i}`}
-              href={`/${locale}${item.href}`}
+              key={item.key}
+              href={hrefFor(item)}
               data-cursor="magnetic"
               draggable={false}
               className={className}
@@ -199,6 +163,16 @@ export function UpdatesFeed({
           );
         })}
       </div>
+      {(edges.prev || edges.next) && <div className="mt-3 flex justify-center gap-2 sm:justify-end">
+        <button type="button" className="glass min-h-10 rounded-full px-4 disabled:opacity-40" onClick={() => step(-1)} disabled={!edges.prev}>{en ? "Previous" : "Anterior"}</button>
+        <button type="button" className="glass min-h-10 rounded-full px-4 disabled:opacity-40" onClick={() => step(1)} disabled={!edges.next}>{en ? "Next" : "Siguiente"}</button>
+      </div>}
+      {detail && <PortfolioDialog title={detail.title} onClose={() => setDetail(null)} closeLabel={en ? "Close" : "Cerrar"}>
+        <p className="whitespace-pre-line break-words text-sm">{detail.description}</p>
+        {detail.href && <Link href={hrefFor(detail)} target={detail.external ? "_blank" : undefined}
+          rel={detail.external ? "noopener noreferrer" : undefined} className="mt-4 block text-accent underline"
+          onClick={() => setDetail(null)}>{en ? "Open link" : "Abrir enlace"}</Link>}
+      </PortfolioDialog>}
     </section>
   );
 }

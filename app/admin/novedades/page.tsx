@@ -21,7 +21,6 @@ export default async function NovedadesAdminPage() {
     updatesFeedEnabled: false,
     updatesFeedTitle: null as string | null,
     updatesFeedTitleEn: null as string | null,
-    updatesFeedSpeed: "normal",
     updatesFeedVisible: 3,
   };
   let entries: {
@@ -32,6 +31,7 @@ export default async function NovedadesAdminPage() {
     descriptionEn: string | null;
     date: string;
     imageUrl: string | null;
+    linkUrl: string | null;
   }[] = [];
   let autoCandidates: {
     sourceType: "project" | "category" | "instagram";
@@ -110,24 +110,6 @@ export default async function NovedadesAdminPage() {
               className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
             />
           </div>
-        </div>
-        <div>
-          <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">
-            Velocidad del carrusel
-          </label>
-          <select
-            name="updatesFeedSpeed"
-            defaultValue={settings.updatesFeedSpeed}
-            className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2"
-          >
-            <option value="detenido">Detenido (solo se mueve si lo arrastrás)</option>
-            <option value="lento">Lento</option>
-            <option value="normal">Normal</option>
-            <option value="rapido">Rápido</option>
-          </select>
-          <p className="mt-1 font-mono text-[10px] text-[var(--ink-muted)]">
-            Sin importar esto, siempre se puede arrastrar a mano (mouse o dedo).
-          </p>
         </div>
         <div>
           <label className="mb-1 block font-mono text-[11px] text-[var(--ink-muted)]">

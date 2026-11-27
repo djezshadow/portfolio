@@ -3,12 +3,9 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { projectWebp } from "@/lib/managed-blob";
+import { finishProjectMedia, projectEditorialFields, readProjectMedia } from "@/lib/project-publication";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { parseVideoUrl } from "@/lib/video-url";
-import { bakeMediaWatermark } from "@/lib/watermark-bake";
-import { getSiteSettings } from "@/lib/site-settings";
 
 async function assertAdmin() {
   const store = await cookies();
@@ -49,16 +46,11 @@ export async function createProject(formData: FormData) {
       ? new Date(scheduledFor)
       : null;
 
-  // El watermark ya NO se hornea acá: solo guardamos si esta foto lo lleva
-  // o no. La apariencia (logo/opacidad/posición/escala) se aplica al vuelo
-  // en app/api/media/[id]/route.ts, leyendo la config global cada vez —
-  // así cambiar la config en Configuración actualiza TODAS las fotos ya
-  // subidas, sin re-procesarlas a mano.
-  const watermarkEnabled = formData.get("watermarkEnabled") === "on";
-
-  if (!title || !categoryId) {
-    throw new Error("Falta título o categoría.");
+  if (!title || !categoryId) throw new Error("Falta título o categoría.");
+  if (publishState === "scheduled" && (!publishedAt || Number.isNaN(publishedAt.getTime()))) {
+    throw new Error("Elegí una fecha válida para publicar.");
   }
+  const media = readProjectMedia(formData);
 
   const project = await prisma.project.create({
     data: {
@@ -69,6 +61,7 @@ export async function createProject(formData: FormData) {
       role,
       roleEn,
       featured,
+      ...projectEditorialFields(formData),
       showInNav,
       isComingSoon,
       comingSoonHint,
@@ -79,72 +72,13 @@ export async function createProject(formData: FormData) {
       dateEnd,
       isOngoing,
       categories: { create: [{ categoryId }] },
+      media: { create: media.map((item, order) => ({ ...item, order, isThumbnail: order === 0 })) },
     },
   });
 
-  // Las fotos ya se subieron solas al storage desde el navegador (ver
-  // components/admin/media-dropzone.tsx) — acá solo llegan sus URLs, así
-  // que este pedido es liviano sin importar cuántas fotos o cuánto pesen.
-  const uploadedUrls = formData.getAll("uploadedImageUrls") as string[];
-  let order = 0;
-  const watermarkSettings = await getSiteSettings();
-
-  for (const tempUrl of uploadedUrls) {
-    if (!tempUrl) continue;
-
-    try {
-      const url = projectWebp(tempUrl);
-      const created = await prisma.media.create({
-        data: {
-          projectId: project.id,
-          type: "image",
-          url,
-          watermarkEnabled,
-          order,
-          isThumbnail: order === 0,
-        },
-      });
-
-      // Horneamos ya mismo la versión pública (con watermark si corresponde)
-      // para que se sirva rápido desde el primer minuto — no depende de que
-      // más adelante alguien apriete "Aplicar" en Configuración.
-      try {
-        await bakeMediaWatermark(created, watermarkSettings);
-      } catch (err) {
-        console.error(`No se pudo hornear el watermark de ${created.id} al subir:`, err);
-        // no cortamos la subida por esto — /api/media/[id] sirve de respaldo
-      }
-
-      order++;
-    } catch (err) {
-      console.error("Error procesando una foto subida:", err);
-      throw new Error(
-        `No se pudo procesar una de las fotos. Detalle: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    }
-  }
-
-  // Links de video (YouTube/Vimeo) — se guardan como Media tipo "video".
-  const videoUrls = formData.getAll("videoUrls") as string[];
-  for (const raw of videoUrls) {
-    const parsed = parseVideoUrl(raw);
-    if (!parsed) continue;
-    await prisma.media.create({
-      data: {
-        projectId: project.id,
-        type: "video",
-        url: "",
-        videoProvider: parsed.provider,
-        videoId: parsed.videoId,
-        order,
-      },
-    });
-    order++;
-  }
+  finishProjectMedia(project.id, media.filter((item) => item.type === "image").map((item) => item.url));
 
   revalidatePath("/admin");
   revalidatePath("/", "layout");
-  redirect("/admin");
+  redirect(`/admin/proyectos/${project.id}`);
 }

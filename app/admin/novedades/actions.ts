@@ -110,27 +110,32 @@ export async function updateUpdatesFeedSettings(formData: FormData) {
   const updatesFeedEnabled = formData.get("updatesFeedEnabled") === "on";
   const updatesFeedTitle = (formData.get("updatesFeedTitle") as string)?.trim() || null;
   const updatesFeedTitleEn = (formData.get("updatesFeedTitleEn") as string)?.trim() || null;
-  const validSpeeds = ["detenido", "lento", "normal", "rapido"];
-  const rawSpeed = (formData.get("updatesFeedSpeed") as string) || "normal";
-  const updatesFeedSpeed = validSpeeds.includes(rawSpeed) ? rawSpeed : "normal";
   const rawVisible = Number(formData.get("updatesFeedVisible"));
   const updatesFeedVisible = Number.isFinite(rawVisible) && rawVisible >= 1 && rawVisible <= 6 ? Math.round(rawVisible) : 3;
 
   await prisma.siteSettings.upsert({
     where: { id: "default" },
-    update: { updatesFeedEnabled, updatesFeedTitle, updatesFeedTitleEn, updatesFeedSpeed, updatesFeedVisible },
+    update: { updatesFeedEnabled, updatesFeedTitle, updatesFeedTitleEn, updatesFeedVisible },
     create: {
       id: "default",
       updatesFeedEnabled,
       updatesFeedTitle,
       updatesFeedTitleEn,
-      updatesFeedSpeed,
       updatesFeedVisible,
     },
   });
 
   revalidatePath("/admin/novedades");
   revalidatePath("/", "layout");
+}
+
+function parseUpdateLink(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  if (raw.startsWith("/") && !raw.startsWith("//") && !raw.includes(String.fromCharCode(92))) return raw;
+  const url = new URL(raw);
+  if (!["https:", "http:"].includes(url.protocol)) throw new Error("Usá una ruta del sitio o un enlace HTTP/HTTPS.");
+  return url.href;
 }
 
 export async function createUpdateEntry(formData: FormData): Promise<{ ok: boolean; error?: string }> {
@@ -147,12 +152,13 @@ export async function createUpdateEntry(formData: FormData): Promise<{ ok: boole
 
   let imageUrl: string | null = null;
   try {
+    const linkUrl = parseUpdateLink(formData.get("linkUrl"));
     if (image && image.size > 0) {
       imageUrl = await uploadUpdatesFeedImage(image);
     }
     const count = await prisma.updateLogEntry.count();
     await prisma.updateLogEntry.create({
-      data: { title, titleEn, description, descriptionEn, date, order: count, imageUrl },
+      data: { title, titleEn, description, descriptionEn, date, order: count, imageUrl, linkUrl },
     });
   } catch (err) {
     console.error("Error en createUpdateEntry:", err);
@@ -178,6 +184,7 @@ export async function updateUpdateEntry(entryId: string, formData: FormData): Pr
   const image = formData.get("image") as File | null;
 
   try {
+    const linkUrl = parseUpdateLink(formData.get("linkUrl"));
     const current = await prisma.updateLogEntry.findUnique({ where: { id: entryId } });
     let imageUrl = current?.imageUrl ?? null;
 
@@ -202,7 +209,7 @@ export async function updateUpdateEntry(entryId: string, formData: FormData): Pr
 
     await prisma.updateLogEntry.update({
       where: { id: entryId },
-      data: { title, titleEn, description, descriptionEn, imageUrl, ...(date ? { date } : {}) },
+      data: { title, titleEn, description, descriptionEn, imageUrl, linkUrl, ...(date ? { date } : {}) },
     });
   } catch (err) {
     console.error("Error en updateUpdateEntry:", err);

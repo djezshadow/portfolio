@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { LocaleLink } from "./locale-link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./theme-toggle";
 import { CvDownloadLink } from "./cv-download-link";
@@ -16,11 +17,11 @@ type NavLink = { href: string; label: string; emphasis?: boolean; isComingSoon?:
  */
 export function MobileNav({
   links,
-  otherLocaleHref,
+  otherLocale,
   otherLocaleLabel,
 }: {
   links: NavLink[];
-  otherLocaleHref: string;
+  otherLocale: string;
   otherLocaleLabel: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -89,6 +90,7 @@ export function MobileNav({
                     key={link.href}
                     href={link.href}
                     label={link.label}
+                    locale={otherLocale === "en" ? "es" : "en"}
                     className="rounded-xl bg-[var(--accent)] px-3 py-3 text-center text-[var(--bg)] transition-opacity hover:opacity-85"
                   />
                 ) : (
@@ -109,14 +111,14 @@ export function MobileNav({
               )}
 
               <div className="mt-4 flex items-center justify-between border-t border-[var(--glass-border)] pt-4">
-                <Link
-                  href={otherLocaleHref}
+                <LocaleLink
+                  locale={otherLocale}
                   data-cursor="magnetic"
                   onClick={() => setOpen(false)}
                   className="rounded-xl px-3 py-2 text-[var(--ink-muted)] transition-colors hover:text-accent"
                 >
                   {otherLocaleLabel}
-                </Link>
+                </LocaleLink>
                 <ThemeToggle />
               </div>
             </motion.div>

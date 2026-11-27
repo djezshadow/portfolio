@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ProjectEditorialFields } from "@/components/admin/project-editorial-fields";
 import { prisma } from "@/lib/prisma";
 import { createProject } from "./actions";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
@@ -16,6 +18,9 @@ export default async function NewProjectPage() {
     <div className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="font-display text-3xl">Nuevo proyecto</h1>
 
+      <div className="mt-5">
+        <Link href="/admin/privado" className="glass inline-flex items-center rounded-full px-4 py-2">Crear un álbum privado</Link>
+      </div>
       <form action={createProject} className="mt-8 space-y-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
@@ -181,6 +186,7 @@ export default async function NewProjectPage() {
         <MediaDropzone />
 
 
+        <ProjectEditorialFields />
         <PublishControls />
 
         <SubmitButton>Guardar proyecto</SubmitButton>

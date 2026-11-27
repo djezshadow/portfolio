@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 // Fuentes estándar del sistema de @react-pdf (no dependen de internet en build).
 const styles = StyleSheet.create({
@@ -17,18 +17,18 @@ export type ReelCategory = {
   projects: { title: string; role: string | null; collaboratorName: string | null; subcategories?: string[] }[];
 };
 
-export function ReelDocument({ categories }: { categories: ReelCategory[] }) {
+export function ReelDocument({ categories, en = false }: { categories: ReelCategory[]; en?: boolean }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.brand}>DJEZSHADOW®</Text>
-        <Text style={styles.tagline}>Portfolio de filmmaking — reel generado automáticamente</Text>
+        <Text style={styles.tagline}>{en ? "Film and photography portfolio" : "Dossier de cine y fotografía"}</Text>
 
         {categories.map((cat) => (
-          <View key={cat.name} wrap={false}>
+          <View key={cat.name}>
             <Text style={styles.categoryTitle}>{cat.name.toUpperCase()}</Text>
             {cat.projects.map((p, i) => (
-              <View key={i} style={styles.row}>
+              <View key={i} style={styles.row} wrap={false}>
                 <Text style={styles.projectTitle}>{p.title}</Text>
                 <Text style={styles.projectMeta}>
                   {[p.role, p.collaboratorName, p.subcategories && p.subcategories.length > 0 ? p.subcategories.join(", ") : null]
@@ -41,7 +41,7 @@ export function ReelDocument({ categories }: { categories: ReelCategory[] }) {
         ))}
 
         <Text style={styles.footer} fixed>
-          © {new Date().getFullYear()} DJEZSHADOW® — generado el {new Date().toLocaleDateString("es-AR")}
+          © {new Date().getFullYear()} DJEZSHADOW®
         </Text>
       </Page>
     </Document>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { WatermarkOverrideForm } from "./watermark-override-form";
 import { ExifForm } from "./exif-form";
@@ -59,6 +59,8 @@ export function MediaGrid({
   updateMediaAlt: (mediaId: string, formData: FormData) => Promise<void>;
 }) {
   const [order, setOrder] = useState(media);
+  const [selection, setSelection] = useState<string[]>([]);
+  useEffect(() => setOrder(media), [media]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
@@ -82,7 +84,26 @@ export function MediaGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <div className="space-y-3">
+      {!!order.length && <fieldset className="glass flex flex-wrap items-center gap-3 rounded-xl p-3 text-sm">
+        <legend className="px-2">Editar selección por lote</legend>
+        <button type="button" onClick={() => setSelection(selection.length ? [] : order.map(({ id }) => id))} className="underline">
+          {selection.length ? "Limpiar selección" : "Seleccionar todo"}
+        </button>
+        <span>{selection.length} seleccionados</span>
+        <select name="batchGroup" aria-label="Subcategoría de la selección" disabled={!selection.length} className="glass rounded px-2 py-1">
+          <option value="keep">Mantener subcategoría</option>
+          <option value="">Quitar subcategoría</option>
+          {mediaGroups.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
+        </select>
+        <select name="batchWatermark" aria-label="Marca de agua de la selección" disabled={!selection.length} className="glass rounded px-2 py-1">
+          <option value="keep">Mantener marcas</option>
+          <option value="on">Agregar marca</option>
+          <option value="off">Quitar marca</option>
+        </select>
+        <p className="w-full text-[var(--ink-muted)]">Los cambios se aplican al guardar el proyecto.</p>
+      </fieldset>}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {order.map((m, mi) => (
         <div
           key={m.id}
@@ -113,6 +134,11 @@ export function MediaGrid({
               disableDown={mi === order.length - 1}
             />
           </div>
+          <label className="flex items-center gap-1 text-xs">
+            <input type="checkbox" name="batchMedia" value={m.id} checked={selection.includes(m.id)}
+              onChange={(event) => setSelection((ids) => event.target.checked ? [...ids, m.id] : ids.filter((id) => id !== m.id))} />
+            Seleccionar
+          </label>
           <label className="relative block cursor-pointer">
             {m.type === "image" ? (
               <Image
@@ -179,6 +205,7 @@ export function MediaGrid({
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }

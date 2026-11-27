@@ -51,6 +51,10 @@ export function VideoEmbed({ provider, videoId, title = "Proyecto" }: VideoEmbed
       : `https://vimeo.com/${videoId}`;
 
   const thumbnailUrl = getVideoThumbnail(provider, videoId);
+  const external = <a href={watchUrl} target="_blank" rel="noopener noreferrer"
+    className="absolute bottom-3 left-4 rounded-full bg-black/65 px-3 py-1 font-mono text-xs text-white">
+    {provider === "youtube" ? "YouTube" : "Vimeo"} ↗
+  </a>;
 
   // En mobile, un video vertical (Short) se adapta por altura en vez de
   // ancho — así no quedan franjas negras a los costados. En desktop (sm+)
@@ -70,6 +74,7 @@ export function VideoEmbed({ provider, videoId, title = "Proyecto" }: VideoEmbed
           allowFullScreen
           className="h-full w-full"
         />
+        {external}
       </div>
     );
   }
@@ -93,15 +98,7 @@ export function VideoEmbed({ provider, videoId, title = "Proyecto" }: VideoEmbed
         </span>
       </button>
 
-      <a
-        href={watchUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-cursor="magnetic"
-        className="absolute bottom-3 left-4 rounded-full bg-black/50 px-3 py-1 font-mono text-[10px] text-white backdrop-blur-sm"
-      >
-        Abrir en {provider === "youtube" ? "YouTube" : "Vimeo"} ↗
-      </a>
+      {external}
     </div>
   );
 }

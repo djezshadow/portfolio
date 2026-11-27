@@ -19,6 +19,7 @@ type Props = {
     heroTitle2En: string | null;
     heroSubtitle: string | null;
     heroSubtitleEn: string | null;
+    showreelUrl: string | null;
     heroKicker: string | null;
     heroKickerEn: string | null;
     heroKickerShowTimecode: boolean;
@@ -350,6 +351,11 @@ export function HeroSettingsForm({ action, initial, placeholders }: Props) {
         </div>
       </div>
 
+      <label className="block space-y-2 text-sm">
+        <span>Reel de Inicio (YouTube o Vimeo)</span>
+        <input name="showreelUrl" defaultValue={initial.showreelUrl ?? ""} placeholder="https://…"
+          className="block w-full rounded-xl border border-[var(--glass-border)] px-3 py-2" />
+      </label>
       <SubmitButton>Guardar título y subtítulo</SubmitButton>
     </form>
   );

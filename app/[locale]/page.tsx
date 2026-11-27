@@ -1,3 +1,6 @@
+import { SelectedWork, type WorkCard } from "@/components/selected-work";
+import { publicProjectWhere, toWorkCard, workCardSelect } from "@/lib/public-projects";
+import { parseVideoUrl } from "@/lib/video-url";
 import type { ReactNode } from "react";
 import { Carousel, type CarouselItem, type CarouselPreset, type CarouselStyleConfig } from "@/components/carousel";
 import { Reveal } from "@/components/reveal";
@@ -29,20 +32,13 @@ import { getPublicUpdatesFeed, type ResolvedUpdateItem } from "@/lib/updates-fee
 // tiene este problema porque es una función común, no config de ruta.
 export const dynamic = "force-dynamic";
 
-const fallback: CarouselItem[] = [
-  { id: "1", code: "SC-01", title: "Cortometrajes", subtitle: "6 proyectos" },
-  { id: "2", code: "SC-02", title: "Comerciales", subtitle: "12 proyectos" },
-  { id: "3", code: "SC-03", title: "Música", subtitle: "9 proyectos" },
-  { id: "4", code: "SC-04", title: "Documentales", subtitle: "4 proyectos" },
-];
-
 async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselItem[]; slugs: Record<string, string>; live: boolean }> {
   try {
     const categories = await prisma.category.findMany({
       orderBy: { order: "asc" },
-      include: { projects: true },
+      include: { _count: { select: { projects: { where: { project: { publishedAt: { lte: new Date() }, isComingSoon: false } } } } } },
     });
-    if (categories.length === 0) return { items: fallback, slugs: {}, live: false };
+    if (categories.length === 0) return { items: [], slugs: {}, live: false };
 
     const slugs: Record<string, string> = {};
     const items = categories.map((c, i) => {
@@ -51,7 +47,7 @@ async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselI
         id: c.id,
         code: `SC-${String(i + 1).padStart(2, "0")}`,
         title: loc(c.name, c.nameEn, locale),
-        subtitle: `${c.projects.length} proyectos`,
+        subtitle: `${c._count.projects} ${locale === "en" ? "projects" : "proyectos"}`,
         coverImageUrl: c.coverImageUrl,
         coverTextDark: c.coverTextDark,
         href: c.isComingSoon ? undefined : `/${locale}/categoria/${c.slug}`,
@@ -61,7 +57,7 @@ async function getFeaturedCategories(locale: Locale): Promise<{ items: CarouselI
     });
     return { items, slugs, live: true };
   } catch {
-    return { items: fallback, slugs: {}, live: false };
+    return { items: [], slugs: {}, live: false };
   }
 }
 
@@ -86,12 +82,16 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   let instagramTitle: string = "";
   let updatesFeedEnabled = false;
   let updatesFeedTitle: string = "";
-  let updatesFeedSpeed: string = "normal";
   let updatesFeedVisible: number = 3;
+  let reel: string | null = null;
   let homeSectionOrder: string | null = null;
   try {
     const [settings, profile] = await Promise.all([getSiteSettings(), getProfile()]);
     cvEnabled = profile.cvEnabled;
+    const video = parseVideoUrl(settings.showreelUrl ?? "");
+    if (video) reel = video.provider === "youtube"
+      ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.videoId)}?autoplay=1&rel=0`
+      : `https://player.vimeo.com/video/${encodeURIComponent(video.videoId)}?autoplay=1`;
     heroTitle1 = locOrNull(settings.heroTitle1, settings.heroTitle1En, locale) || dict.hero.title1;
     heroTitle2 = locOrNull(settings.heroTitle2, settings.heroTitle2En, locale) || dict.hero.title2;
     heroSubtitle = locOrNull(settings.heroSubtitle, settings.heroSubtitleEn, locale) || dict.hero.subtitle;
@@ -132,12 +132,27 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       updatesFeedTitle =
         locOrNull(settings.updatesFeedTitle, settings.updatesFeedTitleEn, locale) ||
         (locale === "en" ? "What's new" : "Novedades");
-      updatesFeedSpeed = settings.updatesFeedSpeed;
       updatesFeedVisible = settings.updatesFeedVisible;
     }
     homeSectionOrder = settings.homeSectionOrder;
   } catch {
     // sin DB disponible, seguimos con los textos por defecto del diccionario
+  }
+
+  let work: WorkCard[] = [];
+  try {
+    const featured = await prisma.project.findMany({
+      where: { ...publicProjectWhere(), featured: true },
+      orderBy: [{ featuredRank: { sort: "asc", nulls: "last" } }, { order: "asc" }, { publishedAt: "desc" }, { id: "asc" }],
+      select: workCardSelect,
+      take: 3,
+    });
+    const chosen = featured.length ? featured : await prisma.project.findMany({
+      where: publicProjectWhere(), orderBy: [{ publishedAt: "desc" }, { id: "asc" }], select: workCardSelect, take: 3,
+    });
+    work = chosen.map((project, index) => toWorkCard(project, locale, index === 0 ? "feature" : undefined));
+  } catch {
+    // The rest of the homepage remains available when the selection cannot load.
   }
 
   let instagramFeedPosts: { id: string; url: string; caption: string | null }[] = [];
@@ -242,14 +257,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   );
 
   const categoriasSection = (
-    <section key="categorias" className="pb-24">
+    <section key="categorias" id="categorias" className="scroll-mt-28 pb-24">
       <Reveal>
         <div className="mb-6 flex flex-wrap items-center justify-center gap-2 text-center sm:justify-between sm:text-left">
           <h2 className="font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
-            {dict.featured.label}
+            {locale === "en" ? "Categories" : "Categorías"}
           </h2>
           {!live && (
-            <span className="font-mono text-[10px] text-[var(--ink-muted)]">{dict.featured.sampleNotice}</span>
+            <span className="font-mono text-[10px] text-[var(--ink-muted)]">{(locale === "en" ? "No categories available." : "No hay categorías disponibles.")}</span>
           )}
         </div>
       </Reveal>
@@ -267,10 +282,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         }`}
       >
         <CvDownloadLink
-          href="/api/reel-pdf"
-          label={`${dict.nav.downloadReel} ↓`}
+          href={`/api/reel-pdf?locale=${locale}`}
+          label={locale === "en" ? "Download portfolio PDF" : "Descargar dossier PDF"}
           locale={locale}
-          fileLabel={{ es: "el reel", en: "the reel" }}
+          fileLabel={{ es: "el dossier", en: "the portfolio PDF" }}
           className="glass inline-block rounded-full px-5 py-2 font-mono text-xs"
         />
         {cvEnabled && (
@@ -326,7 +341,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         title={updatesFeedTitle}
         items={updateItems}
         locale={locale}
-        speed={updatesFeedSpeed}
         visibleCount={updatesFeedVisible}
       />
     ) : null;
@@ -334,18 +348,20 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   // Pedido: "dejame acomodar el lugar de novedades también" — ahora
   // Novedades es una sección más del orden, ya no queda fija.
   const sectionsByKey: Record<string, ReactNode> = {
+    seleccion: <SelectedWork key="seleccion" work={work} locale={locale} reel={reel} />,
     novedades: novedadesSection,
     hero: heroSection,
     categorias: categoriasSection,
     colaboradores: colaboradoresSection,
     instagram: instagramSection,
   };
-  const defaultOrder = ["novedades", "hero", "categorias", "colaboradores", "instagram"];
+  const defaultOrder = ["seleccion", "hero", "categorias", "novedades", "colaboradores", "instagram"];
   const savedOrder = homeSectionOrder ? homeSectionOrder.split(",").filter((k) => defaultOrder.includes(k)) : [];
   // Por si en el futuro se agrega una sección nueva y el orden guardado
   // es de antes de que existiera, la agregamos al final para que nunca
   // desaparezca silenciosamente.
-  const finalOrder = [...savedOrder, ...defaultOrder.filter((k) => !savedOrder.includes(k))];
+  const ordered = savedOrder.includes("seleccion") ? savedOrder : ["seleccion", ...savedOrder];
+  const finalOrder = [...new Set([...ordered, ...defaultOrder])];
 
   return (
     <div className="portfolio-page mx-auto max-w-6xl px-6">

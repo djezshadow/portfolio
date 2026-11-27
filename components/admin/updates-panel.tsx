@@ -11,6 +11,7 @@ type Entry = {
   descriptionEn: string | null;
   date: string; // ISO — llega serializado desde el Server Component
   imageUrl: string | null;
+  linkUrl: string | null;
 };
 
 function toDateInputValue(iso: string) {
@@ -206,6 +207,7 @@ export function UpdatesPanel({
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="font-mono text-[11px] text-[var(--ink-muted)]">
                       Fecha:
+                      <input name="linkUrl" aria-label="Enlace de la novedad" placeholder="Enlace opcional (https://… o /contacto)" defaultValue={entry.linkUrl ?? ""} className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2 text-sm" />
                       <input
                         type="date"
                         name="date"
@@ -279,6 +281,7 @@ export function UpdatesPanel({
         <div className="flex flex-wrap items-center gap-2">
           <label className="font-mono text-[11px] text-[var(--ink-muted)]">
             Fecha:
+            <input name="linkUrl" aria-label="Enlace de la novedad" placeholder="Enlace opcional (https://… o /contacto)" className="w-full rounded-lg border border-[var(--glass-border)] bg-transparent px-3 py-2 text-sm" />
             <input
               type="date"
               name="date"

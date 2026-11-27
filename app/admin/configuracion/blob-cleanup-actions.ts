@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 type Candidate = { pathname: string; size: number };
 
 const legacyPhoto = /^([^/]+)-([a-z0-9]{24,40})\.(png|jpe?g|heic|heif|tiff?|webp)$/i;
+const abandonedUpload = /^media\/uploads\/([0-9a-f-]{36})(?:-[a-z0-9]{24,40})?\.webp$/i;
 const oldestAllowed = 7 * 24 * 60 * 60 * 1000;
 const contentModels = Prisma.dmmf.datamodel.models.filter(({ name }) =>
   !name.startsWith("Private") && name !== "PhotoOriginalCleanup"
@@ -35,10 +36,16 @@ async function findCandidates(blobs: ListBlobResultBlob[]) {
   for (const { blob, stem, format } of legacy) {
     if (format === "webp") webpSizes.set(stem, Math.min(webpSizes.get(stem) ?? Infinity, blob.size));
   }
-  const candidates = legacy.filter(({ blob, stem, format }) =>
+  const oldOriginals = legacy.filter(({ blob, stem, format }) =>
     format !== "webp" && Date.now() - blob.uploadedAt.getTime() >= oldestAllowed
     && (webpSizes.get(stem) ?? Infinity) < blob.size
   );
+  const abandoned = blobs.flatMap((blob) => {
+    const match = abandonedUpload.exec(blob.pathname);
+    return match && isManagedBlob(blob.url) && Date.now() - blob.uploadedAt.getTime() >= oldestAllowed
+      ? [{ blob, suffix: match[1].toLowerCase() }] : [];
+  });
+  const candidates = [...oldOriginals, ...abandoned];
   if (!candidates.length) return [];
 
   // Match the unique Blob suffix in all text fields, including content

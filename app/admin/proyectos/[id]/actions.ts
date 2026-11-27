@@ -4,11 +4,10 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { put, del } from "@vercel/blob";
-import { projectWebp } from "@/lib/managed-blob";
+import { finishProjectMedia, projectEditorialFields, readProjectMedia } from "@/lib/project-publication";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { parseVideoUrl } from "@/lib/video-url";
 import { bakeMediaWatermark } from "@/lib/watermark-bake";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -55,47 +54,53 @@ export async function updateProject(projectId: string, formData: FormData) {
     throw new Error("Falta título o categoría.");
   }
 
-  // Borrar media marcada para eliminar (checkboxes "deleteMedia")
-  const mediaIdsToDelete = formData.getAll("deleteMedia").map(String);
-  if (mediaIdsToDelete.length > 0) {
-    const toDelete = await prisma.media.findMany({ where: { id: { in: mediaIdsToDelete } } });
-    for (const m of toDelete) {
-      if (m.url) {
-        try {
-          await del(m.url);
-        } catch {
-          // si ya no existe en el blob, seguimos igual
-        }
-      }
-    }
-    await prisma.media.deleteMany({ where: { id: { in: mediaIdsToDelete } } });
+  if (publishState === "scheduled" && (!publishedAt || Number.isNaN(publishedAt.getTime()))) {
+    throw new Error("Elegí una fecha válida para publicar.");
   }
+  const media = readProjectMedia(formData);
+  const markedForDeletion = new Set(formData.getAll("deleteMedia").map(String));
+  const batchSelection = new Set(formData.getAll("batchMedia").map(String));
+  const batchGroup = formData.get("batchGroup");
+  const batchWatermark = formData.get("batchWatermark");
+  const thumbnailId = String(formData.get("thumbnailMediaId") ?? "");
 
-  // Reasignación de subcategoría por foto/video existente — cada select
-  // en el form se llama "mediaGroup:<mediaId>" (item #13).
-  const existingMedia = await prisma.media.findMany({ where: { projectId }, select: { id: true } });
-  for (const m of existingMedia) {
-    if (mediaIdsToDelete.includes(m.id)) continue;
-    const raw = formData.get(`mediaGroup:${m.id}`);
-    if (raw === null) continue;
-    const groupId = String(raw) || null;
-    await prisma.media.update({ where: { id: m.id }, data: { groupId } });
-  }
-
-  // Portada del proyecto (item #17) — un solo radio "thumbnailMediaId" en
-  // el form elige qué foto se usa como portada en las cards del sitio.
-  const thumbnailMediaId = formData.get("thumbnailMediaId");
-  if (thumbnailMediaId) {
-    await prisma.media.updateMany({ where: { projectId }, data: { isThumbnail: false } });
-    await prisma.media.update({
-      where: { id: String(thumbnailMediaId) },
-      data: { isThumbnail: true },
+  const { removed, newPhotos, rebake } = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${projectId} FOR UPDATE`;
+    const current = await tx.project.findUniqueOrThrow({
+      where: { id: projectId },
+      select: { categories: { select: { categoryId: true } }, mediaGroups: { select: { id: true } } },
     });
-  }
-
-  await prisma.project.update({
-    where: { id: projectId },
-    data: {
+    const oldCategory = String(formData.get("originalCategoryId") ?? "");
+    const categoryIds = [...new Set([categoryId, ...current.categories.map((row) => row.categoryId).filter((id) => id !== oldCategory)])];
+    const groups = new Set(current.mediaGroups.map(({ id }) => id));
+    const existing = await tx.media.findMany({ where: { projectId }, orderBy: [{ order: "asc" }, { id: "asc" }] });
+    const removed = existing.filter((item) => markedForDeletion.has(item.id));
+    const retained = existing.filter((item) => !markedForDeletion.has(item.id));
+    const validThumbnail = retained.some(({ id }) => id === thumbnailId) ? thumbnailId
+      : retained.find((item) => item.isThumbnail)?.id ?? retained[0]?.id;
+    const retainedUrls = new Set(retained.filter((item) => item.type === "image").map((item) => item.url));
+    const additional = media.filter((item) => item.type !== "image" || !retainedUrls.has(item.url));
+    const rebake: string[] = [];
+    if (removed.length) await tx.media.deleteMany({ where: { id: { in: removed.map(({ id }) => id) }, projectId } });
+    for (const item of retained) {
+      const selected = batchSelection.has(item.id);
+      const groupInput = selected && batchGroup !== null && batchGroup !== "keep" ? batchGroup : formData.get(`mediaGroup:${item.id}`);
+      const groupId = groupInput === null ? item.groupId : String(groupInput) || null;
+      if (groupId && !groups.has(groupId)) throw new Error("La subcategoría elegida ya no está disponible.");
+      const watermarkEnabled = selected && item.type === "image" && (batchWatermark === "on" || batchWatermark === "off")
+        ? batchWatermark === "on" : item.watermarkEnabled;
+      const isThumbnail = item.id === validThumbnail;
+      if (groupId === item.groupId && watermarkEnabled === item.watermarkEnabled && isThumbnail === item.isThumbnail) continue;
+      const watermarkChanged = watermarkEnabled !== item.watermarkEnabled;
+      if (watermarkChanged) rebake.push(item.url);
+      await tx.media.update({ where: { id: item.id }, data: {
+        groupId, watermarkEnabled, isThumbnail, ...(watermarkChanged ? { bakedThumbUrl: null, bakedFullUrl: null } : {}),
+      } });
+    }
+    const order = Math.max(-1, ...retained.map((item) => item.order)) + 1;
+    await tx.project.update({
+      where: { id: projectId },
+      data: {
       title,
       titleEn,
       description,
@@ -103,6 +108,7 @@ export async function updateProject(projectId: string, formData: FormData) {
       role,
       roleEn,
       featured,
+      ...projectEditorialFields(formData),
       showInNav,
       isComingSoon,
       comingSoonHint,
@@ -112,70 +118,22 @@ export async function updateProject(projectId: string, formData: FormData) {
       dateEnd,
       isOngoing,
       collaborator: collaboratorId ? { connect: { id: collaboratorId } } : { disconnect: true },
-      categories: {
-        deleteMany: {},
-        create: [{ categoryId }],
-      },
-    },
-  });
-
-  // Nueva media agregada en esta edición: se sube el original y se hornea
-  // la versión pública (con watermark si corresponde) al toque — no
-  // depende de apretar "Aplicar" en Configuración después.
-  const watermarkEnabled = formData.get("watermarkEnabled") === "on";
-
-  const existingCount = await prisma.media.count({ where: { projectId } });
-  const uploadedUrls = formData.getAll("uploadedImageUrls") as string[];
-  let order = existingCount;
-  const watermarkSettings = await getSiteSettings();
-
-  for (const tempUrl of uploadedUrls) {
-    if (!tempUrl) continue;
-
-    try {
-      const url = projectWebp(tempUrl);
-      const created = await prisma.media.create({
-        data: { projectId, type: "image", url, watermarkEnabled, order, isThumbnail: order === 0 },
-      });
-
-      try {
-        await bakeMediaWatermark(created, watermarkSettings);
-      } catch (err) {
-        console.error(`No se pudo hornear el watermark de ${created.id} al subir:`, err);
-      }
-
-      order++;
-    } catch (err) {
-      console.error("Error procesando una foto subida:", err);
-      throw new Error(
-        `No se pudo procesar una de las fotos. Detalle: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    }
-  }
-
-  // Links de video nuevos (YouTube/Vimeo)
-  const videoUrls = formData.getAll("videoUrls") as string[];
-  for (const raw of videoUrls) {
-    const parsed = parseVideoUrl(raw);
-    if (!parsed) continue;
-    await prisma.media.create({
-      data: {
-        projectId,
-        type: "video",
-        url: "",
-        videoProvider: parsed.provider,
-        videoId: parsed.videoId,
-        order,
+        categories: { deleteMany: {}, create: categoryIds.map((categoryId) => ({ categoryId })) },
+        media: { create: additional.map((item, index) => ({ ...item, order: order + index, isThumbnail: !validThumbnail && index === 0 })) },
       },
     });
-    order++;
-  }
+    return {
+      removed: [...removed.flatMap((item) => [item.url, item.bakedFullUrl, item.bakedThumbUrl]),
+        ...retained.filter((item) => rebake.includes(item.url)).flatMap((item) => [item.bakedThumbUrl, item.bakedFullUrl])],
+      newPhotos: additional.filter((item) => item.type === "image").map((item) => item.url),
+      rebake,
+    };
+  }, { timeout: 15000 });
+  finishProjectMedia(projectId, [...newPhotos, ...rebake], removed.filter((url): url is string => Boolean(url)));
 
   revalidatePath("/admin");
   revalidatePath("/", "layout");
-  redirect("/admin");
+  redirect(`/admin/proyectos/${projectId}`);
 }
 
 export async function createMediaGroup(projectId: string, formData: FormData) {
@@ -454,4 +412,26 @@ export async function deleteProject(projectId: string, _formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/", "layout");
   redirect("/admin");
+}
+
+export async function duplicateProject(projectId: string) {
+  await assertAdmin();
+  const source = await prisma.project.findUniqueOrThrow({
+    where: { id: projectId }, include: { categories: true, tags: true, mediaGroups: true },
+  });
+  const draft = await prisma.project.create({
+    data: {
+      title: `${source.title} (copia)`, titleEn: source.titleEn ? `${source.titleEn} (copy)` : null,
+      description: source.description, descriptionEn: source.descriptionEn,
+      role: source.role, roleEn: source.roleEn,
+      behindScenes: source.behindScenes, behindScenesEn: source.behindScenesEn,
+      dateStart: source.dateStart, dateEnd: source.dateEnd, isOngoing: source.isOngoing,
+      collaboratorId: source.collaboratorId,
+      categories: { create: source.categories.map(({ categoryId }) => ({ categoryId })) },
+      tags: { create: source.tags.map(({ tagId }) => ({ tagId })) },
+      mediaGroups: { create: source.mediaGroups.map(({ name, nameEn, order }) => ({ name, nameEn, order })) },
+    },
+  });
+  revalidatePath("/admin");
+  redirect(`/admin/proyectos/${draft.id}`);
 }

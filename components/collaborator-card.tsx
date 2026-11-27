@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { PortfolioDialog } from "./portfolio-dialog";
 
 type Participant = {
   id: string;
@@ -33,9 +34,6 @@ export function CollaboratorCard({
 }) {
   const [open, setOpen] = useState(false);
   const participants = collaborator.participants ?? [];
-  const hasLinks = Boolean(
-    collaborator.instagram || collaborator.website || participants.length > 0
-  );
   const dim = size === "sm" ? "h-14 w-14" : "h-24 w-24 sm:h-28 sm:w-28";
   // Ancho fijo del ítem completo (icono + nombre) para que un nombre largo
   // no empuje ni desacomode al resto de la grilla — el texto se acomoda
@@ -45,7 +43,9 @@ export function CollaboratorCard({
   return (
     <>
       <button
-        onClick={() => hasLinks && setOpen(true)}
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
         data-cursor="magnetic"
         className={`flex ${itemWidth} flex-col items-center gap-2`}
         aria-label={collaborator.name}
@@ -68,31 +68,12 @@ export function CollaboratorCard({
         )}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4"
-            onClick={() => setOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 8 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-              className="nav-surface flex w-full max-w-xs flex-col items-center gap-4 rounded-2xl p-6 text-center"
-            >
-              {collaborator.logoUrl && (
-                <div className="relative h-16 w-16 overflow-hidden rounded-full bg-black/10">
-                  <Image src={collaborator.logoUrl} alt={collaborator.name} fill className="object-cover" />
-                </div>
-              )}
-              <p className="font-display text-lg">{collaborator.name}</p>
-
+      {open && <PortfolioDialog title={collaborator.name} onClose={() => setOpen(false)} closeLabel={locale === "en" ? "Close" : "Cerrar"}>
               <div className="w-full space-y-2">
+                <Link href={`/${locale}/colaboradores/${collaborator.id}`} onClick={() => setOpen(false)}
+                  className="block rounded-full bg-[var(--accent)] px-4 py-3 font-medium text-[var(--bg)]">
+                  {locale === "en" ? "See projects together" : "Ver trabajos juntos"}
+                </Link>
                 {collaborator.website && (
                   <a
                     href={collaborator.website}
@@ -160,17 +141,7 @@ export function CollaboratorCard({
                 </div>
               )}
 
-              <button
-                onClick={() => setOpen(false)}
-                data-cursor="magnetic"
-                className="font-mono text-[10px] text-[var(--ink-muted)] underline"
-              >
-                Cerrar
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </PortfolioDialog>}
     </>
   );
 }

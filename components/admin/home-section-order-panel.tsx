@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 const LABELS: Record<string, string> = {
+  seleccion: "Trabajos seleccionados y reel",
   novedades: "Novedades (carrusel)",
   hero: "Hero (título principal)",
   categorias: "Categorías (carrusel)",
@@ -57,8 +58,7 @@ export function HomeSectionOrderPanel({
   return (
     <div className="glass space-y-2 rounded-2xl p-4">
       <p className="mb-2 font-mono text-[10px] text-[var(--ink-muted)]">
-        Novedades queda siempre arriba de todo. Arrastrá para reordenar el resto (en celular o con
-        teclado, usá las flechitas).
+        Arrastrá para reordenar las secciones. En celular o con teclado, usá los botones.
       </p>
       <ul className="space-y-2">
         {items.map((key, i) => (

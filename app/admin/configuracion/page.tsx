@@ -30,6 +30,7 @@ export default async function ConfiguracionPage() {
     heroTitle2En: null as string | null,
     heroSubtitle: null as string | null,
     heroSubtitleEn: null as string | null,
+    showreelUrl: null as string | null,
     heroKicker: null as string | null,
     heroKickerEn: null as string | null,
     heroKickerShowTimecode: true,
@@ -134,6 +135,7 @@ export default async function ConfiguracionPage() {
           heroTitle2En: settings.heroTitle2En,
           heroSubtitle: settings.heroSubtitle,
           heroSubtitleEn: settings.heroSubtitleEn,
+          showreelUrl: settings.showreelUrl,
           heroKicker: settings.heroKicker,
           heroKickerEn: settings.heroKickerEn,
           heroKickerShowTimecode: settings.heroKickerShowTimecode,
@@ -248,14 +250,12 @@ export default async function ConfiguracionPage() {
       <p className="mb-4 text-sm text-[var(--ink-muted)]">En qué orden aparecen las secciones del home.</p>
       <HomeSectionOrderPanel
         order={(() => {
-          const allKeys = ["novedades", "hero", "categorias", "colaboradores", "instagram"];
+          const allKeys = ["seleccion", "hero", "categorias", "novedades", "colaboradores", "instagram"];
           const saved = settings.homeSectionOrder
             ? settings.homeSectionOrder.split(",").filter((k: string) => allKeys.includes(k))
             : [];
-          // Si guardaste un orden antes de que existiera alguna sección
-          // nueva (ej. "novedades"), la agregamos al final para que no
-          // desaparezca silenciosamente del panel de arrastre.
-          return [...saved, ...allKeys.filter((k) => !saved.includes(k))];
+          const ordered = saved.includes("seleccion") ? saved : ["seleccion", ...saved];
+          return [...new Set([...ordered, ...allKeys])];
         })()}
         saveAction={updateHomeSectionOrder}
       />

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { PortfolioDialog } from "./portfolio-dialog";
+import Link from "next/link";
 import { CvDownloadLink } from "./cv-download-link";
 
 type ComingSoonLink = {
@@ -19,7 +20,7 @@ type ComingSoonLink = {
  * popup con la pista en vez de navegar (mismo comportamiento que las
  * cards del carrusel de la home).
  */
-export function NavLinksDesktop({ links }: { links: ComingSoonLink[] }) {
+export function NavLinksDesktop({ links, locale }: { links: ComingSoonLink[]; locale: "es" | "en" }) {
   const [hintOpen, setHintOpen] = useState<{ label: string; hint: string | null } | null>(null);
 
   return (
@@ -39,11 +40,12 @@ export function NavLinksDesktop({ links }: { links: ComingSoonLink[] }) {
           <CvDownloadLink
             key={link.href}
             href={link.href}
+            locale={locale}
             label={link.label}
             className="shrink-0 rounded-full bg-[var(--accent)] px-3 py-2 text-[var(--bg)] transition-opacity hover:opacity-85"
           />
         ) : (
-          <a
+          <Link
             key={link.href}
             href={link.href}
             data-cursor="magnetic"
@@ -54,42 +56,15 @@ export function NavLinksDesktop({ links }: { links: ComingSoonLink[] }) {
             }
           >
             {link.label}
-          </a>
+          </Link>
         )
       )}
 
-      <AnimatePresence>
-        {hintOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setHintOpen(null)}
-            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 p-6"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.94 }}
-              onClick={(e) => e.stopPropagation()}
-              className="nav-surface max-w-xs rounded-2xl p-6 text-center"
-            >
-              <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-accent">
-                Próximamente 🔒
-              </p>
-              <h3 className="mb-3 font-display text-lg">{hintOpen.label}</h3>
-              {hintOpen.hint && <p className="text-sm text-[var(--ink-muted)]">{hintOpen.hint}</p>}
-              <button
-                onClick={() => setHintOpen(null)}
-                data-cursor="magnetic"
-                className="mt-4 rounded-full bg-[var(--accent)] px-4 py-1.5 font-mono text-xs text-[var(--bg)]"
-              >
-                Cerrar
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {hintOpen && <PortfolioDialog title={hintOpen.label} onClose={() => setHintOpen(null)}
+        closeLabel={locale === "en" ? "Close" : "Cerrar"}>
+        <p className="text-sm text-accent">{locale === "en" ? "Coming soon" : "Próximamente"}</p>
+        {hintOpen.hint && <p className="mt-2 text-sm">{hintOpen.hint}</p>}
+      </PortfolioDialog>}
     </>
   );
 }

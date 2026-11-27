@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { put, del } from "@vercel/blob";
 import sharp from "sharp";
+import { parseVideoUrl } from "@/lib/video-url";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 
@@ -100,7 +101,10 @@ export async function updateHeroSettings(formData: FormData) {
   const rawCarouselAlign = (formData.get("carouselAlign") as string) || "left";
   const carouselAlign = validAligns.includes(rawCarouselAlign) ? rawCarouselAlign : "left";
 
+  const showreelUrl = field("showreelUrl");
+  if (showreelUrl && !parseVideoUrl(showreelUrl)) throw new Error("Ingresá un enlace válido de YouTube o Vimeo.");
   const sharedFields = {
+    showreelUrl,
     heroTitle1: field("heroTitle1"),
     heroTitle1En: field("heroTitle1En"),
     heroTitle2: field("heroTitle2"),
@@ -248,7 +252,7 @@ export async function updateContactSettings(formData: FormData) {
   revalidatePath("/admin/configuracion");
 }
 
-const VALID_HOME_SECTIONS = ["novedades", "hero", "categorias", "colaboradores", "instagram"];
+const VALID_HOME_SECTIONS = ["seleccion", "hero", "categorias", "novedades", "colaboradores", "instagram"];
 
 /**
  * Pedido: "ajuste en admin para modificar el orden de las cosas en

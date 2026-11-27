@@ -16,6 +16,8 @@ const KEYS: Record<string, (typeof DIRECTIONS)[number]> = {
 // el otro para no confundir diagonales.
 const SWIPE_MIN_PX = 40;
 const SWIPE_AXIS_RATIO = 1.4;
+const SWIPE_IDLE_MS = 4500;
+const LOCK_STEP = 4;
 
 /**
  * Pedido: código Konami también en celular — las 8 flechas se hacen
@@ -29,12 +31,18 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showBA, setShowBA] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const mobileActions = useRef<{ pressB: () => void; pressA: () => void } | null>(null);
   const isEn = locale === "en";
-  const defaultMessage = isEn ? "You found my secret" : "Descubriste mi secreto";
-  const baProgress = useRef(0); // 0 = espera B, 1 = espera A (ya tocó B)
+  const defaultMessage = isEn ? "Cut. This scene isn’t in the script." : "Corte. Esta escena no estaba en el guion.";
 
   useEffect(() => {
-    let progress = 0;
+    let keyboardProgress = 0;
+    let swipeProgress = 0;
+    let swipeTimeout: ReturnType<typeof setTimeout>;
+    let waitingForButtons = false;
+    let tappedB = false;
+    let disposed = false;
     let hideTimer: ReturnType<typeof setTimeout>;
     let baTimeout: ReturnType<typeof setTimeout>;
     let checking = false;
@@ -46,7 +54,7 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
         const res = await fetch("/api/konami-check", { method: "POST" });
         if (!res.ok) return;
         const data = await res.json();
-        if (data.alreadySeen) return;
+        if (disposed || data.alreadySeen) return;
 
         const custom = isEn ? data.messageEn : data.message;
         setMessage((custom || data.message || data.messageEn || "").trim() || null);
@@ -70,14 +78,45 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
       }
     }
 
-    function openBAPrompt() {
-      baProgress.current = 0;
-      setShowBA(true);
-      clearTimeout(baTimeout);
-      // Si no toca B y A en unos segundos, se cancela — evita que quede
-      // "colgado" esperando para siempre.
-      baTimeout = setTimeout(() => setShowBA(false), 8000);
+    function setScrollLock(active: boolean) {
+      document.documentElement.classList.toggle("konami-scroll-lock", active);
+      setLocked(active);
     }
+
+    function resetSwipes() {
+      clearTimeout(swipeTimeout);
+      swipeProgress = 0;
+      setScrollLock(false);
+    }
+
+    function closeButtons() {
+      clearTimeout(baTimeout);
+      waitingForButtons = false;
+      tappedB = false;
+      setShowBA(false);
+    }
+
+    function openBAPrompt() {
+      resetSwipes();
+      waitingForButtons = true;
+      tappedB = false;
+      setShowBA(true);
+      baTimeout = setTimeout(closeButtons, 8000);
+    }
+
+    mobileActions.current = {
+      pressB: () => {
+        if (!waitingForButtons) return;
+        tappedB = true;
+        clearTimeout(baTimeout);
+        baTimeout = setTimeout(closeButtons, 8000);
+      },
+      pressA: () => {
+        if (!waitingForButtons || !tappedB) return;
+        closeButtons();
+        void trigger();
+      },
+    };
 
     // --- Teclado (desktop) ---
     let waitingA = false;
@@ -85,11 +124,11 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
       const dir = KEYS[e.key];
       const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
 
-      if (progress < DIRECTIONS.length) {
-        if (dir === DIRECTIONS[progress]) {
-          progress += 1;
+      if (keyboardProgress < DIRECTIONS.length) {
+        if (dir === DIRECTIONS[keyboardProgress]) {
+          keyboardProgress += 1;
         } else {
-          progress = dir === DIRECTIONS[0] ? 1 : 0;
+          keyboardProgress = dir === DIRECTIONS[0] ? 1 : 0;
         }
         return;
       }
@@ -97,85 +136,83 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
       if (key === "b") {
         waitingA = true;
       } else if (key === "a" && waitingA) {
-        progress = 0;
+        keyboardProgress = 0;
         waitingA = false;
         trigger();
       } else {
-        progress = 0;
+        keyboardProgress = 0;
         waitingA = false;
       }
     }
 
-    // --- Touch / swipe (mobile) ---
-    let touchStartX = 0;
-    let touchStartY = 0;
+    let start: { id: number; x: number; y: number } | null = null;
 
     function onTouchStart(e: TouchEvent) {
-      const t = e.changedTouches[0];
-      touchStartX = t.clientX;
-      touchStartY = t.clientY;
+      start = null;
+      if (waitingForButtons || e.touches.length !== 1) return;
+      const target = e.target;
+      if (!swipeProgress && target instanceof Element &&
+        target.closest("dialog, [role=dialog], input, textarea, select, [contenteditable=true]")) return;
+      const touch = e.changedTouches[0];
+      if (touch) start = { id: touch.identifier, x: touch.clientX, y: touch.clientY };
     }
 
     function onTouchEnd(e: TouchEvent) {
-      if (showBA) return; // ya completó las flechas, está esperando B/A
-      const t = e.changedTouches[0];
-      const dx = t.clientX - touchStartX;
-      const dy = t.clientY - touchStartY;
+      const origin = start;
+      if (!origin) return;
+      const touch = Array.from(e.changedTouches).find(({ identifier }) => identifier === origin.id);
+      if (!touch) return;
+      start = null;
+      const dx = touch.clientX - origin.x;
+      const dy = touch.clientY - origin.y;
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
+      const distance = Math.max(absX, absY);
+      if (distance < SWIPE_MIN_PX || distance < Math.min(absX, absY) * SWIPE_AXIS_RATIO) return;
 
-      if (Math.max(absX, absY) < SWIPE_MIN_PX) return; // toque, no swipe
-      if (Math.max(absX, absY) < Math.min(absX, absY) * SWIPE_AXIS_RATIO) return; // demasiado diagonal
-
-      let dir: (typeof DIRECTIONS)[number];
-      if (absX > absY) dir = dx > 0 ? "right" : "left";
-      else dir = dy > 0 ? "down" : "up";
-
-      if (dir === DIRECTIONS[progress]) {
-        progress += 1;
-        if (progress === DIRECTIONS.length) {
-          progress = 0;
+      const direction = absX > absY ? dx > 0 ? "right" : "left" : dy > 0 ? "down" : "up";
+      if (direction === DIRECTIONS[swipeProgress]) {
+        swipeProgress++;
+        if (swipeProgress === LOCK_STEP) setScrollLock(true);
+        if (swipeProgress === DIRECTIONS.length) {
           openBAPrompt();
+          return;
         }
       } else {
-        progress = dir === DIRECTIONS[0] ? 1 : 0;
+        resetSwipes();
+        swipeProgress = direction === DIRECTIONS[0] ? 1 : 0;
       }
+      clearTimeout(swipeTimeout);
+      if (swipeProgress) swipeTimeout = setTimeout(resetSwipes, SWIPE_IDLE_MS);
+    }
+
+    function onTouchCancel() {
+      start = null;
+      resetSwipes();
     }
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    // Expone trigger/openBAPrompt para los botones B/A tocados en la UI.
-    (window as unknown as { __djezKonamiTrigger?: () => void }).__djezKonamiTrigger = trigger;
+    window.addEventListener("touchcancel", onTouchCancel, { passive: true });
 
     return () => {
+      disposed = true;
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchCancel);
+      clearTimeout(swipeTimeout);
       clearTimeout(hideTimer);
       clearTimeout(baTimeout);
+      document.documentElement.classList.remove("konami-scroll-lock");
+      mobileActions.current = null;
     };
-  }, [isEn, showBA]);
-
-  function tapB() {
-    baProgress.current = 1;
-  }
-  function tapA() {
-    if (baProgress.current === 1) {
-      setShowBA(false);
-      const trigger = (window as unknown as { __djezKonamiTrigger?: () => void }).__djezKonamiTrigger;
-      trigger?.();
-    } else {
-      // Tocó A sin tocar B antes — reinicia el paso B/A, no hace falta
-      // volver a deslizar las flechas de nuevo dentro de la ventana de
-      // 8s.
-      baProgress.current = 0;
-    }
-  }
+  }, [isEn]);
 
   return (
     <>
+      {locked && <div aria-hidden="true" className="fixed inset-0 z-[229] touch-none overscroll-none" />}
       <div className="pointer-events-none fixed right-4 top-20 z-[230] sm:right-6 sm:top-24">
         <AnimatePresence>
           {visible && (
@@ -217,7 +254,7 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
               </p>
               <button
                 type="button"
-                onClick={tapB}
+                onClick={() => mobileActions.current?.pressB()}
                 data-cursor="magnetic"
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] font-display text-lg text-[var(--bg)] active:scale-90"
               >
@@ -225,7 +262,7 @@ export function KonamiEasterEgg({ locale }: { locale: string }) {
               </button>
               <button
                 type="button"
-                onClick={tapA}
+                onClick={() => mobileActions.current?.pressA()}
                 data-cursor="magnetic"
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] font-display text-lg text-[var(--bg)] active:scale-90"
               >

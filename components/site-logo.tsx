@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "./theme-provider";
@@ -33,9 +33,17 @@ export function SiteLogo({
   const [secretOpen, setSecretOpen] = useState(false);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
+  const origin = useRef<{ x: number; y: number } | null>(null);
 
-  function startPress() {
+  useEffect(() => () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+  }, []);
+
+  function startPress(event: React.PointerEvent<HTMLAnchorElement>) {
+    if (!event.isPrimary || event.button !== 0) return;
+    cancelPress();
     longPressFired.current = false;
+    origin.current = { x: event.clientX, y: event.clientY };
     pressTimer.current = setTimeout(() => {
       longPressFired.current = true;
       setSecretOpen(true);
@@ -43,9 +51,11 @@ export function SiteLogo({
   }
   function cancelPress() {
     if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+    origin.current = null;
   }
   function handleClick(e: React.MouseEvent) {
-    if (longPressFired.current) {
+    if (longPressFired.current && e.detail !== 0) {
       e.preventDefault();
       longPressFired.current = false;
     }
@@ -57,10 +67,17 @@ export function SiteLogo({
         href={`/${locale}`}
         data-cursor="magnetic"
         onPointerDown={startPress}
+        onPointerMove={(event) => {
+          const point = origin.current;
+          if (point && Math.hypot(event.clientX - point.x, event.clientY - point.y) > 12) cancelPress();
+        }}
         onPointerUp={cancelPress}
         onPointerLeave={cancelPress}
         onPointerCancel={cancelPress}
         onClick={handleClick}
+        onContextMenu={(event) => event.preventDefault()}
+        onDragStart={(event) => event.preventDefault()}
+        style={{ WebkitTouchCallout: "none", userSelect: "none", WebkitUserSelect: "none" }}
         className={
           plain
             ? "inline-flex shrink-0 items-center transition-opacity hover:opacity-80"
@@ -74,10 +91,11 @@ export function SiteLogo({
             width={size * 4}
             height={size}
             style={{ height: size, width: "auto" }}
-            className="object-contain"
+            draggable={false}
+            className="pointer-events-none object-contain"
           />
         ) : (
-          <span className="font-display tracking-tight" style={{ fontSize: Math.round(size * 0.55) }}>
+          <span className="pointer-events-none font-display tracking-tight" style={{ fontSize: Math.round(size * 0.55) }}>
             DJEZSHADOW
           </span>
         )}

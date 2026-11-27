@@ -19,11 +19,12 @@ export async function grantAlbum(id: string, accessVersion: string) {
   (await cookies()).set(`djz_album_${id}`, token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 28800,
   });
+  return token;
 }
 
-export async function canViewAlbum(id: string, accessVersion: string) {
+export async function canViewAlbum(id: string, accessVersion: string, viewerToken?: string) {
   if (await isAdmin()) return true;
-  const token = (await cookies()).get(`djz_album_${id}`)?.value;
+  const token = viewerToken ?? (await cookies()).get(`djz_album_${id}`)?.value;
   if (!token) return false;
   try {
     const { payload } = await jwtVerify(token, albumKey(), {

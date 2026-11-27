@@ -308,3 +308,10 @@ body[data-lightbox-open="true"] [data-floating-nav] {
   }
 }
 
+
+/* Freeze the page while the last four Konami swipes are entered. */
+html.konami-scroll-lock,
+html.konami-scroll-lock body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}

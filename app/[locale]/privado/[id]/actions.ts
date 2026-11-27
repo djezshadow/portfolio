@@ -3,15 +3,13 @@
 import { createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { grantAlbum } from "@/lib/private-albums";
 import { prisma } from "@/lib/prisma";
 
-export async function unlockAlbum(id: string, locale: string, data: FormData) {
-  const path = `/${locale === "en" ? "en" : "es"}/privado/${id}`;
+export async function unlockAlbum(id: string, data: FormData) {
   const password = String(data.get("password") ?? "");
   const album = await prisma.privateAlbum.findUnique({ where: { id } });
-  if (!album || !password || Buffer.byteLength(password) > 72) redirect(`${path}?error=1`);
+  if (!album || !password || Buffer.byteLength(password) > 72) return { error: "incorrect" } as const;
 
   const requestHeaders = await headers();
   const ip = requestHeaders.get("x-vercel-forwarded-for") ?? "unknown";
@@ -25,9 +23,14 @@ export async function unlockAlbum(id: string, locale: string, data: FormData) {
     }),
     prisma.privateAlbumAttempt.deleteMany({ where: { albumId: id, window: { lt: window - 1 } } }),
   ]);
-  if (attempt.count > 10) redirect(`${path}?error=2`);
-  if (!(await bcrypt.compare(password, album.passwordHash))) redirect(`${path}?error=1`);
+  if (attempt.count > 10) return { error: "limited" } as const;
+  if (!(await bcrypt.compare(password, album.passwordHash))) return { error: "incorrect" } as const;
   await prisma.privateAlbumAttempt.deleteMany({ where: { albumId: id, visitor, window } });
-  await grantAlbum(id, album.accessVersion);
-  redirect(path);
+  const photos = await prisma.privatePhoto.findMany({
+    where: { albumId: id, album: { accessVersion: album.accessVersion } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true, alt: true },
+  });
+  const token = await grantAlbum(id, album.accessVersion);
+  return { photos, token } as const;
 }

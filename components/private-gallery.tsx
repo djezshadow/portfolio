@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createAlbumImageKeys, deriveAlbumImageKey, exportAlbumPublicKey, importAlbumPublicKey } from "@/lib/album-image-crypto";
 
-export function PrivateGallery({ photos, en }: { photos: { id: string; alt: string }[]; en: boolean }) {
+export function PrivateGallery({ photos, en, token }: { photos: { id: string; alt: string }[]; en: boolean; token?: string }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
@@ -29,7 +30,7 @@ export function PrivateGallery({ photos, en }: { photos: { id: string; alt: stri
       <div className="flex justify-end">
         <button type="button" autoFocus onClick={() => dialog.current?.close()} className="rounded px-3 py-2">{en ? "Close" : "Cerrar"}</button>
       </div>
-      {open && <PrivatePhoto key={active.id} id={active.id} alt={active.alt || label(index)} en={en} />}
+      {open && <PrivatePhoto key={active.id} id={active.id} alt={active.alt || label(index)} en={en} token={token} />}
       <div className="mt-2 flex items-center justify-between">
         <button type="button" disabled={photos.length < 2} onClick={() => move(-1)} className="rounded px-3 py-2 disabled:opacity-40">{en ? "Previous" : "Anterior"}</button>
         <span aria-live="polite">{index + 1} / {photos.length}</span>
@@ -39,7 +40,7 @@ export function PrivateGallery({ photos, en }: { photos: { id: string; alt: stri
   </>;
 }
 
-function PrivatePhoto({ id, alt, en }: { id: string; alt: string; en: boolean }) {
+function PrivatePhoto({ id, alt, en, token }: { id: string; alt: string; en: boolean; token?: string }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   const canvas = useRef<HTMLCanvasElement>(null);
   const src = `/api/album-photo/${id}`;
@@ -48,13 +49,24 @@ function PrivatePhoto({ id, alt, en }: { id: string; alt: string; en: boolean })
     const controller = new AbortController();
     async function draw() {
       try {
+        const keys = await createAlbumImageKeys();
         const response = await fetch(src, {
           method: "POST",
-          headers: { "x-album-view": "1" },
+          headers: {
+            "x-album-view": "1",
+            "x-album-image-key": await exportAlbumPublicKey(keys.publicKey),
+            ...(token ? { "x-album-token": token } : {}),
+          },
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error("Photo unavailable");
-        const bitmap = await createImageBitmap(await response.blob());
+        const publicKey = response.headers.get("x-album-image-key");
+        if (!response.ok || !publicKey) throw new Error("Photo unavailable");
+        const key = await deriveAlbumImageKey(await importAlbumPublicKey(publicKey), keys.privateKey, "decrypt");
+        const payload = await response.arrayBuffer();
+        const iv = new Uint8Array(payload, 0, 12);
+        const image = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, payload.slice(12));
+        if (controller.signal.aborted) return;
+        const bitmap = await createImageBitmap(new Blob([image], { type: "image/webp" }));
         try {
           if (controller.signal.aborted) return;
           const element = canvas.current;
@@ -73,7 +85,7 @@ function PrivatePhoto({ id, alt, en }: { id: string; alt: string; en: boolean })
     }
     void draw();
     return () => controller.abort();
-  }, [src]);
+  }, [src, token]);
 
   return <div className="relative grid min-h-32 place-items-center" aria-busy={status === "loading"}>
     <canvas ref={canvas} aria-hidden="true"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useHorizontalRail } from "@/lib/use-horizontal-rail";
 import { InstagramEmbedItem, InstagramEmbedScript } from "./instagram-embed";
 
 export type InstagramPostItem = { id: string; url: string; caption: string | null };
@@ -50,12 +50,13 @@ export function InstagramFeed({
   highlights: InstagramHighlightItem[];
   labels: { feed: string; highlights: string; followOn: string };
 }) {
+  const rail = useHorizontalRail();
   if (feed.length === 0 && highlights.length === 0) return null;
 
   return (
     <section className="pb-24">
       <InstagramEmbedScript />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-center gap-3 text-center sm:justify-between sm:text-left">
         <h2 className="font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">{title}</h2>
         {handle && (
           <a
@@ -72,10 +73,10 @@ export function InstagramFeed({
 
       {highlights.length > 0 && (
         <div className="mb-8">
-          <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
+          <p className="mb-3 text-center font-mono sm:text-left text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">
             {labels.highlights}
           </p>
-          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div {...rail} className="horizontal-rail flex min-w-0 justify-center-safe gap-4 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {highlights.map((h) => (
               <HighlightCircle key={h.id} item={h} />
             ))}

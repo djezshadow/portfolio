@@ -71,26 +71,75 @@ body {
     overflow-x: clip;
   }
 
-  .carousel-track:is([data-align="center"], [data-align="right"]) {
+  .portfolio-page {
+    padding-inline: max(clamp(1rem, 5.4vw, 1.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
+  }
+
+  .carousel-track:is([data-align="center"], [data-align="right"]),
+  .updates-track {
     justify-content: flex-start;
-    --carousel-edge-space: max(0px, calc(100% - var(--carousel-card-width)));
   }
 
-  .carousel-track[data-align="center"] {
-    padding-inline: max(0px, calc((100% - var(--carousel-card-width)) / 2));
+  .carousel-track[data-align="center"],
+  .updates-track {
+    --rail-edge: max(0px, calc((100% - var(--rail-card-width)) / 2));
   }
 
-  .carousel-track[data-align="center"] > * {
+  .updates-track {
+    scroll-snap-type: x mandatory;
+  }
+
+  .carousel-track[data-align="center"] > *,
+  .updates-track > * {
     scroll-snap-align: center;
   }
 
   .carousel-track[data-align="right"] {
-    padding-inline-start: var(--carousel-edge-space);
+    --rail-edge: max(0px, calc(100% - var(--rail-card-width)));
   }
 
   .carousel-track[data-align="right"] > * {
     scroll-snap-align: end;
   }
+
+  .carousel-track:is([data-align="center"], [data-align="right"])::before,
+  .updates-track::before,
+  .carousel-track[data-align="center"]::after,
+  .updates-track::after {
+    content: "";
+    flex: 0 0 var(--rail-edge);
+  }
+
+  .carousel-track:is([data-align="center"], [data-align="right"])::before,
+  .updates-track::before {
+    margin-inline-end: calc(-1 * var(--rail-gap));
+  }
+
+  .carousel-track[data-align="center"]::after,
+  .updates-track::after {
+    margin-inline-start: calc(-1 * var(--rail-gap));
+  }
+}
+
+.portfolio-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.horizontal-rail {
+  touch-action: pan-y pinch-zoom;
+}
+
+.horizontal-rail[data-dragging="true"] {
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.instagram-embed :is(iframe, .instagram-media) {
+  display: block;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
 }
 
 .carousel-cover-card {

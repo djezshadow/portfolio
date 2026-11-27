@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useHorizontalRail } from "@/lib/use-horizontal-rail";
 import { PortfolioDialog } from "./portfolio-dialog";
 
 export type CarouselItem = {
@@ -137,6 +138,7 @@ export function Carousel({
   style,
 }: CarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const rail = useHorizontalRail();
   const [hintOpen, setHintOpen] = useState<{ title: string; hint: string | null } | null>(null);
 
   const [edges, setEdges] = useState({ prev: false, next: false });
@@ -184,9 +186,11 @@ export function Carousel({
   const alignFlex =
     effectiveAlign === "center" ? "justify-center-safe" : effectiveAlign === "right" ? "justify-end-safe" : "justify-start";
   const baseWidth = preset === "filmstrip" ? 160 : preset === "marquee" ? 240 : 280;
+  const trackGap = preset === "filmstrip" ? gapPx * 0.75 : gapPx;
   const trackStyle = {
-    gap: preset === "filmstrip" ? gapPx * 0.75 : gapPx,
-    "--carousel-card-width": `min(${baseWidth * sizeScale}px, 82vw)`,
+    gap: trackGap,
+    "--rail-gap": `${trackGap}px`,
+    "--rail-card-width": `min(${baseWidth * sizeScale}px, 82vw)`,
   } as React.CSSProperties;
 
   const scrollBy = (dir: 1 | -1) => {
@@ -215,9 +219,9 @@ export function Carousel({
       {hintOpen.hint && <p className="mt-2 text-sm">{hintOpen.hint}</p>}
     </PortfolioDialog>
   );
-  const trackClass = `carousel-track flex max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin] ${alignFlex}`;
+  const trackClass = `carousel-track horizontal-rail flex min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin] ${alignFlex}`;
   const controls = (edges.prev || edges.next) && (
-    <div className="mt-2 flex justify-end gap-2">
+    <div className="mt-2 flex justify-center gap-2 sm:justify-end">
       <button type="button" disabled={!edges.prev} onClick={() => scrollBy(-1)}
         className="glass rounded-full px-4 py-2 text-sm disabled:opacity-40" aria-label="Anterior">‹</button>
       <button type="button" disabled={!edges.next} onClick={() => scrollBy(1)}
@@ -313,7 +317,7 @@ export function Carousel({
     return (
       <>
         <div
-          ref={trackRef}
+          ref={trackRef} {...rail}
           className={trackClass}
           data-align={effectiveAlign}
           style={trackStyle}
@@ -331,7 +335,7 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                style={{ width: "var(--carousel-card-width)" }}
+                style={{ width: "var(--rail-card-width)" }}
                 className="group relative block shrink-0 overflow-hidden rounded-sm bg-black text-left"
               >
                 {item.isComingSoon && <LockBadge />}
@@ -443,14 +447,14 @@ export function Carousel({
   if (preset === "marquee") {
     return (
       <>
-        <div ref={trackRef} className={trackClass} data-align={effectiveAlign} style={trackStyle}>
+        <div ref={trackRef} {...rail} className={trackClass} data-align={effectiveAlign} style={trackStyle}>
             {visible.map((item) => (
               <ItemWrapper
                 key={item.id}
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                style={{ width: "var(--carousel-card-width)" }}
+                style={{ width: "var(--rail-card-width)" }}
                 className={`${cardBg} group/card relative block shrink-0 snap-start overflow-hidden rounded-2xl p-5 text-left ${cardShadow}`}
               >
                 {item.isComingSoon && <LockBadge />}
@@ -607,7 +611,7 @@ export function Carousel({
     <>
       <div className="relative">
         <div
-          ref={trackRef}
+          ref={trackRef} {...rail}
           className={trackClass}
           data-align={effectiveAlign}
           style={trackStyle}
@@ -625,7 +629,7 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                style={{ width: "var(--carousel-card-width)", minHeight: item.coverImageUrl && !item.isComingSoon ? 220 * sizeScale : undefined }}
+                style={{ width: "var(--rail-card-width)", minHeight: item.coverImageUrl && !item.isComingSoon ? 220 * sizeScale : undefined }}
                 className={`${cardBg} group relative block overflow-hidden rounded-2xl p-6 text-left ${cardShadow} ${item.coverImageUrl && !item.isComingSoon ? "flex flex-col justify-end" : ""}`}
               >
                 {item.isComingSoon && <LockBadge />}

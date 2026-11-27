@@ -77,14 +77,14 @@ export function CategoryView({
   }, [searchParams, category.projects, locale]);
 
   return (
-    <div data-theme={resolvedTheme} className="min-h-screen px-6 py-16 transition-colors duration-500">
-      <div className="mx-auto max-w-5xl">
+    <div data-theme={resolvedTheme} className="min-h-screen py-16 transition-colors duration-500">
+      <div className="portfolio-page mx-auto max-w-[67rem] px-6">
         {isPreview && (
           <div className="glass mb-8 rounded-xl px-4 py-2 text-center font-mono text-[11px] text-accent">
             {dict.category.previewBanner}
           </div>
         )}
-        <Reveal>
+        <Reveal className="text-center sm:text-left">
           <span className="font-mono text-[11px] text-[var(--ink-muted)]">
             {resolvedTheme === "neon" ? "NEÓN" : "NOIR"} · {category.themeMode === "auto" ? "AUTO" : "MANUAL"}
           </span>

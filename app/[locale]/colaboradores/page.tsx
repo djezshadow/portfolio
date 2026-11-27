@@ -103,7 +103,7 @@ export default async function ColaboradoresPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16">
+    <div className="portfolio-page mx-auto max-w-4xl px-6 py-16">
       <Reveal>
         <h1 className="text-center font-display text-3xl sm:text-4xl">
           {locale === "en" ? "Who I've worked with" : "Con quién trabajé"}

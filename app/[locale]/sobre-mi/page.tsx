@@ -28,7 +28,7 @@ export default async function AboutMePage({
   const html = markdownToHtml(content);
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
+    <div className="portfolio-page mx-auto max-w-3xl px-6 py-16">
       {(settings.aboutCustomCss || settings.aboutCustomCssNeon) && (
         // CSS propio del admin (item #21), separado por tema (pendiente
         // del PDF: "separar el CSS en dos cuadros NOIR/NEON") — cada

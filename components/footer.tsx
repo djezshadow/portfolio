@@ -54,8 +54,8 @@ export async function Footer({ locale }: { locale: Locale }) {
   ].filter((s) => s.url);
 
   return (
-    <footer className="mt-24 border-t border-[var(--glass-border)] px-6 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
+    <footer className="mt-24 border-t border-[var(--glass-border)] py-10">
+      <div className="portfolio-page mx-auto flex max-w-6xl flex-col items-center gap-4 px-6 sm:flex-row sm:justify-between">
         <div className="flex items-center gap-4 font-mono text-xs text-[var(--ink-muted)]">
           {settings.aboutEnabled && (
             <Link href={`/${locale}/sobre-mi`} data-cursor="magnetic" className="hover:text-accent">
@@ -68,7 +68,7 @@ export async function Footer({ locale }: { locale: Locale }) {
         </div>
 
         {socials.length > 0 && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {socials.map((s) => (
               <a
                 key={s.key}

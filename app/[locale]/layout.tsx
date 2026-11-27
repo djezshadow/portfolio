@@ -19,9 +19,9 @@ export default async function LocaleLayout({
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "es";
   return (
-    <div className="djez-content-offset flex min-h-screen flex-col">
+    <div className="djez-content-offset flex min-h-screen w-full min-w-0 flex-col">
       <SetHtmlLang locale={locale} />
-      <div className="flex-1">{children}</div>
+      <div className="w-full min-w-0 flex-1">{children}</div>
       <Footer locale={locale} />
       <FloatingNav locale={locale} />
       <RandomExifCapsule />

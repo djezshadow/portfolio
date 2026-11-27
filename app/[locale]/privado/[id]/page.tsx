@@ -19,9 +19,9 @@ export default async function AlbumPage({ params }: {
   const photos = admin ? await prisma.privatePhoto.findMany({
     where: { albumId: id }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, alt: true },
   }) : [];
-  return <main className="mx-auto max-w-5xl space-y-6 px-5 py-12">
-    <Link href={`/${locale}/privado`} className="text-accent">{en ? "All private albums" : "Todos los álbumes privados"}</Link>
-    <h1 className="font-display text-4xl">{album.name}</h1>
+  return <main className="portfolio-page mx-auto max-w-5xl space-y-6 px-6 py-12">
+    <Link href={`/${locale}/privado`} className="block text-center text-accent sm:text-left">{en ? "All private albums" : "Todos los álbumes privados"}</Link>
+    <h1 className="text-center font-display text-4xl [overflow-wrap:anywhere] sm:text-left">{album.name}</h1>
     {admin ? <PrivateGallery photos={photos} en={en} /> : <AlbumAccess key={`${locale}:${id}`} id={id} en={en} />}
   </main>;
 }

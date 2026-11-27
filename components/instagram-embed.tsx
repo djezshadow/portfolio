@@ -20,7 +20,7 @@ export function InstagramEmbedItem({ url, caption }: { url: string; caption?: st
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl">
+    <div className="instagram-embed min-w-0 overflow-hidden rounded-2xl">
       <blockquote
         ref={ref}
         className="instagram-media"

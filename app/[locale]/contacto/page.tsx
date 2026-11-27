@@ -17,9 +17,9 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
   const dict = getDictionary(locale);
 
   return (
-    <div className="mx-auto max-w-md px-6 py-16">
-      <h1 className="font-display text-4xl">{dict.contact.title}</h1>
-      <p className="mt-2 mb-8 text-[var(--ink-muted)]">{dict.contact.subtitle}</p>
+    <div className="portfolio-page mx-auto max-w-md px-6 py-16">
+      <h1 className="text-center font-display text-4xl sm:text-left">{dict.contact.title}</h1>
+      <p className="mt-2 mb-8 text-center sm:text-left text-[var(--ink-muted)]">{dict.contact.subtitle}</p>
       <ContactForm dict={dict} locale={locale} />
     </div>
   );

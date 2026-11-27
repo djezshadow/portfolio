@@ -214,12 +214,12 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const heroSection = (
     <section
       key="hero"
-      className={`flex min-h-[70vh] flex-col justify-center gap-6 ${
+      className={`flex min-h-[70vh] flex-col items-center justify-center gap-6 text-center ${
         homeAlign === "center"
-          ? "items-center text-center"
+          ? ""
           : homeAlign === "right"
-            ? "items-end text-right"
-            : "items-start text-left"
+            ? "sm:items-end sm:text-right"
+            : "sm:items-start sm:text-left"
       }`}
     >
       <Reveal>
@@ -229,7 +229,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </span>
       </Reveal>
       <Reveal delay={0.1}>
-        <h1 className="font-display text-5xl leading-[1.05] sm:text-7xl">
+        <h1 className="font-display text-[clamp(2.25rem,10vw,3rem)] leading-[1.05] [overflow-wrap:anywhere] sm:text-7xl">
           {heroTitle1}
           <br />
           {heroTitle2}
@@ -244,7 +244,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const categoriasSection = (
     <section key="categorias" className="pb-24">
       <Reveal>
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-2 text-center sm:justify-between sm:text-left">
           <h2 className="font-mono text-xs uppercase tracking-widest text-[var(--ink-muted)]">
             {dict.featured.label}
           </h2>
@@ -262,8 +262,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       />
 
       <div
-        className={`mt-8 flex flex-wrap gap-3 ${
-          homeAlign === "center" ? "justify-center" : homeAlign === "right" ? "justify-end" : ""
+        className={`mt-8 flex flex-wrap justify-center gap-3 ${
+          homeAlign === "center" ? "" : homeAlign === "right" ? "sm:justify-end" : "sm:justify-start"
         }`}
       >
         <CvDownloadLink
@@ -348,7 +348,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const finalOrder = [...savedOrder, ...defaultOrder.filter((k) => !savedOrder.includes(k))];
 
   return (
-    <div className="mx-auto max-w-6xl px-6">
+    <div className="portfolio-page mx-auto max-w-6xl px-6">
       {embeddedLogo && (embeddedLogo.noirUrl || embeddedLogo.neonUrl) && (
         <Reveal>
           {/* Logo "deslizable" (modo no-fijo): esquina superior izquierda

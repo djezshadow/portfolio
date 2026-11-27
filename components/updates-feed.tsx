@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useHorizontalRail } from "@/lib/use-horizontal-rail";
 import type { ResolvedUpdateItem } from "@/lib/updates-feed";
 
 export type UpdateFeedItem = ResolvedUpdateItem;
@@ -52,10 +53,7 @@ export function UpdatesFeed({
   visibleCount?: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartScrollRef = useRef(0);
-  const movedRef = useRef(false);
+  const rail = useHorizontalRail({ mouse: true });
 
   const speedPxPerSec = SPEED_PX_PER_SEC[speed] ?? SPEED_PX_PER_SEC.normal;
   // Con pocos ítems, duplicar la lista una sola vez puede no alcanzar a
@@ -80,7 +78,7 @@ export function UpdatesFeed({
     function step(now: number) {
       const dt = (now - last) / 1000;
       last = now;
-      if (track && !draggingRef.current) {
+      if (track && !track.dataset.dragging) {
         track.scrollLeft += speedPxPerSec * dt;
         // Loop sin salto: la lista está duplicada, así que al pasar el
         // ancho de la MITAD (una copia completa) restamos ese ancho —
@@ -95,39 +93,6 @@ export function UpdatesFeed({
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [speedPxPerSec]);
-
-  function onPointerDown(e: React.PointerEvent) {
-    movedRef.current = false;
-    if (e.pointerType !== "mouse" || e.button !== 0) return;
-    const track = trackRef.current;
-    if (!track) return;
-    draggingRef.current = true;
-    dragStartXRef.current = e.clientX;
-    dragStartScrollRef.current = track.scrollLeft;
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    const track = trackRef.current;
-    if (!track || !draggingRef.current) return;
-    const dx = e.clientX - dragStartXRef.current;
-    if (!movedRef.current && Math.abs(dx) <= 3) return;
-    if (!movedRef.current) {
-      movedRef.current = true;
-      track.setPointerCapture(e.pointerId);
-    }
-    track.scrollLeft = dragStartScrollRef.current - dx;
-  }
-  function endDrag() {
-    draggingRef.current = false;
-  }
-  function onClickCapture(e: React.MouseEvent) {
-    // Si hubo arrastre real, no dejamos que el click abra el link — así
-    // "arrastrar para mirar" no navega por accidente.
-    if (e.detail !== 0 && movedRef.current) {
-      movedRef.current = false;
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
 
   if (items.length === 0) return null;
 
@@ -154,23 +119,16 @@ export function UpdatesFeed({
           .djez-updates-card { width: ${desktopWidth}; }
         }
       `}</style>
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)]">{title}</p>
+      <p className="mb-3 text-center font-mono text-[10px] uppercase tracking-widest text-[var(--ink-muted)] sm:text-left">{title}</p>
       <div
         ref={trackRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onPointerLeave={(event) => {
-          if (!event.currentTarget.hasPointerCapture(event.pointerId)) endDrag();
-        }}
-        onClickCapture={onClickCapture}
+        {...rail}
         onContextMenu={(event) => {
           if ((event.target as Element).closest(".carousel-cover-card")) event.preventDefault();
         }}
         onDragStart={(event) => event.preventDefault()}
-        className="flex max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ cursor: "grab", scrollBehavior: "auto", gap: GAP_PX }}
+        className="horizontal-rail updates-track flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ "--rail-card-width": mobileWidth, "--rail-gap": `${GAP_PX}px`, cursor: "grab", gap: GAP_PX } as React.CSSProperties}
       >
         {loopItems.map((item, i) => {
           const content = (

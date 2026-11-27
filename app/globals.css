@@ -70,6 +70,27 @@ body {
   body {
     overflow-x: clip;
   }
+
+  .carousel-track:is([data-align="center"], [data-align="right"]) {
+    justify-content: flex-start;
+    --carousel-edge-space: max(0px, calc(100% - var(--carousel-card-width)));
+  }
+
+  .carousel-track[data-align="center"] {
+    padding-inline: max(0px, calc((100% - var(--carousel-card-width)) / 2));
+  }
+
+  .carousel-track[data-align="center"] > * {
+    scroll-snap-align: center;
+  }
+
+  .carousel-track[data-align="right"] {
+    padding-inline-start: var(--carousel-edge-space);
+  }
+
+  .carousel-track[data-align="right"] > * {
+    scroll-snap-align: end;
+  }
 }
 
 .carousel-cover-card {

@@ -71,6 +71,12 @@ body {
     overflow-x: clip;
   }
 
+  /* Measure the public layout against the viewport, like the fixed logo. */
+  .djez-content-offset {
+    inline-size: 100vw;
+    inline-size: 100dvw;
+  }
+
   .portfolio-page {
     padding-inline: max(clamp(1rem, 5.4vw, 1.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
   }
@@ -122,8 +128,10 @@ body {
 }
 
 .portfolio-page {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  margin-inline: auto;
 }
 
 .horizontal-rail {

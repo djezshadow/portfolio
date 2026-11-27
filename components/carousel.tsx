@@ -498,7 +498,7 @@ export function Carousel({
   if (preset === "split") {
     return (
       <>
-        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: gapPx }}>
+        <div className="mx-auto grid w-full min-w-0 grid-cols-1 sm:grid-cols-3" style={{ gap: gapPx }}>
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
@@ -511,8 +511,8 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                className={`group relative block overflow-hidden rounded-2xl text-left ${effectiveAlign === "center" ? "mx-auto" : effectiveAlign === "right" ? "ml-auto" : ""}`}
-                style={{ width: `${Math.min(100, 100 * sizeScale)}%` }}
+                className={`group relative mx-auto block w-full min-w-0 overflow-hidden rounded-2xl text-left sm:w-[var(--split-card-width)] ${effectiveAlign === "left" ? "sm:ml-0" : effectiveAlign === "right" ? "sm:mr-0" : ""}`}
+                style={{ "--split-card-width": `${Math.min(100, 100 * sizeScale)}%` } as React.CSSProperties}
               >
                 {item.isComingSoon && <LockBadge />}
                 <div className="relative aspect-square w-full overflow-hidden">

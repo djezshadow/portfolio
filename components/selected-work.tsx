@@ -11,8 +11,8 @@ export function SelectedWork({ work, locale, reel }: { work: WorkCard[]; locale:
   const poster = lead?.poster ?? (reel?.provider === "youtube" ? `https://img.youtube.com/vi/${reel.videoId}/hqdefault.jpg` : null);
   return (
     <section aria-labelledby="selected-work" className="pb-16 pt-5 sm:pb-24 sm:pt-9">
-      <div className="mb-5 flex items-baseline justify-between gap-5 border-b border-[var(--glass-border)] pb-4">
-        <h2 id="selected-work" className="font-display text-3xl sm:text-5xl">{en ? "Selected work" : "Trabajos seleccionados"}</h2>
+      <div className="mb-5 flex flex-col items-center gap-2 border-b border-[var(--glass-border)] pb-4 text-center sm:flex-row sm:items-baseline sm:justify-between sm:gap-5 sm:text-left">
+        <h2 id="selected-work" className="font-display text-3xl leading-tight sm:text-5xl">{en ? "Selected work" : "Trabajos seleccionados"}</h2>
         {work.length > 0 && <a href="#categorias" className="shrink-0 text-sm text-accent hover:underline">{en ? "Categories" : "Categorías"}</a>}
       </div>
       <div className={`grid gap-3 ${supporting.length ? "lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]" : ""}`}>

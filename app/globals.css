@@ -73,9 +73,9 @@ body {
     overflow-x: clip;
   }
 
-  .djez-content-offset {
-    inline-size: 100%;
-    max-inline-size: 100%;
+  .djez-public-layout {
+    inline-size: var(--portfolio-viewport-width, 100vw);
+    contain: inline-size;
   }
 
   .portfolio-page {
@@ -125,6 +125,12 @@ body {
   .carousel-track[data-align="center"]::after,
   .updates-track::after {
     margin-inline-start: calc(-1 * var(--rail-gap));
+  }
+}
+
+@media print {
+  .djez-public-layout {
+    inline-size: 100%;
   }
 }
 

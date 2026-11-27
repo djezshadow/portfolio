@@ -57,22 +57,27 @@ async function servePhoto(request: Request, { params }: RouteContext, viewerKey?
   if (preview && !(await isAdmin())) return new Response(null, { status: 404, headers });
   const thumbnail = !full && query.has("thumb") && request.headers.get("sec-fetch-dest") === "image";
 
-  const image = await prisma.privatePhoto.findFirst({
-    where: { id, album: { accessVersion: photo.album.accessVersion } },
-    select: { bytes: true, watermarkX: true, watermarkY: true },
-  });
-  if (!image) return new Response(null, { status: 404, headers });
-
   try {
-    const source = Buffer.from(image.bytes);
     const low = !full && !preview && !thumbnail;
+    const [image, storedSettings] = await Promise.all([
+      prisma.privatePhoto.findFirst({
+        where: { id, album: { accessVersion: photo.album.accessVersion } },
+        select: { bytes: true, watermarkX: true, watermarkY: true },
+      }),
+      low ? null : prisma.siteSettings.findUnique({
+        where: { id: "default" },
+        select: { watermarkOpacity: true, watermarkScale: true, watermarkPosition: true, watermarkUrl: true },
+      }),
+    ]);
+    if (!image) return new Response(null, { status: 404, headers });
+    const source = Buffer.from(image.bytes.buffer, image.bytes.byteOffset, image.bytes.byteLength);
     if (low) {
       const tiny = await sharp(source).resize({ width: 64, height: 64, fit: "inside", withoutEnlargement: true })
         .blur(1.5).webp({ quality: 18 }).toBuffer();
       return new Response(new Uint8Array(tiny), { headers: { ...headers, "Content-Type": "image/webp" } });
     }
 
-    const settings = await getSiteSettings();
+    const settings = storedSettings ?? await getSiteSettings();
     const options = {
       opacity: Math.max(settings.watermarkOpacity, 25),
       scale: Math.max(settings.watermarkScale, 6),
@@ -81,6 +86,7 @@ async function servePhoto(request: Request, { params }: RouteContext, viewerKey?
         ? previewCoordinates(query)
         : coordinates(image.watermarkX, image.watermarkY),
       webpQuality: preview ? 78 : thumbnail ? 75 : 88,
+      webpEffort: 3,
     };
     const size = preview ? 900 : 480;
     const input = preview || thumbnail

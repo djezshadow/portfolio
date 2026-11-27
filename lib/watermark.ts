@@ -63,6 +63,7 @@ export async function applyWatermark(
     scale?: number;
     coordinates?: { x: number; y: number };
     webpQuality?: number;
+    webpEffort?: number;
   }
 ): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
@@ -127,5 +128,7 @@ export async function applyWatermark(
         ...placement,
       },
   ]);
-  return (opts.webpQuality ? composited.webp({ quality: opts.webpQuality }) : composited).toBuffer();
+  return (opts.webpQuality
+    ? composited.webp({ quality: opts.webpQuality, effort: opts.webpEffort })
+    : composited).toBuffer();
 }

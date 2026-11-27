@@ -1,16 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createAlbumImageKeys, deriveAlbumImageKey, exportAlbumPublicKey, importAlbumPublicKey } from "@/lib/album-image-crypto";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PrivateAlbumPhotoCache } from "@/lib/private-album-photo-cache";
 
 export function PrivateGallery({ photos, en, token }: { photos: { id: string; alt: string }[]; en: boolean; token?: string }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
-  if (!photos.length) return <p>{en ? "This album is empty." : "Este álbum todavía está vacío."}</p>;
   const active = photos[index] ?? photos[0];
-  const next = photos[(index + 1) % photos.length]?.id;
-  const previous = photos[(index + photos.length - 1) % photos.length]?.id;
+  const cache = useMemo(() => new PrivateAlbumPhotoCache(token), [token]);
+
+  useEffect(() => {
+    const clear = () => cache.clear();
+    window.addEventListener("pagehide", clear);
+    return () => {
+      window.removeEventListener("pagehide", clear);
+      clear();
+    };
+  }, [cache]);
+
+  useEffect(() => {
+    if (!active) return;
+    const neighbors: string[] = [];
+    for (let distance = 1; distance <= Math.floor(photos.length / 2); distance++) {
+      neighbors.push(photos[(index + distance) % photos.length].id);
+      const previous = photos[(index + photos.length - distance) % photos.length].id;
+      if (previous !== neighbors.at(-1)) neighbors.push(previous);
+    }
+
+    void cache.prefetchAfter(active.id, neighbors);
+  }, [active, cache, index, photos]);
+
+  if (!active) return <p>{en ? "This album is empty." : "Este álbum todavía está vacío."}</p>;
   const label = (i: number) => en ? `Photo ${i + 1}` : `Foto ${i + 1}`;
   const move = (step: number) => setIndex((current) => (current + step + photos.length) % photos.length);
   return <>
@@ -32,8 +53,7 @@ export function PrivateGallery({ photos, en, token }: { photos: { id: string; al
       <div className="flex justify-end">
         <button type="button" autoFocus onClick={() => dialog.current?.close()} className="rounded px-3 py-2">{en ? "Close" : "Cerrar"}</button>
       </div>
-      {open && <PrivatePhoto key={token ?? "admin"} id={active.id} next={next} previous={previous}
-        alt={active.alt || label(index)} en={en} token={token} />}
+      {open && <PrivatePhoto key={active.id} id={active.id} alt={active.alt || label(index)} en={en} cache={cache} />}
       <div className="mt-2 flex items-center justify-between">
         <button type="button" disabled={photos.length < 2} onClick={() => move(-1)} className="rounded px-3 py-2 disabled:opacity-40">{en ? "Previous" : "Anterior"}</button>
         <span aria-live="polite">{index + 1} / {photos.length}</span>
@@ -44,123 +64,42 @@ export function PrivateGallery({ photos, en, token }: { photos: { id: string; al
 }
 
 
-type CachedPhoto = {
-  promise: Promise<ImageBitmap>;
-  controller: AbortController;
-  bitmap?: ImageBitmap;
-};
-
-function releasePhoto(entry: CachedPhoto) {
-  entry.controller.abort();
-  entry.bitmap?.close();
-}
-
-async function downloadPhoto(id: string, token: string | undefined, signal: AbortSignal) {
-  const keys = await createAlbumImageKeys();
-  const response = await fetch(`/api/album-photo/${id}`, {
-    method: "POST",
-    headers: {
-      "x-album-view": "1",
-      "x-album-image-key": await exportAlbumPublicKey(keys.publicKey),
-      ...(token ? { "x-album-token": token } : {}),
-    },
-    signal,
-  });
-  const publicKey = response.headers.get("x-album-image-key");
-  if (!response.ok || !publicKey) throw new Error("Photo unavailable");
-  const key = await deriveAlbumImageKey(await importAlbumPublicKey(publicKey), keys.privateKey, "decrypt");
-  const payload = await response.arrayBuffer();
-  const iv = new Uint8Array(payload, 0, 12);
-  const image = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, payload.slice(12));
-  signal.throwIfAborted();
-  return createImageBitmap(new Blob([image], { type: "image/webp" }));
-}
-
-function PrivatePhoto({ id, next, previous, alt, en, token }: {
+function PrivatePhoto({ id, alt, en, cache }: {
   id: string;
-  next?: string;
-  previous?: string;
   alt: string;
   en: boolean;
-  token?: string;
+  cache: PrivateAlbumPhotoCache;
 }) {
-  const [result, setResult] = useState<{ id: string; status: "loaded" | "error" } | null>(null);
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   const canvas = useRef<HTMLCanvasElement>(null);
-  const cache = useRef(new Map<string, CachedPhoto>());
-  const status = result?.id === id ? result.status : "loading";
   const src = `/api/album-photo/${id}`;
 
   useEffect(() => {
-    const entries = cache.current;
-    return () => {
-      entries.forEach(releasePhoto);
-      entries.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    const entries = cache.current;
-    const neighbors = [...new Set([next, previous])].filter((neighbor): neighbor is string =>
-      neighbor !== undefined && neighbor !== id
-    );
-    const keep = new Set([id, ...neighbors]);
-    for (const [key, entry] of entries) {
-      if (keep.has(key)) continue;
-      entries.delete(key);
-      releasePhoto(entry);
-    }
-
-    function load(photoId: string) {
-      const existing = entries.get(photoId);
-      if (existing) return existing.promise;
-
-      const controller = new AbortController();
-      const entry: CachedPhoto = {
-        controller,
-        promise: downloadPhoto(photoId, token, controller.signal).then((bitmap) => {
-          if (controller.signal.aborted) {
-            bitmap.close();
-            throw controller.signal.reason;
-          }
-          entry.bitmap = bitmap;
-          return bitmap;
-        }).catch((error) => {
-          if (entries.get(photoId) === entry) entries.delete(photoId);
-          throw error;
-        }),
-      };
-      entries.set(photoId, entry);
-      return entry.promise;
-    }
-
     let cancelled = false;
     async function draw() {
       try {
-        const bitmap = await load(id);
+        const photo = await cache.load(id);
         if (cancelled) return;
-        const element = canvas.current;
-        const context = element?.getContext("2d");
-        if (!element || !context) throw new Error("Canvas unavailable");
-        element.width = bitmap.width;
-        element.height = bitmap.height;
-        context.drawImage(bitmap, 0, 0);
-        setResult({ id, status: "loaded" });
+        const bitmap = await createImageBitmap(photo);
+        try {
+          if (cancelled) return;
+          const element = canvas.current;
+          const context = element?.getContext("2d");
+          if (!element || !context) throw new Error("Canvas unavailable");
+          element.width = bitmap.width;
+          element.height = bitmap.height;
+          context.drawImage(bitmap, 0, 0);
+          setStatus("loaded");
+        } finally {
+          bitmap.close();
+        }
       } catch {
-        if (!cancelled) setResult({ id, status: "error" });
-        return;
-      }
-
-      for (const neighbor of neighbors) {
-        if (cancelled) break;
-        // A failed speculative request can be retried when the visitor opens it.
-        await load(neighbor).catch(() => {});
+        if (!cancelled) setStatus("error");
       }
     }
-
-    setResult(null);
     void draw();
     return () => { cancelled = true; };
-  }, [id, next, previous, token]);
+  }, [cache, id]);
 
   return <div className="relative grid min-h-32 place-items-center" aria-busy={status === "loading"}>
     <canvas key={id} ref={canvas} aria-hidden="true"

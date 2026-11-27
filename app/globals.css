@@ -62,19 +62,20 @@ body {
 }
 
 @media (max-width: 639px) {
-  html {
+  html:has(.djez-public-layout) {
     overscroll-behavior-x: none;
+    overflow-x: hidden;
+    touch-action: pan-y pinch-zoom;
   }
 
-  html,
-  body {
+  .djez-public-layout,
+  .djez-public-content {
     overflow-x: clip;
   }
 
-  /* Measure the public layout against the viewport, like the fixed logo. */
   .djez-content-offset {
-    inline-size: 100vw;
-    inline-size: 100dvw;
+    inline-size: 100%;
+    max-inline-size: 100%;
   }
 
   .portfolio-page {

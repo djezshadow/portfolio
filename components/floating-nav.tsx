@@ -171,15 +171,10 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
 
   return (
     <div data-floating-nav>
-      {/* Logo: solo si el modo "Fijo" está activo (default). Sin caja,
-          en las dos plataformas — mobile centrado arriba, desktop en la
-          esquina superior izquierda. Si está en modo "Se desliza",
-          no se muestra acá: aparece incrustado arriba de la portada de
-          la home nomás (ver app/[locale]/page.tsx), y en el resto de las
-          páginas directamente no hay logo fijo. */}
+      {/* Logo de todas las páginas: en flujo en celular y fijo en escritorio. */}
       {logos.logoFloating && (
         <>
-          <div className="fixed inset-x-0 top-14 z-[100] flex justify-center sm:hidden">
+          <div className="mx-auto flex w-full max-w-6xl justify-center px-6 pb-10 pt-2 sm:hidden">
             <SiteLogo
               locale={locale}
               noirLogoUrl={logos.logoNoirUrl}

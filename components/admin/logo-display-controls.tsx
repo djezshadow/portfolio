@@ -35,10 +35,9 @@ export function LogoDisplayControls({
             className="mt-1"
           />
           <span>
-            <span className="block font-mono text-xs">Fijo (recomendado)</span>
+            <span className="block font-mono text-xs">En todas las páginas</span>
             <span className="block font-mono text-[10px] text-[var(--ink-muted)]">
-              Se queda quieto mientras scrolleás — mobile centrado arriba, desktop arriba a la
-              izquierda. Visible en todas las páginas.
+              Fijo arriba a la izquierda en escritorio. En celular aparece centrado al comienzo y sube con el contenido.
             </span>
           </span>
         </label>
@@ -52,7 +51,7 @@ export function LogoDisplayControls({
             className="mt-1"
           />
           <span>
-            <span className="block font-mono text-xs">Se desliza con la página</span>
+            <span className="block font-mono text-xs">Solo en Inicio</span>
             <span className="block font-mono text-[10px] text-[var(--ink-muted)]">
               Va arriba de la portada de la home nomás, y se scrollea junto con el resto del
               contenido (deja de verse al bajar la página).

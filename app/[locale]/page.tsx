@@ -369,7 +369,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               debajo de la barra de timecode, y en las dos scrollea con
               el resto del contenido (a diferencia del modo fijo, que
               vive en FloatingNav). */}
-          <div className="flex justify-center pb-4 pt-14 sm:hidden">
+          <div className="flex justify-center pb-10 pt-2 sm:hidden">
             <SiteLogo
               locale={locale}
               noirLogoUrl={embeddedLogo.noirUrl}

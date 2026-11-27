@@ -61,6 +61,28 @@ body {
   transition: background-color 0.5s ease, color 0.5s ease;
 }
 
+@media (max-width: 639px) {
+  html {
+    overscroll-behavior-x: none;
+  }
+
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+.carousel-cover-card {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.carousel-cover-card img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
 /* Envuelto en @layer components a propósito: así las utilidades de Tailwind
    (fixed, sticky, rounded-2xl, etc.) siguen pudiendo pisar estas propiedades
    cuando se combinan en el mismo elemento. Sin esto, .glass (CSS "suelto",

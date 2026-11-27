@@ -97,19 +97,23 @@ export function UpdatesFeed({
   }, [speedPxPerSec]);
 
   function onPointerDown(e: React.PointerEvent) {
+    movedRef.current = false;
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
     const track = trackRef.current;
     if (!track) return;
     draggingRef.current = true;
-    movedRef.current = false;
     dragStartXRef.current = e.clientX;
     dragStartScrollRef.current = track.scrollLeft;
-    track.setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: React.PointerEvent) {
     const track = trackRef.current;
     if (!track || !draggingRef.current) return;
     const dx = e.clientX - dragStartXRef.current;
-    if (Math.abs(dx) > 3) movedRef.current = true;
+    if (!movedRef.current && Math.abs(dx) <= 3) return;
+    if (!movedRef.current) {
+      movedRef.current = true;
+      track.setPointerCapture(e.pointerId);
+    }
     track.scrollLeft = dragStartScrollRef.current - dx;
   }
   function endDrag() {
@@ -118,7 +122,8 @@ export function UpdatesFeed({
   function onClickCapture(e: React.MouseEvent) {
     // Si hubo arrastre real, no dejamos que el click abra el link — así
     // "arrastrar para mirar" no navega por accidente.
-    if (movedRef.current) {
+    if (e.detail !== 0 && movedRef.current) {
+      movedRef.current = false;
       e.preventDefault();
       e.stopPropagation();
     }
@@ -156,8 +161,15 @@ export function UpdatesFeed({
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onPointerLeave={(event) => {
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) endDrag();
+        }}
         onClickCapture={onClickCapture}
-        className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onContextMenu={(event) => {
+          if ((event.target as Element).closest(".carousel-cover-card")) event.preventDefault();
+        }}
+        onDragStart={(event) => event.preventDefault()}
+        className="flex max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ cursor: "grab", scrollBehavior: "auto", gap: GAP_PX }}
       >
         {loopItems.map((item, i) => {
@@ -170,6 +182,8 @@ export function UpdatesFeed({
                     src={item.imageUrl}
                     alt=""
                     draggable={false}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 h-full w-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
@@ -190,7 +204,7 @@ export function UpdatesFeed({
           );
 
           const className =
-            "djez-updates-card group relative block h-32 shrink-0 overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.03] select-none";
+            "carousel-cover-card djez-updates-card group relative block h-32 shrink-0 overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.03]";
 
           if (!item.href) {
             return (

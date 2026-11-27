@@ -81,6 +81,11 @@ function ItemWrapper({
   style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
+  const coverProps = {
+    onContextMenu: (event: React.MouseEvent) => event.preventDefault(),
+    onDragStart: (event: React.DragEvent) => event.preventDefault(),
+  };
+  const cardClassName = `carousel-cover-card ${className ?? ""}`;
   if (comingSoon) {
     return (
       <button
@@ -88,7 +93,8 @@ function ItemWrapper({
         onClick={onComingSoonClick}
         data-cursor="magnetic"
         style={style}
-        className={`${className} grayscale opacity-60 saturate-0 transition-opacity hover:opacity-75`}
+        {...coverProps}
+        className={`${cardClassName} grayscale opacity-60 saturate-0 transition-opacity hover:opacity-75`}
       >
         {children}
       </button>
@@ -96,13 +102,13 @@ function ItemWrapper({
   }
   if (href) {
     return (
-      <Link href={href} data-cursor="magnetic" style={style} className={className}>
+      <Link href={href} data-cursor="magnetic" style={style} draggable={false} {...coverProps} className={cardClassName}>
         {children}
       </Link>
     );
   }
   return (
-    <div data-cursor="magnetic" style={style} className={className}>
+    <div data-cursor="magnetic" style={style} {...coverProps} className={cardClassName}>
       {children}
     </div>
   );
@@ -198,7 +204,7 @@ export function Carousel({
       {hintOpen.hint && <p className="mt-2 text-sm">{hintOpen.hint}</p>}
     </PortfolioDialog>
   );
-  const trackClass = `flex snap-x snap-mandatory overflow-x-auto pb-3 [scrollbar-width:thin] ${alignFlex}`;
+  const trackClass = `flex max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin] ${alignFlex}`;
   const controls = (edges.prev || edges.next) && (
     <div className="mt-2 flex justify-end gap-2">
       <button type="button" disabled={!edges.prev} onClick={() => scrollBy(-1)}

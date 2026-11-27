@@ -68,6 +68,14 @@ body {
     touch-action: pan-y pinch-zoom;
   }
 
+  html:has(.djez-public-layout[data-viewport-zoom="out"]) {
+    overflow-x: visible;
+  }
+
+  html:has(.djez-public-layout[data-viewport-zoom="in"]) {
+    touch-action: auto;
+  }
+
   .djez-public-layout,
   .djez-public-content {
     overflow-x: clip;

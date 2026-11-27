@@ -17,7 +17,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         if (!valid) throw new Error("No autorizado");
 
         return {
-          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/heic"],
+          allowedContentTypes: ["image/webp"],
           addRandomSuffix: true,
           maximumSizeInBytes: 30 * 1024 * 1024, // 30MB por foto, de sobra para cámara/celular
         };

@@ -125,6 +125,7 @@ export async function FloatingNav({ locale }: { locale: Locale }) {
 
   const links = [
     { key: "home", href: `/${locale}`, label: labelFor("home", locale === "en" ? "Home" : "Inicio") },
+    { key: "privado", href: `/${locale}/privado`, label: labelFor("privado", locale === "en" ? "Private" : "Privado") },
     ...categories.map((c) => ({
       key: `category:${c.slug}`,
       href: `/${locale}/categoria/${c.slug}`,

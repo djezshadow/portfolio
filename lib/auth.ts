@@ -19,8 +19,8 @@ export async function createSessionToken() {
 
 export async function verifySessionToken(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, getSecret());
-    return true;
+    const { payload } = await jwtVerify(token, getSecret(), { algorithms: [alg] });
+    return payload.role === "admin";
   } catch {
     return false;
   }

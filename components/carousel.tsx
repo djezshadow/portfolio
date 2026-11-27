@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { PortfolioDialog } from "./portfolio-dialog";
 
 export type CarouselItem = {
   id: string;
@@ -132,6 +133,25 @@ export function Carousel({
   const trackRef = useRef<HTMLDivElement>(null);
   const [hintOpen, setHintOpen] = useState<{ title: string; hint: string | null } | null>(null);
 
+  const [edges, setEdges] = useState({ prev: false, next: false });
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    function update() {
+      if (!track) return;
+      setEdges({ prev: track.scrollLeft > 2, next: track.scrollLeft + track.clientWidth < track.scrollWidth - 2 });
+    }
+    const observer = new ResizeObserver(update);
+    observer.observe(track);
+    Array.from(track.children).forEach((card) => observer.observe(card));
+    track.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => {
+      observer.disconnect();
+      track.removeEventListener("scroll", update);
+    };
+  }, [preset, items.length, maxItems, style?.gap, style?.itemSize]);
+
   // Con 0 categorías no hay nada que mostrar. Con 1 o más, se muestran
   // todas — nunca se esconde la sección entera por tener "pocas".
   if (items.length === 0) return null;
@@ -156,10 +176,16 @@ export function Carousel({
   // — si nadie toca "align", que siga viéndose igual que siempre.
   const effectiveAlign = style?.align ?? (preset === "polaroid" ? "center" : "left");
   const alignFlex =
-    effectiveAlign === "center" ? "justify-center" : effectiveAlign === "right" ? "justify-end" : "justify-start";
+    effectiveAlign === "center" ? "justify-center-safe" : effectiveAlign === "right" ? "justify-end-safe" : "justify-start";
 
   const scrollBy = (dir: 1 | -1) => {
-    trackRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
+    const track = trackRef.current;
+    if (!track) return;
+    const start = track.getBoundingClientRect().left;
+    const offsets = Array.from(track.children, (card) => card.getBoundingClientRect().left - start);
+    const delta = dir > 0 ? offsets.find((offset) => offset > 3) : offsets.filter((offset) => offset < -3).at(-1);
+    if (delta === undefined) return;
+    track.scrollBy({ left: delta, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   };
 
   function openHint(item: CarouselItem) {
@@ -167,36 +193,19 @@ export function Carousel({
   }
 
   const HintPopup = hintOpen && (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setHintOpen(null)}
-        className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 p-6"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.94 }}
-          onClick={(e) => e.stopPropagation()}
-          className="nav-surface max-w-xs rounded-2xl p-6 text-center"
-        >
-          <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-accent">
-            {comingSoonLabel} 🔒
-          </p>
-          <h3 className="mb-3 font-display text-lg">{hintOpen.title}</h3>
-          {hintOpen.hint && <p className="text-sm text-[var(--ink-muted)]">{hintOpen.hint}</p>}
-          <button
-            onClick={() => setHintOpen(null)}
-            data-cursor="magnetic"
-            className="mt-4 rounded-full bg-[var(--accent)] px-4 py-1.5 font-mono text-xs text-[var(--bg)]"
-          >
-            Cerrar
-          </button>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    <PortfolioDialog title={hintOpen.title} onClose={() => setHintOpen(null)}>
+      <p className="text-sm text-accent">{comingSoonLabel}</p>
+      {hintOpen.hint && <p className="mt-2 text-sm">{hintOpen.hint}</p>}
+    </PortfolioDialog>
+  );
+  const trackClass = `flex snap-x snap-mandatory overflow-x-auto pb-3 [scrollbar-width:thin] ${alignFlex}`;
+  const controls = (edges.prev || edges.next) && (
+    <div className="mt-2 flex justify-end gap-2">
+      <button type="button" disabled={!edges.prev} onClick={() => scrollBy(-1)}
+        className="glass rounded-full px-4 py-2 text-sm disabled:opacity-40" aria-label="Anterior">‹</button>
+      <button type="button" disabled={!edges.next} onClick={() => scrollBy(1)}
+        className="glass rounded-full px-4 py-2 text-sm disabled:opacity-40" aria-label="Siguiente">›</button>
+    </div>
   );
 
   // ============================= MINIMAL =============================
@@ -265,7 +274,7 @@ export function Carousel({
                     "🔒"
                   ) : item.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.coverImageUrl} alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="absolute inset-0 h-full w-full object-cover" />
+                    <img src={item.coverImageUrl} loading="lazy" decoding="async" alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
                     item.code.replace("SC-", "")
                   )}
@@ -287,12 +296,14 @@ export function Carousel({
     return (
       <>
         <div
-          className={`flex overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${alignFlex}`}
+          ref={trackRef}
+          className={trackClass}
           style={{ gap: gapPx * 0.75 }}
         >
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
+              className="shrink-0 snap-start"
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -316,7 +327,7 @@ export function Carousel({
                   {item.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={item.coverImageUrl}
+                      src={item.coverImageUrl} loading="lazy" decoding="async"
                       alt=""
                       draggable={false}
                       onContextMenu={(e) => e.preventDefault()}
@@ -341,6 +352,7 @@ export function Carousel({
             </motion.div>
           ))}
         </div>
+        {controls}
         {HintPopup}
       </>
     );
@@ -374,7 +386,7 @@ export function Carousel({
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={item.coverImageUrl}
+                      src={item.coverImageUrl} loading="lazy" decoding="async"
                       alt=""
                       draggable={false}
                       onContextMenu={(e) => e.preventDefault()}
@@ -409,44 +421,26 @@ export function Carousel({
   }
 
   // ============================= MARQUEE ==============================
-  // Loop horizontal automático, se pausa al pasar el mouse.
+  // Fila horizontal con el estilo visual del preset Marquee.
   if (preset === "marquee") {
-    const loopItems = [...visible, ...visible];
-    const duration = Math.max(visible.length * 4, 16);
     return (
       <>
-        <style>{`
-          @keyframes djez-marquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
-          }
-          .djez-marquee-track {
-            animation: djez-marquee var(--marquee-duration, 20s) linear infinite;
-          }
-          .djez-marquee-track:hover {
-            animation-play-state: paused;
-          }
-        `}</style>
-        <div className="overflow-hidden">
-          <div
-            className="djez-marquee-track flex w-max"
-            style={{ "--marquee-duration": `${duration}s`, gap: gapPx } as React.CSSProperties}
-          >
-            {loopItems.map((item, i) => (
+        <div ref={trackRef} className={trackClass} style={{ gap: gapPx }}>
+            {visible.map((item) => (
               <ItemWrapper
-                key={`${item.id}-${i}`}
+                key={item.id}
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                style={{ minWidth: 240 * sizeScale }}
-                className={`${cardBg} group/card relative block shrink-0 overflow-hidden rounded-2xl p-5 text-left ${cardShadow}`}
+                style={{ width: `min(${240 * sizeScale}px, 82vw)` }}
+                className={`${cardBg} group/card relative block shrink-0 snap-start overflow-hidden rounded-2xl p-5 text-left ${cardShadow}`}
               >
                 {item.isComingSoon && <LockBadge />}
                 {item.coverImageUrl && (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={item.coverImageUrl}
+                      src={item.coverImageUrl} loading="lazy" decoding="async"
                       alt=""
                       draggable={false}
                       onContextMenu={(e) => e.preventDefault()}
@@ -469,8 +463,8 @@ export function Carousel({
                 </h3>
               </ItemWrapper>
             ))}
-          </div>
         </div>
+        {controls}
         {HintPopup}
       </>
     );
@@ -503,7 +497,7 @@ export function Carousel({
                   {item.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={item.coverImageUrl}
+                      src={item.coverImageUrl} loading="lazy" decoding="async"
                       alt=""
                       draggable={false}
                       onContextMenu={(e) => e.preventDefault()}
@@ -570,7 +564,7 @@ export function Carousel({
                 <div className="relative aspect-square w-full overflow-hidden bg-black/10">
                   {item.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.coverImageUrl} alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="h-full w-full object-cover" />
+                    <img src={item.coverImageUrl} loading="lazy" decoding="async" alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <span className="font-display text-2xl text-black/30">{item.code.replace("SC-", "")}</span>
@@ -596,12 +590,13 @@ export function Carousel({
       <div className="relative">
         <div
           ref={trackRef}
-          className={`flex snap-x snap-mandatory overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${alignFlex}`}
+          className={trackClass}
           style={{ gap: gapPx }}
         >
           {visible.map((item, i) => (
             <motion.div
               key={item.id}
+              className="shrink-0 snap-start"
               initial={{ opacity: 0, scale: 0.94 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
@@ -611,15 +606,15 @@ export function Carousel({
                 href={item.href}
                 comingSoon={item.isComingSoon}
                 onComingSoonClick={() => openHint(item)}
-                style={{ minWidth: 280 * sizeScale, minHeight: item.coverImageUrl && !item.isComingSoon ? 220 * sizeScale : undefined }}
-                className={`${cardBg} group relative block snap-start overflow-hidden rounded-2xl p-6 text-left ${cardShadow} ${item.coverImageUrl && !item.isComingSoon ? "flex flex-col justify-end" : ""}`}
+                style={{ width: `min(${280 * sizeScale}px, 82vw)`, minHeight: item.coverImageUrl && !item.isComingSoon ? 220 * sizeScale : undefined }}
+                className={`${cardBg} group relative block overflow-hidden rounded-2xl p-6 text-left ${cardShadow} ${item.coverImageUrl && !item.isComingSoon ? "flex flex-col justify-end" : ""}`}
               >
                 {item.isComingSoon && <LockBadge />}
                 {item.coverImageUrl && (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={item.coverImageUrl}
+                      src={item.coverImageUrl} loading="lazy" decoding="async"
                       alt=""
                       draggable={false}
                       onContextMenu={(e) => e.preventDefault()}
@@ -652,24 +647,7 @@ export function Carousel({
           ))}
         </div>
 
-        <div className="mt-3 flex justify-end gap-2">
-          <button
-            onClick={() => scrollBy(-1)}
-            data-cursor="magnetic"
-            className="glass h-9 w-9 rounded-full font-mono text-sm"
-            aria-label="Anterior"
-          >
-            ←
-          </button>
-          <button
-            onClick={() => scrollBy(1)}
-            data-cursor="magnetic"
-            className="glass h-9 w-9 rounded-full font-mono text-sm"
-            aria-label="Siguiente"
-          >
-            →
-          </button>
-        </div>
+        {controls}
       </div>
       {HintPopup}
     </>

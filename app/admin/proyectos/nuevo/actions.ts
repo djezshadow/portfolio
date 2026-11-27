@@ -3,8 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { put, del } from "@vercel/blob";
-import sharp from "sharp";
+import { projectWebp } from "@/lib/managed-blob";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { parseVideoUrl } from "@/lib/video-url";
@@ -94,25 +93,12 @@ export async function createProject(formData: FormData) {
     if (!tempUrl) continue;
 
     try {
-      const res = await fetch(tempUrl);
-      const buffer = Buffer.from(await res.arrayBuffer());
-      // Conversión a WebP (calidad 82, ver guía de export del spec) — sin
-      // watermark; esta es la copia "base" que sirve de original interno.
-      const webp = await sharp(buffer)
-        .resize({ width: 2400, withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer();
-
-      const blob = await put(`media/${project.id}-${order}.webp`, webp, {
-        access: "public",
-        contentType: "image/webp",
-      });
-
+      const url = projectWebp(tempUrl);
       const created = await prisma.media.create({
         data: {
           projectId: project.id,
           type: "image",
-          url: blob.url,
+          url,
           watermarkEnabled,
           order,
           isThumbnail: order === 0,
@@ -127,14 +113,6 @@ export async function createProject(formData: FormData) {
       } catch (err) {
         console.error(`No se pudo hornear el watermark de ${created.id} al subir:`, err);
         // no cortamos la subida por esto — /api/media/[id] sirve de respaldo
-      }
-
-      // Borramos el original temporal, ya no lo necesitamos (ya tenemos
-      // la copia webp base en `blob.url`).
-      try {
-        await del(tempUrl);
-      } catch {
-        // no pasa nada si ya no existe
       }
 
       order++;

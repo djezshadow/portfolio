@@ -1,0 +1,40 @@
+"use client";
+
+import { useRef, useState } from "react";
+
+export function PrivateGallery({ photos, en }: { photos: { id: string; alt: string }[]; en: boolean }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [index, setIndex] = useState(0);
+  const [open, setOpen] = useState(false);
+  if (!photos.length) return <p>{en ? "This album is empty." : "Este álbum todavía está vacío."}</p>;
+  const active = photos[index] ?? photos[0];
+  const label = (i: number) => en ? `Photo ${i + 1}` : `Foto ${i + 1}`;
+  const move = (step: number) => setIndex((current) => (current + step + photos.length) % photos.length);
+  return <>
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      {photos.map((photo, i) => <button key={photo.id} type="button" aria-label={photo.alt || label(i)}
+        className="glass overflow-hidden rounded-xl focus-visible:outline-2 focus-visible:outline-accent"
+        onClick={() => { setIndex(i); setOpen(true); dialog.current?.showModal(); }}>
+        <img src={`/api/album-photo/${photo.id}?thumb=1`} alt={photo.alt} loading="lazy" className="aspect-[4/3] w-full object-cover" />
+      </button>)}
+    </div>
+    <dialog ref={dialog} onClose={() => setOpen(false)} aria-label={en ? "Photo viewer" : "Visor de fotos"}
+      className="m-auto w-[min(96vw,72rem)] rounded-2xl bg-neutral-950 p-4 text-white backdrop:bg-black/80"
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          e.preventDefault();
+          move(e.key === "ArrowLeft" ? -1 : 1);
+        }
+      }}>
+      <div className="flex justify-end">
+        <button type="button" autoFocus onClick={() => dialog.current?.close()} className="rounded px-3 py-2">{en ? "Close" : "Cerrar"}</button>
+      </div>
+      {open && <img src={`/api/album-photo/${active.id}`} alt={active.alt || label(index)} className="mx-auto max-h-[72dvh] w-full object-contain" />}
+      <div className="mt-2 flex items-center justify-between">
+        <button type="button" disabled={photos.length < 2} onClick={() => move(-1)} className="rounded px-3 py-2 disabled:opacity-40">{en ? "Previous" : "Anterior"}</button>
+        <span aria-live="polite">{index + 1} / {photos.length}</span>
+        <button type="button" disabled={photos.length < 2} onClick={() => move(1)} className="rounded px-3 py-2 disabled:opacity-40">{en ? "Next" : "Siguiente"}</button>
+      </div>
+    </dialog>
+  </>;
+}

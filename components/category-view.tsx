@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import { PortfolioDialog } from "./portfolio-dialog";
 import type { Prisma } from "@prisma/client";
 import { useTheme, resolveCategoryTheme } from "./theme-provider";
 import { categoryStyleToCSS } from "@/lib/category-style";
 import { loc, locOrNull } from "@/lib/i18n/content";
 import { formatDateRange } from "@/lib/date-range";
 import type { Locale } from "@/lib/i18n/dictionaries";
-import { VideoEmbed } from "./video-embed";
+import { getVideoThumbnail } from "@/lib/video-url";
 import { ProjectLightbox } from "./project-lightbox";
 import { Reveal } from "./reveal";
 import Image from "next/image";
@@ -73,7 +74,7 @@ export function CategoryView({
       setOpenProjectId(target.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams, category.projects, locale]);
 
   return (
     <div data-theme={resolvedTheme} className="min-h-screen px-6 py-16 transition-colors duration-500">
@@ -103,18 +104,7 @@ export function CategoryView({
 
             return (
               <Reveal key={project.id} delay={i * 0.05}>
-                <article
-                  onClick={() =>
-                    project.isComingSoon
-                      ? setHintOpen({
-                          title,
-                          hint: locOrNull(project.comingSoonHint, project.comingSoonHintEn, locale),
-                        })
-                      : setOpenProjectId(project.id)
-                  }
-                  data-cursor="magnetic"
-                  className={`glass cursor-pointer overflow-hidden rounded-2xl ${project.isComingSoon ? "grayscale opacity-60 saturate-0" : ""}`}
-                >
+                <article className={`glass group relative overflow-hidden rounded-2xl focus-within:ring-2 focus-within:ring-accent ${project.isComingSoon ? "grayscale opacity-60 saturate-0" : ""}`}>
                   <div className="relative">
                     {project.isComingSoon && (
                       <span className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-sm text-white">
@@ -122,12 +112,12 @@ export function CategoryView({
                       </span>
                     )}
                     {coverMedia?.type === "video" && coverMedia.videoProvider && coverMedia.videoId ? (
-                      <div className="pointer-events-none">
-                        <VideoEmbed
-                          provider={coverMedia.videoProvider}
-                          videoId={coverMedia.videoId}
-                          title={title}
-                        />
+                      <div className="relative grid aspect-video place-items-center bg-black/30">
+                        {coverMedia.videoProvider === "youtube" && (
+                          <img src={getVideoThumbnail("youtube", coverMedia.videoId) ?? undefined} alt="" loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover" />
+                        )}
+                        <span aria-hidden className="relative rounded-full bg-black/70 px-4 py-2 text-white">▶</span>
                       </div>
                     ) : coverMedia?.url ? (
                       <div className="relative aspect-video w-full">
@@ -135,7 +125,7 @@ export function CategoryView({
                           src={coverMedia.bakedThumbUrl || `/api/media/${coverMedia.id}?w=800`}
                           alt={title}
                           fill
-                          className="object-cover"
+                          className="object-cover motion-safe:transition-transform motion-safe:group-hover:scale-[1.03]"
                           sizes="(max-width: 640px) 100vw, 50vw"
                           unoptimized
                         />
@@ -164,6 +154,11 @@ export function CategoryView({
                       </p>
                     )}
                   </div>
+                  <button type="button" aria-label={title} aria-haspopup="dialog" data-cursor="magnetic"
+                    className="absolute inset-0 z-20 cursor-pointer"
+                    onClick={() => project.isComingSoon
+                      ? setHintOpen({ title, hint: locOrNull(project.comingSoonHint, project.comingSoonHintEn, locale) })
+                      : setOpenProjectId(project.id)} />
                 </article>
               </Reveal>
             );
@@ -175,8 +170,10 @@ export function CategoryView({
         )}
       </div>
 
+      <AnimatePresence>
       {openProject && (
         <ProjectLightbox
+          key={openProject.id}
           project={{
             title: loc(openProject.title, openProject.titleEn, locale),
             role: locOrNull(openProject.role, openProject.roleEn, locale),
@@ -197,38 +194,10 @@ export function CategoryView({
         />
       )}
 
-      <AnimatePresence>
-        {hintOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setHintOpen(null)}
-            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 p-6"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.94 }}
-              onClick={(e) => e.stopPropagation()}
-              className="nav-surface max-w-xs rounded-2xl p-6 text-center"
-            >
-              <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-accent">
-                {locale === "en" ? "Coming soon" : "Próximamente"} 🔒
-              </p>
-              <h3 className="mb-3 font-display text-lg">{hintOpen.title}</h3>
-              {hintOpen.hint && <p className="text-sm text-[var(--ink-muted)]">{hintOpen.hint}</p>}
-              <button
-                onClick={() => setHintOpen(null)}
-                data-cursor="magnetic"
-                className="mt-4 rounded-full bg-[var(--accent)] px-4 py-1.5 font-mono text-xs text-[var(--bg)]"
-              >
-                Cerrar
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
+      {hintOpen && <PortfolioDialog title={hintOpen.title} onClose={() => setHintOpen(null)} closeLabel={locale === "en" ? "Close" : "Cerrar"}>
+        {hintOpen.hint && <p className="text-sm">{hintOpen.hint}</p>}
+      </PortfolioDialog>}
     </div>
   );
 }

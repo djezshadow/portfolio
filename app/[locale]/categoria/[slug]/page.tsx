@@ -31,7 +31,7 @@ export async function generateMetadata({
     where: { slug },
     include: {
       projects: {
-        where: { project: { publishedAt: { lte: new Date() } } },
+        where: { project: { publishedAt: { lte: new Date() }, isComingSoon: false } },
         include: { project: { include: { media: true } } },
         take: 1,
       },
@@ -49,7 +49,8 @@ export async function generateMetadata({
   const description =
     locOrNull(category.metaDescription, category.metaDescriptionEn, locale) ||
     `Proyectos de ${name} filmados y editados por DJEZSHADOW.`;
-  const ogImage = category.projects[0]?.project.media.find((m) => m.type === "image")?.url;
+  const ogMedia = category.projects[0]?.project.media.find((m) => m.type === "image");
+  const ogImage = ogMedia && (ogMedia.bakedThumbUrl || `/api/media/${ogMedia.id}?w=800`);
 
   return {
     title,
@@ -105,9 +106,23 @@ export default async function CategoryPage({
     return <ComingSoon hint={hint} dict={dict} />;
   }
 
+  const publicMediaCategory = {
+    ...category,
+    projects: category.projects.map(({ project, ...entry }) => ({
+      ...entry,
+      project: {
+        ...project,
+        media: !isAdmin && project.isComingSoon ? [] : project.media.map((media) => ({
+          ...media,
+          url: media.type === "image" && media.url ? `/api/media/${media.id}` : "",
+        })),
+      },
+    })),
+  };
+
   return (
     <Suspense fallback={null}>
-      <CategoryView category={category} isPreview={isAdmin} dict={dict} locale={locale} />
+      <CategoryView category={publicMediaCategory} isPreview={isAdmin} dict={dict} locale={locale} />
     </Suspense>
   );
 }

@@ -13,6 +13,7 @@ export function AdminNav() {
     <nav className="glass sticky top-10 z-40 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap font-mono text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link href="/admin" data-cursor="magnetic">Admin</Link>
+        <Link href="/admin/privado" data-cursor="magnetic">Álbumes privados</Link>
         <Link href="/admin/categorias" data-cursor="magnetic">Categorías</Link>
         <Link href="/admin/colaboradores" data-cursor="magnetic">Colaboradores</Link>
         <Link href="/admin/tipos-colaborador" data-cursor="magnetic">Tipos de relación</Link>

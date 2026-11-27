@@ -45,6 +45,16 @@ export default async function AdminNavbarPage() {
       currentEs: navLabels.home?.es ?? "Inicio",
       currentEn: navLabels.home?.en ?? "Home",
     },
+    {
+      key: "privado",
+      label: navLabels.privado?.es || "Privado",
+      type: "fixed" as const,
+      enabled: true,
+      toggleAction: null,
+      renameable: true,
+      currentEs: navLabels.privado?.es ?? "Privado",
+      currentEn: navLabels.privado?.en ?? "Private",
+    },
     ...allCategories.map((c) => ({
       key: `category:${c.slug}`,
       label: c.name,

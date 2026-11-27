@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { VideoEmbed } from "./video-embed";
 import { getVideoThumbnail } from "@/lib/video-url";
@@ -105,13 +105,18 @@ export function ProjectLightbox({
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [zoomed, setZoomed] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const activeThumbnailRef = useRef<HTMLButtonElement>(null);
+  const reduceMotion = useReducedMotion();
 
   // Antes acá se hacía setZoomed(false) — por eso cada vez que tocabas
   // una flechita el visor "saltaba" fuera de pantalla completa. Ahora el
   // estado de zoom NO se toca al cambiar de foto: si estabas en pantalla
   // completa, seguís en pantalla completa viendo la siguiente/anterior.
   function goTo(next: number) {
-    setDirection(next > index || (index === media.length - 1 && next === 0) ? 1 : -1);
+    if (next === index) return;
+    setDirection(next > index ? 1 : -1);
     setIndex(next);
   }
   function goNext() {
@@ -139,67 +144,71 @@ export function ProjectLightbox({
   const current = media[index];
   const showingPicker = activeGroupId === null;
 
+  function closeStep() {
+    if (zoomed) setZoomed(false);
+    else if (!showingPicker && groups.length) setActiveGroupId(null);
+    else onClose();
+  }
+
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        if (zoomed) {
-          setZoomed(false);
-        } else if (!showingPicker && groups.length > 0) {
-          setActiveGroupId(null);
-        } else {
-          onClose();
-        }
-      }
-      if (showingPicker) return;
-      if (e.key === "ArrowRight") goNext();
-      if (e.key === "ArrowLeft") goPrev();
-    }
-    window.addEventListener("keydown", onKey);
+    const trigger = document.activeElement;
+    const oldOverflow = document.body.style.overflow;
+    closeRef.current?.focus();
     document.body.style.overflow = "hidden";
     document.body.setAttribute("data-lightbox-open", "true");
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = oldOverflow;
       document.body.removeAttribute("data-lightbox-open");
+      if (trigger instanceof HTMLElement) trigger.focus({ preventScroll: true });
     };
-  }, [media.length, onClose, showingPicker]);
+  }, []);
 
-  // Precarga: solo las dos fotos VECINAS (anterior/siguiente) — la actual
-  // no, porque de eso ya se encarga <ProgressiveImage> con su propio
-  // fetch(). Precargarla acá TAMBIÉN generaba un segundo pedido a la
-  // misma URL al mismo tiempo; el navegador los unifica en uno solo y
-  // eso rompía el progreso por bytes (llegaba todo junto al final en vez
-  // de ir subiendo de a poco). No competimos con el proyecto entero,
-  // solo con los dos pasos posibles de "siguiente/anterior".
   useEffect(() => {
-    if (showingPicker) return;
-    const neighborOffsets = [1, -1];
-    const preloaded: HTMLImageElement[] = [];
-    for (const offset of neighborOffsets) {
-      const m = media[(index + offset + media.length) % media.length];
-      if (!m) continue;
-      if (m.type === "image") {
-        const img = new window.Image();
-        img.src = m.bakedFullUrl || `/api/media/${m.id}?w=${LIGHTBOX_WIDTH}`;
-        preloaded.push(img);
-      } else if (m.videoProvider && m.videoId) {
-        const thumb = getVideoThumbnail(m.videoProvider, m.videoId);
-        if (thumb) {
-          const img = new window.Image();
-          img.src = thumb;
-          preloaded.push(img);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeStep();
+      } else if (e.key === "Tab") {
+        const controls = [...(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], iframe") ?? [])];
+        const first = controls.at(0);
+        const last = controls.at(-1);
+        if (!first || !last) return;
+        if (e.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+          e.preventDefault();
+          first.focus();
         }
+      } else if (!showingPicker && media.length > 1 && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        e.preventDefault();
+        if (e.key === "ArrowRight") goNext();
+        else goPrev();
       }
     }
-    return () => {
-      preloaded.forEach((img) => {
-        img.src = "";
-      });
-    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [media.length, groups.length, onClose, showingPicker, zoomed]);
+
+  useEffect(() => {
+    if (showingPicker || media.length < 2) return;
+    const indexes = new Set([(index + 1) % media.length, (index - 1 + media.length) % media.length]);
+    for (const nearby of indexes) {
+      const item = media[nearby];
+      if (item?.type !== "image") continue;
+      const image = new window.Image();
+      image.fetchPriority = "low";
+      image.src = item.bakedFullUrl || `/api/media/${item.id}?w=${LIGHTBOX_WIDTH}`;
+    }
   }, [media, index, showingPicker]);
 
+  useEffect(() => {
+    if (!zoomed && !showingPicker) {
+      activeThumbnailRef.current?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "instant" });
+    }
+  }, [index, showingPicker, zoomed]);
+
   return (
-    <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -209,12 +218,16 @@ export function ProjectLightbox({
         onClick={onClose}
       >
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={project.title}
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{
             opacity: 1,
             scale: 1,
             width: "100%",
-            height: zoomed ? "100%" : "95vh",
+            height: zoomed ? "100%" : "min(95dvh, 100%)",
             maxWidth: zoomed ? "100%" : "72rem",
             borderRadius: zoomed ? 0 : 16,
           }}
@@ -268,19 +281,8 @@ export function ProjectLightbox({
                 </span>
               ))}
             <button
-              onClick={() => {
-                // Jerarquía: foto en zoom → cruz sale del zoom. Álbum
-                // (con subcategorías arriba) → cruz vuelve al selector.
-                // Si no, cierra todo. Ya no hace falta el link
-                // "← Subcategorías", la cruz cumple esa función.
-                if (zoomed) {
-                  setZoomed(false);
-                } else if (!showingPicker && groups.length > 0) {
-                  setActiveGroupId(null);
-                } else {
-                  onClose();
-                }
-              }}
+              ref={closeRef}
+              onClick={closeStep}
               data-cursor="magnetic"
               aria-label={zoomed ? "Achicar" : !showingPicker && groups.length > 0 ? "Volver a subcategorías" : "Cerrar"}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-xl text-white transition-colors hover:bg-black/70"
@@ -342,7 +344,7 @@ export function ProjectLightbox({
             <>
               <motion.div
                 className="relative min-h-0 flex-1 touch-pan-y bg-black"
-                drag={media.length > 1 ? "x" : false}
+                drag={media.length > 1 && current?.type === "image" ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.6}
                 onDragEnd={(_, info) => {
@@ -357,13 +359,17 @@ export function ProjectLightbox({
                   <motion.div
                     key={current?.id}
                     custom={direction}
-                    initial={{ opacity: 0, x: direction * 90, scale: 0.97 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: direction * -90, scale: 0.97 }}
+                    variants={{
+                      enter: (step: number) => ({ opacity: 0, x: reduceMotion ? 0 : step * 48 }),
+                      active: { opacity: 1, x: 0 },
+                      exit: (step: number) => ({ opacity: 0, x: reduceMotion ? 0 : step * -48 }),
+                    }}
+                    initial="enter"
+                    animate="active"
+                    exit="exit"
                     transition={{
                       x: { type: "spring", stiffness: 340, damping: 32 },
                       opacity: { duration: 0.2 },
-                      scale: { type: "spring", stiffness: 340, damping: 32 },
                     }}
                     className="absolute inset-0"
                   >
@@ -372,7 +378,8 @@ export function ProjectLightbox({
                         <VideoEmbed provider={current.videoProvider} videoId={current.videoId} title={project.title} />
                       </div>
                     ) : current?.url ? (
-                      <div onClick={() => setZoomed((z) => !z)} className="absolute inset-0 cursor-zoom-in">
+                      <button type="button" onClick={() => setZoomed((z) => !z)} aria-label={zoomed ? "Achicar foto" : "Ampliar foto"}
+                        className={`absolute inset-0 w-full ${zoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}>
                         <ProgressiveImage
                           key={current.id}
                           src={current.bakedFullUrl || `/api/media/${current.id}?w=${LIGHTBOX_WIDTH}`}
@@ -388,7 +395,7 @@ export function ProjectLightbox({
                           iso={current.exifIso}
                           fps={current.exifFps}
                         />
-                      </div>
+                      </button>
                     ) : null}
                   </motion.div>
                 </AnimatePresence>
@@ -425,9 +432,11 @@ export function ProjectLightbox({
                         </span>
                       )}
                       <button
+                        ref={i === index ? activeThumbnailRef : undefined}
                         onClick={() => goTo(i)}
                         data-cursor="magnetic"
                         aria-label={m.type === "image" ? `${project.title} — ${i + 1}` : `${project.title} — video ${i + 1}`}
+                        aria-current={i === index ? "true" : undefined}
                         className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md"
                         style={{ outline: i === index ? "2px solid var(--accent)" : "none" }}
                       >
@@ -438,7 +447,7 @@ export function ProjectLightbox({
                             fill
                             className="object-cover"
                             sizes="64px"
-                            loading="eager"
+                            loading="lazy"
                             unoptimized
                           />
                         ) : m.videoProvider && m.videoId && getVideoThumbnail(m.videoProvider, m.videoId) ? (
@@ -449,7 +458,7 @@ export function ProjectLightbox({
                               fill
                               className="object-cover"
                               sizes="64px"
-                              loading="eager"
+                              loading="lazy"
                               unoptimized
                             />
                             <span className="absolute inset-0 flex items-center justify-center bg-black/20 font-mono text-[10px] text-white">
@@ -470,7 +479,7 @@ export function ProjectLightbox({
           )}
 
           {!zoomed && (
-            <div className="shrink-0 space-y-1 px-5 pb-5">
+            <div className="max-h-[24dvh] shrink-0 space-y-1 overflow-y-auto px-5 pb-5">
               <span className="font-mono text-[11px] text-accent">{project.role ?? "—"}</span>
               {project.dateLabel && (
                 <span className="ml-2 font-mono text-[11px] text-[var(--ink-muted)]">{project.dateLabel}</span>
@@ -488,6 +497,5 @@ export function ProjectLightbox({
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
   );
 }

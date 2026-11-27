@@ -18,7 +18,7 @@
  */
 export async function compressImageForUpload(
   file: File,
-  opts: { maxWidth?: number; maxHeight?: number; quality?: number } = {}
+  opts: { maxWidth?: number; maxHeight?: number; quality?: number; requireWebp?: boolean } = {}
 ): Promise<File> {
   // Si no es una imagen (o el navegador no soporta canvas por algún
   // motivo raro), devolvemos el archivo tal cual — mejor eso que romper
@@ -30,29 +30,34 @@ export async function compressImageForUpload(
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxWidth / bitmap.width, maxHeight / bitmap.height);
-    const width = Math.round(bitmap.width * scale);
-    const height = Math.round(bitmap.height * scale);
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
+    if (!ctx) {
+      bitmap.close();
+      throw new Error("Canvas no disponible");
+    }
     ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
 
     const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob(resolve, "image/webp", quality)
     );
-    if (!blob) return file;
+    if (!blob || blob.type !== "image/webp") throw new Error("WebP no disponible");
 
     // Si por algún motivo la "compresión" salió más pesada que el
     // original (pasa con imágenes ya muy chicas/simples), nos quedamos
     // con el original.
-    if (blob.size >= file.size) return file;
+    if (blob.size >= file.size && (!opts.requireWebp || file.type === "image/webp" && scale === 1)) return file;
 
     const newName = file.name.replace(/\.[^.]+$/, "") + ".webp";
     return new File([blob], newName, { type: "image/webp" });
   } catch {
+    if (opts.requireWebp) throw new Error("No se pudo convertir esta foto a WebP. Probá con un JPEG o PNG.");
     // Cualquier falla acá (formato raro, navegador viejo, etc.) — mejor
     // intentar subir el original que bloquear al usuario.
     return file;

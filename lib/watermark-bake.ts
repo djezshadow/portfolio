@@ -60,10 +60,9 @@ export async function bakeMediaWatermark(
   ]);
 
   const oldUrls = [media.bakedThumbUrl, media.bakedFullUrl].filter(Boolean) as string[];
-  await Promise.allSettled(oldUrls.map((u) => del(u)));
-
   await prisma.media.update({
     where: { id: media.id },
     data: { bakedThumbUrl: thumbBlob.url, bakedFullUrl: fullBlob.url },
   });
+  await Promise.allSettled(oldUrls.map((u) => del(u)));
 }

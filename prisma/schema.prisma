@@ -2,6 +2,41 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model PrivateAlbum {
+  id            String                @id @default(cuid())
+  name          String
+  passwordHash  String
+  accessVersion String                @default(uuid())
+  photos        PrivatePhoto[]
+  attempts      PrivateAlbumAttempt[]
+}
+
+model PrivatePhoto {
+  id        String       @id @default(cuid())
+  albumId   String
+  album     PrivateAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  bytes     Bytes
+  alt       String       @default("")
+  createdAt DateTime     @default(now())
+
+  @@index([albumId, createdAt])
+}
+
+model PrivateAlbumAttempt {
+  albumId String
+  album   PrivateAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  visitor String
+  window  Int
+  count   Int          @default(1)
+
+  @@id([albumId, visitor, window])
+  @@index([albumId, window])
+}
+
+model PhotoOriginalCleanup {
+  url String @id
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")

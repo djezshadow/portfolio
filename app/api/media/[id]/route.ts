@@ -30,9 +30,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const widthParam = Number(req.nextUrl.searchParams.get("w") ?? 0);
   const targetWidth = widthParam > 0 && widthParam <= 2000 ? Math.round(widthParam) : null;
 
-  const media = await prisma.media.findUnique({ where: { id } });
+  const media = await prisma.media.findUnique({
+    where: { id },
+    include: { project: { select: {
+      publishedAt: true, isComingSoon: true,
+      categories: { select: { category: { select: { isComingSoon: true } } } },
+    } } },
+  });
   if (!media || media.type !== "image" || !media.url) {
     return new Response("Not found", { status: 404 });
+  }
+
+  const { project } = media;
+  const isPublic = !!project.publishedAt && project.publishedAt <= new Date()
+    && !project.isComingSoon && project.categories.some(({ category }) => !category.isComingSoon);
+  if (wantsOriginal || !isPublic) {
+    const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+    if (!token || !(await verifySessionToken(token))) {
+      return new Response(null, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+    }
   }
 
   const sourceRes = await fetch(media.url);
@@ -44,13 +60,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // público. Cualquier otro pedido siempre lleva el watermark aplicado
   // (si corresponde), para que nunca se pueda "descargar la limpia" desde afuera.
   if (wantsOriginal) {
-    const store = await cookies();
-    const token = store.get(SESSION_COOKIE_NAME)?.value;
-    const isAdmin = token ? await verifySessionToken(token) : false;
-    if (!isAdmin) return new Response("No autorizado", { status: 401 });
-
     return new Response(new Uint8Array(sourceBuffer), {
-      headers: { "Content-Type": "image/webp", "Cache-Control": "private, no-store" },
+      headers: { "Content-Type": sourceRes.headers.get("Content-Type") || "application/octet-stream", "Cache-Control": "private, no-store" },
     });
   }
 
@@ -66,8 +77,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
       const settings = await getCachedSiteSettings();
       outputBuffer = await applyWatermark(sourceBuffer, {
-        opacity: settings.watermarkOpacity,
-        position: settings.watermarkPosition as
+        opacity: media.watermarkOpacityOverride ?? settings.watermarkOpacity,
+        position: (media.watermarkPositionOverride ?? settings.watermarkPosition) as
           | "bottom-right"
           | "bottom-left"
           | "top-right"
@@ -89,7 +100,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       "Content-Type": "image/webp",
       // Las miniaturas cachean más tiempo (cambian poco visualmente aunque
       // se ajuste el watermark); el tamaño completo sigue con cache corto.
-      "Cache-Control": targetWidth
+      "Cache-Control": !isPublic ? "private, no-store" : targetWidth
         ? "public, max-age=3600, stale-while-revalidate=86400"
         : "public, max-age=60, stale-while-revalidate=300",
     },

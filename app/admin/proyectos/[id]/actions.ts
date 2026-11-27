@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { put, del } from "@vercel/blob";
+import { projectWebp } from "@/lib/managed-blob";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
@@ -132,32 +133,15 @@ export async function updateProject(projectId: string, formData: FormData) {
     if (!tempUrl) continue;
 
     try {
-      const res = await fetch(tempUrl);
-      const buffer = Buffer.from(await res.arrayBuffer());
-      const webp = await sharp(buffer)
-        .resize({ width: 2400, withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer();
-
-      const blob = await put(`media/${projectId}-${order}.webp`, webp, {
-        access: "public",
-        contentType: "image/webp",
-      });
-
+      const url = projectWebp(tempUrl);
       const created = await prisma.media.create({
-        data: { projectId, type: "image", url: blob.url, watermarkEnabled, order, isThumbnail: order === 0 },
+        data: { projectId, type: "image", url, watermarkEnabled, order, isThumbnail: order === 0 },
       });
 
       try {
         await bakeMediaWatermark(created, watermarkSettings);
       } catch (err) {
         console.error(`No se pudo hornear el watermark de ${created.id} al subir:`, err);
-      }
-
-      try {
-        await del(tempUrl);
-      } catch {
-        // no pasa nada si ya no existe
       }
 
       order++;

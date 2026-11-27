@@ -1,87 +1,140 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { put, del } from "@vercel/blob";
+import { Prisma } from "@prisma/client";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
-import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { bakeMediaWatermark } from "@/lib/watermark-bake";
+import { isAdmin } from "@/lib/private-albums";
+import { isManagedBlob } from "@/lib/managed-blob";
 import { getSiteSettings } from "@/lib/site-settings";
+import { bakeMediaWatermark } from "@/lib/watermark-bake";
 
-async function assertAdmin() {
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE_NAME)?.value;
-  const valid = token ? await verifySessionToken(token) : false;
-  if (!valid) throw new Error("No autorizado");
-}
+export type OptimizeResult = {
+  converted: number;
+  deleted: number;
+  skipped: number;
+  errors: string[];
+  cursor: string | null;
+};
 
-export type OptimizeResult = { ok: boolean; processed: number; skipped: number; error?: string };
+const fields = [
+  ["Media", "url"], ["Media", "bakedThumbUrl"], ["Media", "bakedFullUrl"],
+  ["Category", "coverImageUrl"], ["MediaGroup", "coverImageUrl"],
+  ["Collaborator", "logoUrl"], ["Project", "logoUrl"],
+  ["Profile", "photoUrl"], ["InstagramPost", "coverImageUrl"],
+  ["UpdateLogEntry", "imageUrl"], ["UpdateFeedOverride", "imageUrlOverride"],
+  ["SiteSettings", "aboutImageUrl"], ["SiteSettings", "notFoundImageUrl"],
+] as const;
 
-/**
- * "Optimizar fotos ya subidas" — un solo botón que hace las dos cosas:
- * 1) Achica el ORIGINAL a 2400px máximo si venía más grande (menos peso
- *    guardado, más rápido de volver a procesar en el futuro).
- * 2) Hornea de nuevo las versiones públicas (bakedThumbUrl/bakedFullUrl)
- *    con el watermark actual ya IMPRESO en el archivo, comprimidas a
- *    WebP — nada se calcula en cada visita.
- *
- * Las fotos nuevas que subís de acá en más ya pasan por este mismo
- * proceso solas al subirlas (ver watermarkEnabled + bakeMediaWatermark en
- * las acciones de proyecto) — este botón es para ponerse al día con las
- * que ya estaban antes, o después de cambiar la config del watermark.
- */
-export async function optimizeExistingPhotos(): Promise<OptimizeResult> {
-  await assertAdmin();
+// Only identifiers from the fixed list above enter these queries.
+const references = Prisma.join(fields.map(([table, column]) => Prisma.sql`
+  SELECT ${Prisma.raw(`"${column}"`)} AS url FROM ${Prisma.raw(`"${table}"`)}
+`), " UNION ALL ");
 
-  const watermarkSettings = await getSiteSettings();
-  const images = await prisma.media.findMany({ where: { type: "image" } });
-  let processed = 0;
-  let skipped = 0;
+const protectedReferences = Prisma.sql`
+  ${references}
+  UNION ALL SELECT "watermarkUrl" FROM "SiteSettings"
+  UNION ALL SELECT "logoNoirUrl" FROM "SiteSettings"
+  UNION ALL SELECT "logoNeonUrl" FROM "SiteSettings"
+  UNION ALL SELECT "loadingAnimationUrl" FROM "SiteSettings"
+`;
 
-  for (const media of images) {
+export async function optimizeExistingPhotos(after: string | null = null): Promise<OptimizeResult> {
+  if (!(await isAdmin())) throw new Error("No autorizado");
+  const result: OptimizeResult = { converted: 0, deleted: 0, skipped: 0, errors: [], cursor: null };
+  if (!after) {
+    const pending = await prisma.photoOriginalCleanup.findMany({ take: 4, orderBy: { url: "asc" } });
+    for (const { url } of pending) await cleanOriginal(url, result);
+  }
+
+  const rows = await prisma.$queryRaw<{ url: string }[]>`
+    SELECT DISTINCT url FROM (${references}) AS photos
+    WHERE url > ${after ?? ""}
+    ORDER BY url LIMIT 5
+  `;
+
+  for (const { url } of rows.slice(0, 4)) {
+    if (!isManagedBlob(url) || /\.webp$/i.test(url)) {
+      result.skipped++;
+      continue;
+    }
+
     try {
-      let mediaForBake = media;
-
-      const res = await fetch(media.url);
-      if (res.ok) {
-        const buffer = Buffer.from(await res.arrayBuffer());
-        const metadata = await sharp(buffer).metadata();
-
-        // Solo re-subimos el original si venía más grande de lo necesario.
-        if (metadata.width && metadata.width > 2400) {
-          const resized = await sharp(buffer)
-            .resize({ width: 2400, withoutEnlargement: true })
-            .webp({ quality: 82 })
-            .toBuffer();
-
-          const oldUrl = media.url;
-          const blob = await put(`media/${media.projectId}-${media.id}-opt.webp`, resized, {
-            access: "public",
-            contentType: "image/webp",
-          });
-
-          mediaForBake = await prisma.media.update({ where: { id: media.id }, data: { url: blob.url } });
-
-          try {
-            await del(oldUrl);
-          } catch {
-            // no pasa nada si ya no existe
-          }
-        }
+      const response = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error("No se pudo leer la foto");
+      const source = Buffer.from(await response.arrayBuffer());
+      const image = sharp(source, { limitInputPixels: 100_000_000 });
+      const metadata = await image.metadata();
+      if (!metadata.format || !["jpeg", "png", "webp", "tiff", "heif", "gif"].includes(metadata.format) || (metadata.pages ?? 1) > 1) {
+        result.skipped++;
+        continue;
       }
+      const output = await image.rotate().resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 84 }).toBuffer();
+      const replacement = await put("media/optimized/photo.webp", output, {
+        access: "public", contentType: "image/webp", addRandomSuffix: true,
+      });
 
-      // Siempre rehorneamos thumb+full con el watermark actual, aunque el
-      // original no haya necesitado achicarse — es lo que pediste: que
-      // "Optimizar" también deje el watermark ya impreso y comprimido.
-      await bakeMediaWatermark(mediaForBake, watermarkSettings);
-      processed++;
-    } catch (err) {
-      console.error(`Error optimizando media ${media.id}:`, err);
-      skipped++;
+      const changed = await prisma.$transaction(async (tx) => {
+        let count = 0;
+        for (const [table, column] of fields) {
+          const field = Prisma.raw(`"${column}"`);
+          count += await tx.$executeRaw`UPDATE ${Prisma.raw(`"${table}"`)} SET ${field} = ${replacement.url} WHERE ${field} = ${url}`;
+        }
+        if (count) await tx.photoOriginalCleanup.upsert({ where: { url }, create: { url }, update: {} });
+        return count;
+      });
+      if (changed) {
+        result.converted++;
+        await cleanOriginal(url, result);
+      } else {
+        await del(replacement.url);
+        result.skipped++;
+      }
+    } catch (error) {
+      console.error("Error convirtiendo foto", url, error);
+      result.errors.push(`No se pudo convertir ${new URL(url).pathname}`);
     }
   }
 
-  revalidatePath("/", "layout");
-  return { ok: true, processed, skipped };
+  if (rows.length > 4) result.cursor = rows[3].url;
+  if (result.converted) revalidatePath("/", "layout");
+  return result;
+}
+
+export async function refreshPhotoWatermarks(after: string | null): Promise<OptimizeResult> {
+  if (!(await isAdmin())) throw new Error("No autorizado");
+  const result: OptimizeResult = { converted: 0, deleted: 0, skipped: 0, errors: [], cursor: null };
+  const [images, settings] = await Promise.all([
+    prisma.media.findMany({ where: { type: "image", id: { gt: after ?? "" } }, orderBy: { id: "asc" }, take: 3 }),
+    getSiteSettings(),
+  ]);
+  for (const image of images.slice(0, 2)) {
+    try {
+      await bakeMediaWatermark(image, settings);
+      result.converted++;
+    } catch (error) {
+      console.error("Error actualizando la marca de agua", image.id, error);
+      result.errors.push(`No se pudo actualizar la foto ${image.id}`);
+    }
+  }
+  if (images.length > 2) result.cursor = images[1].id;
+  if (result.converted) revalidatePath("/", "layout");
+  return result;
+}
+
+async function cleanOriginal(url: string, result: OptimizeResult) {
+  try {
+    const [reference] = await prisma.$queryRaw<{ url: string }[]>`
+      SELECT url FROM (${protectedReferences}) AS photos WHERE url = ${url} LIMIT 1
+    `;
+    if (reference || !isManagedBlob(url)) return;
+    await del(url);
+    await prisma.photoOriginalCleanup.deleteMany({ where: { url } });
+    result.deleted++;
+  } catch (error) {
+    console.error("Original pendiente de borrar", url, error);
+    result.errors.push(`Quedó pendiente borrar ${url}`);
+  }
 }

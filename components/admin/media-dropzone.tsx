@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import clsx from "clsx";
 import { parseVideoUrl } from "@/lib/video-url";
+import { compressImageForUpload } from "@/lib/compress-image";
 
 type UploadItem = {
   id: string;
@@ -18,12 +19,19 @@ type UploadItem = {
 export function MediaDropzone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const previewUrls = useRef(new Set<string>());
   const [items, setItems] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [videoUrls, setVideoUrls] = useState<string[]>([""]);
 
   const uploadingCount = items.filter((it) => it.status === "uploading").length;
+  const failedCount = items.filter((it) => it.status === "error").length;
+
+  useEffect(() => {
+    const urls = previewUrls.current;
+    return () => { urls.forEach((url) => URL.revokeObjectURL(url)); };
+  }, []);
 
   // Si todavía hay fotos subiendo, no dejamos mandar el formulario —
   // evita guardar el proyecto sin todas las fotos asociadas.
@@ -35,14 +43,19 @@ export function MediaDropzone() {
         e.preventDefault();
         alert(`Esperá a que terminen de subir las ${uploadingCount} foto(s) pendientes.`);
       }
+      if (failedCount > 0) {
+        e.preventDefault();
+        alert("Reintentá o quitá las fotos que fallaron antes de guardar.");
+      }
     };
     form.addEventListener("submit", guard);
     return () => form.removeEventListener("submit", guard);
-  }, [uploadingCount]);
+  }, [uploadingCount, failedCount]);
 
   async function uploadOne(item: UploadItem) {
     try {
-      const blob = await upload(item.file.name, item.file, {
+      const photo = await compressImageForUpload(item.file, { maxWidth: 2400, maxHeight: 2400, requireWebp: true });
+      const blob = await upload(`media/uploads/${crypto.randomUUID()}.webp`, photo, {
         access: "public",
         handleUploadUrl: "/api/admin/upload-token",
         onUploadProgress: ({ percentage }) => {
@@ -83,6 +96,7 @@ export function MediaDropzone() {
       status: "uploading",
     }));
 
+    newItems.forEach((item) => previewUrls.current.add(item.previewUrl));
     setItems((prev) => [...prev, ...newItems]);
 
     for (const item of newItems) {
@@ -100,6 +114,10 @@ export function MediaDropzone() {
   }
 
   function removeItem(id: string) {
+    const item = items.find((entry) => entry.id === id);
+    if (!item || item.status === "uploading") return;
+    URL.revokeObjectURL(item.previewUrl);
+    previewUrls.current.delete(item.previewUrl);
     setItems((prev) => prev.filter((it) => it.id !== id));
   }
 
@@ -185,8 +203,9 @@ export function MediaDropzone() {
               <button
                 type="button"
                 onClick={() => removeItem(item.id)}
+                disabled={item.status === "uploading"}
                 data-cursor="magnetic"
-                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs text-white"
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs text-white disabled:opacity-35"
                 aria-label="Quitar"
               >
                 ×
